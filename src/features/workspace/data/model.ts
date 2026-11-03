@@ -128,7 +128,14 @@ export interface DemoState {
   sprints: Sprint[];
   notifications: WorkspaceNotification[];
   settingsByWorkspace: Record<EntityId, WorkspaceSettings>;
-  counters: { issue: number; project: number; workspace: number; sprint: number; comment: number; subtask: number };
+  counters: {
+    issue: number;
+    project: number;
+    workspace: number;
+    sprint: number;
+    comment: number;
+    subtask: number;
+  };
 }
 
 export interface CreateIssueInput {
