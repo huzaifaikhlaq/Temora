@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { MetricCard, Panel, PanelTitle } from "@/components/shared/dashboard-ui";
 import { AdvancedPage, type AdvancedPageKind } from "@/features/workspace/components/advanced-pages";
+import { ProjectsDirectory } from "@/features/projects/components/projects-directory";
 
 type PageKind =
   | "projects"
@@ -110,21 +111,6 @@ function Table({ headings, rows }: { headings: string[]; rows: React.ReactNode[]
 }
 
 export function AdditionalPage({ kind }: { kind: PageKind }) {
-  if (
-    [
-      "create-issue",
-      "issues",
-      "dependencies",
-      "burndown",
-      "complete-sprint",
-      "roles",
-      "retrospective",
-      "automation",
-      "audit",
-    ].includes(kind)
-  ) {
-    return <AdvancedPage kind={kind as AdvancedPageKind} />;
-  }
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [read, setRead] = useState<number[]>([]);
@@ -140,6 +126,23 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
       ),
     [query, filter],
   );
+
+  if (kind === "projects") return <ProjectsDirectory />;
+  if (
+    [
+      "create-issue",
+      "issues",
+      "dependencies",
+      "burndown",
+      "complete-sprint",
+      "roles",
+      "retrospective",
+      "automation",
+      "audit",
+    ].includes(kind)
+  ) {
+    return <AdvancedPage kind={kind as AdvancedPageKind} />;
+  }
 
   if (kind === "projects")
     return (

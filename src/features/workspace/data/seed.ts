@@ -1,0 +1,126 @@
+import type { DemoState, Issue, Member, Project, Workspace } from "@/features/workspace/data/model";
+
+export const DEMO_TODAY = new Date().toISOString().slice(0, 10);
+
+export function addDays(value: string, days: number): string {
+  const date = new Date(`${value}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const northstar = "northstar-studio";
+const hyperion = "hyperion-labs";
+const apex = "apex-systems";
+const members: Member[] = [
+  { id: "alex-morgan", workspaceId: northstar, name: "Alex Morgan", email: "alex@northstar.studio", team: "Leadership", role: "Owner", presence: "Online" },
+  { id: "sarah-chen", workspaceId: northstar, name: "Sarah Chen", email: "sarah@northstar.studio", team: "Product Design", role: "Admin", presence: "Online" },
+  { id: "jordan-lee", workspaceId: northstar, name: "Jordan Lee", email: "jordan@northstar.studio", team: "Engineering", role: "Member", presence: "Online" },
+  { id: "maya-patel", workspaceId: northstar, name: "Maya Patel", email: "maya@northstar.studio", team: "Product Design", role: "Member", presence: "Away" },
+  { id: "theo-kim", workspaceId: northstar, name: "Theo Kim", email: "theo@northstar.studio", team: "Engineering", role: "Member", presence: "Offline" },
+  { id: "emily-carter", workspaceId: northstar, name: "Emily Carter", email: "emily@northstar.studio", team: "Engineering", role: "Project lead", presence: "Online" },
+  { id: "hyperion-owner", workspaceId: hyperion, name: "Riley Park", email: "riley@hyperion.dev", team: "Platform", role: "Owner", presence: "Online" },
+  { id: "hyperion-member", workspaceId: hyperion, name: "Sam Rivera", email: "sam@hyperion.dev", team: "Engineering", role: "Member", presence: "Away" },
+  { id: "apex-owner", workspaceId: apex, name: "Avery Brooks", email: "avery@apex.example", team: "Core Engine", role: "Owner", presence: "Online" },
+];
+
+const projects: Project[] = [
+  { id: "website-redesign", workspaceId: northstar, key: "WR", name: "Website Redesign", description: "Responsive marketing site refresh and design-system delivery.", category: "Web / Marketing", status: "In Progress", progress: 74, leadId: "alex-morgan", memberIds: ["alex-morgan", "sarah-chen", "jordan-lee", "maya-patel"], dueDate: addDays(DEMO_TODAY, 12), color: "bg-accent" },
+  { id: "mobile-application", workspaceId: northstar, key: "MA", name: "Mobile Application", description: "Native mobile client and secure account experience.", category: "iOS / Android", status: "In Progress", progress: 45, leadId: "sarah-chen", memberIds: ["sarah-chen", "jordan-lee", "theo-kim"], dueDate: addDays(DEMO_TODAY, 28), color: "bg-green" },
+  { id: "customer-portal", workspaceId: northstar, key: "CP", name: "Customer Portal", description: "B2B account portal, billing workflows, and customer reporting.", category: "B2B SaaS", status: "In Review", progress: 88, leadId: "emily-carter", memberIds: ["emily-carter", "alex-morgan", "maya-patel"], dueDate: addDays(DEMO_TODAY, 5), color: "bg-accent" },
+  { id: "design-system", workspaceId: northstar, key: "DS", name: "Design System", description: "Shared components, tokens, and accessibility guidance.", category: "Product Design", status: "Planning", progress: 22, leadId: "sarah-chen", memberIds: ["sarah-chen", "maya-patel"], dueDate: addDays(DEMO_TODAY, 35), color: "bg-amber-500" },
+  { id: "platform-core", workspaceId: hyperion, key: "PC", name: "Platform Core", description: "Hyperion cloud platform reliability work.", category: "Engineering", status: "In Progress", progress: 57, leadId: "hyperion-owner", memberIds: ["hyperion-owner", "hyperion-member"], dueDate: addDays(DEMO_TODAY, 20), color: "bg-sky-500" },
+  { id: "core-engine", workspaceId: apex, key: "CE", name: "Core Engine", description: "Apex Systems core engine collaboration project.", category: "Platform", status: "Planning", progress: 12, leadId: "apex-owner", memberIds: ["apex-owner"], dueDate: addDays(DEMO_TODAY, 45), color: "bg-emerald-500" },
+];
+
+const work: Array<Omit<Issue, "workspaceId" | "createdAt" | "updatedAt" | "subtaskIds" | "commentIds" | "blockedByIds" | "blocksIds"> & { projectId: string }> = [
+  { id: "TEM-096", key: "TEM-096", projectId: "mobile-application", title: "Configure OAuth / OIDC application credentials in staging", description: "Provision and verify secure test credentials for the mobile sign-in flow.", status: "Done", priority: "Medium", assigneeId: "sarah-chen", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, -2), storyPoints: 3, sprintId: "sprint-24", labels: ["Security"] },
+  { id: "TEM-97", key: "TEM-97", projectId: "website-redesign", title: "Update Q3 sprint retrospective documentation", description: "Capture decisions and follow-up work from the sprint retrospective.", status: "In Progress", priority: "High", assigneeId: "alex-morgan", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, -1), storyPoints: 3, sprintId: "sprint-24", labels: ["Planning"] },
+  { id: "TEM-101", key: "TEM-101", projectId: "website-redesign", title: "Design the homepage responsive grid & hero layout", description: "Ensure fluid responsiveness from 360px through desktop widths and preserve the primary call to action.", status: "In Progress", priority: "Urgent", assigneeId: "alex-morgan", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, 1), storyPoints: 5, sprintId: "sprint-24", labels: ["Design System", "Frontend"] },
+  { id: "TEM-103", key: "TEM-103", projectId: "website-redesign", title: "Fix mobile navigation drawer animation", description: "Polish navigation transitions and reduced-motion behavior.", status: "In Review", priority: "High", assigneeId: "emily-carter", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 2), storyPoints: 3, sprintId: "sprint-24", labels: ["Frontend"] },
+  { id: "TEM-104", key: "TEM-104", projectId: "customer-portal", title: "Create the dashboard API contract", description: "Document the customer dashboard data shape for the frontend team.", status: "In Review", priority: "Urgent", assigneeId: "emily-carter", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 3), storyPoints: 5, sprintId: "sprint-24", labels: ["API"] },
+  { id: "TEM-105", key: "TEM-105", projectId: "mobile-application", title: "Review customer onboarding flow copy", description: "Review the onboarding content and empty states.", status: "To Do", priority: "Medium", assigneeId: "alex-morgan", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, 4), storyPoints: 2, sprintId: "sprint-24", labels: ["Content"] },
+  { id: "TEM-106", key: "TEM-106", projectId: "website-redesign", title: "Prepare asset exports for retina screens", description: "Export the approved assets at all required resolutions.", status: "Backlog", priority: "Low", assigneeId: "maya-patel", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, 7), storyPoints: 2, sprintId: null, labels: ["Design"] },
+  { id: "TEM-108", key: "TEM-108", projectId: "mobile-application", title: "End-to-end integration tests for biometric login", description: "Validate the authentication handoff on iOS and Android.", status: "In Review", priority: "Urgent", assigneeId: "jordan-lee", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 5), storyPoints: 5, sprintId: "sprint-24", labels: ["Mobile", "Security"] },
+  { id: "TEM-109", key: "TEM-109", projectId: "website-redesign", title: "Build component library documentation", description: "Publish usage guidance for shared design-system components.", status: "In Progress", priority: "Medium", assigneeId: "sarah-chen", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 6), storyPoints: 3, sprintId: "sprint-24", labels: ["Design System"] },
+  { id: "TEM-110", key: "TEM-110", projectId: "website-redesign", title: "Configure analytics tracking events", description: "Define events for the marketing site journey.", status: "Backlog", priority: "Medium", assigneeId: "theo-kim", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 8), storyPoints: 2, sprintId: null, labels: ["Analytics"] },
+  { id: "TEM-112", key: "TEM-112", projectId: "mobile-application", title: "Update mobile SDK client library to v3.1.0", description: "Update the mobile client SDK and verify compatibility.", status: "To Do", priority: "High", assigneeId: "theo-kim", reporterId: "jordan-lee", dueDate: addDays(DEMO_TODAY, 9), storyPoints: 1, sprintId: "sprint-24", labels: ["Mobile"] },
+  { id: "TEM-114", key: "TEM-114", projectId: "design-system", title: "Sign off on brand icon guidelines", description: "Review final icon exports before release.", status: "In Review", priority: "High", assigneeId: "sarah-chen", reporterId: "maya-patel", dueDate: addDays(DEMO_TODAY, 0), storyPoints: 1, sprintId: "sprint-24", labels: ["Design"] },
+  { id: "TEM-119", key: "TEM-119", projectId: "website-redesign", title: "Review sprint velocity metrics with product leads", description: "Summarize delivery metrics for the sprint review.", status: "To Do", priority: "Low", assigneeId: "alex-morgan", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, 11), storyPoints: 2, sprintId: null, labels: ["Planning"] },
+  { id: "TEM-121", key: "TEM-121", projectId: "customer-portal", title: "QA test mobile checkout with sandbox data", description: "Verify responsive checkout and confirmation states.", status: "Backlog", priority: "Medium", assigneeId: "jordan-lee", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 13), storyPoints: 3, sprintId: null, labels: ["QA"] },
+  { id: "TEM-130", key: "TEM-130", projectId: "website-redesign", title: "Audit workspace role permissions matrix", description: "Review project roles before enabling wider collaboration.", status: "Backlog", priority: "Medium", assigneeId: "alex-morgan", reporterId: "sarah-chen", dueDate: addDays(DEMO_TODAY, 20), storyPoints: 1, sprintId: "sprint-25", labels: ["Security"] },
+  { id: "TEM-132", key: "TEM-132", projectId: "website-redesign", title: "Explore AI workflow automation rules", description: "Collect automation opportunities for future planning.", status: "Backlog", priority: "Low", assigneeId: "maya-patel", reporterId: "alex-morgan", dueDate: addDays(DEMO_TODAY, 25), storyPoints: 2, sprintId: "sprint-25", labels: ["Automation"] },
+];
+
+const workspaces: Workspace[] = [
+  { id: northstar, name: "Northstar Studio", slug: "northstar", plan: "Pro", memberIds: members.filter(x=>x.workspaceId===northstar).map(x=>x.id), projectIds: projects.filter(x=>x.workspaceId===northstar).map(x=>x.id), createdAt: DEMO_TODAY },
+  { id: hyperion, name: "Hyperion Labs", slug: "hyperion", plan: "Free", memberIds: members.filter(x=>x.workspaceId===hyperion).map(x=>x.id), projectIds: projects.filter(x=>x.workspaceId===hyperion).map(x=>x.id), createdAt: DEMO_TODAY },
+  { id: apex, name: "Apex Systems Inc.", slug: "apex", plan: "Enterprise", memberIds: members.filter(x=>x.workspaceId===apex).map(x=>x.id), projectIds: projects.filter(x=>x.workspaceId===apex).map(x=>x.id), createdAt: DEMO_TODAY },
+];
+
+export function createInitialDemoState(): DemoState {
+  const issues: Issue[] = work.map(item => ({
+    ...item,
+    workspaceId: projects.find(project=>project.id===item.projectId)!.workspaceId,
+    createdAt: addDays(DEMO_TODAY, -12),
+    updatedAt: DEMO_TODAY,
+    subtaskIds: [], commentIds: [], blockedByIds: [], blocksIds: [],
+  }));
+  const subtasks = [
+    { id: "sub-101-1", issueId: "TEM-101", title: "Establish the 12-column responsive grid", completed: true, assigneeId: "alex-morgan" },
+    { id: "sub-101-2", issueId: "TEM-101", title: "Export Figma prototype for engineering review", completed: true, assigneeId: "sarah-chen" },
+    { id: "sub-101-3", issueId: "TEM-101", title: "Validate typography clamp scale", completed: true, assigneeId: "maya-patel" },
+    { id: "sub-101-4", issueId: "TEM-101", title: "Verify hero visual assets with marketing director", completed: false, assigneeId: "alex-morgan" },
+  ];
+  const comments = [
+    { id: "comment-101-1", issueId: "TEM-101", authorId: "sarah-chen", body: "The tablet breakpoint is ready for review.", createdAt: addDays(DEMO_TODAY,-1) },
+  ];
+  for (const issue of issues) {
+    issue.subtaskIds = subtasks.filter(item=>item.issueId===issue.id).map(item=>item.id);
+    issue.commentIds = comments.filter(item=>item.issueId===issue.id).map(item=>item.id);
+  }
+  const dependencies = [["TEM-096","TEM-101"],["TEM-101","TEM-108"],["TEM-101","TEM-112"]] as const;
+  for (const [source, target] of dependencies) {
+    const sourceIssue = issues.find(item=>item.id===source);
+    const targetIssue = issues.find(item=>item.id===target);
+    if (sourceIssue && targetIssue) {
+      sourceIssue.blocksIds.push(target);
+      targetIssue.blockedByIds.push(source);
+    }
+  }
+  return {
+    version: 1,
+    activeWorkspaceId: northstar,
+    activeMemberId: "alex-morgan",
+    workspaces,
+    members,
+    projects,
+    issues,
+    subtasks,
+    comments,
+    sprints: [
+      { id: "sprint-24", workspaceId: northstar, projectId: "website-redesign", name: "Sprint 24", goal: "Identity & Multi-Tenant Core", status: "Active", startDate: addDays(DEMO_TODAY,-10), endDate: addDays(DEMO_TODAY,4), capacityPoints: 48, completedAt: null },
+      { id: "sprint-23", workspaceId: northstar, projectId: "website-redesign", name: "Sprint 23", goal: "Design System & Token Delivery", status: "Closed", startDate: addDays(DEMO_TODAY,-24), endDate: addDays(DEMO_TODAY,-11), capacityPoints: 44, completedAt: addDays(DEMO_TODAY,-11) },
+      { id: "sprint-25", workspaceId: northstar, projectId: "website-redesign", name: "Sprint 25", goal: "Responsive Release Readiness", status: "Planned", startDate: addDays(DEMO_TODAY,5), endDate: addDays(DEMO_TODAY,18), capacityPoints: 48, completedAt: null },
+      { id: "hyperion-sprint-1", workspaceId: hyperion, projectId: "platform-core", name: "Platform Cycle 1", goal: "Ship platform reliability improvements", status: "Active", startDate: addDays(DEMO_TODAY,-4), endDate: addDays(DEMO_TODAY,10), capacityPoints: 24, completedAt: null },
+    ],
+    notifications: [
+      { id: "notification-1", workspaceId: northstar, recipientId: "alex-morgan", category: "Mentions", actorId: "sarah-chen", issueId: "TEM-101", message: "mentioned you in Homepage hero exploration", createdAt: DEMO_TODAY, readAt: null },
+      { id: "notification-2", workspaceId: northstar, recipientId: "alex-morgan", category: "Assigned to Me", actorId: "theo-kim", issueId: "TEM-112", message: "assigned you Update mobile SDK client library version to v3.1.0", createdAt: DEMO_TODAY, readAt: null },
+      { id: "notification-3", workspaceId: northstar, recipientId: "alex-morgan", category: "Comments", actorId: "jordan-lee", issueId: "TEM-108", message: "commented on end-to-end biometric login tests", createdAt: DEMO_TODAY, readAt: null },
+      { id: "notification-4", workspaceId: northstar, recipientId: "alex-morgan", category: "System & Sprints", actorId: null, issueId: null, message: "Sprint 24 has four days remaining", createdAt: DEMO_TODAY, readAt: null },
+    ],
+    settingsByWorkspace: Object.fromEntries(workspaces.map(workspace => [workspace.id, {
+      methodology: "Agile Scrum" as const,
+      sprintLengthDays: 14,
+      statuses: ["Backlog", "To Do", "In Progress", "In Review", "Done"] as const,
+      issueFields: ["Story points", "Labels", "Due date"],
+      automationRules: [
+        { id: "RECIPE-094", name: "Auto-close GitHub PR & notify Slack on QA sign-off", enabled: true, successRate: 99.9 },
+        { id: "RECIPE-108", name: "Assign bug to component owner", enabled: true, successRate: 100 },
+        { id: "RECIPE-116", name: "Sprint start notification", enabled: false, successRate: 99.4 },
+      ],
+      security: { mfaRequired: true, allowedRegions: ["US-West", "US-East"], sessionTimeoutMinutes: 30 },
+    }])),
+    counters: { issue: 140, project: 4, workspace: 3, sprint: 25, comment: 1, subtask: 4 },
+  };
+}
