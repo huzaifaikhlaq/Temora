@@ -6,21 +6,21 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
 
-const groups: { label: string; links: { label: string; href: string; icon: string; count?: string; dot?: string }[] }[] = [
+const groups: { label: string; links: { label: string; href: string; icon: string; count?: string; dot?: string; disabled?: boolean }[] }[] = [
   {
     label: "Workspace",
     links: [
       { label: "Overview", href: "/", icon: "grid_view" },
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
-      { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
+      { label: "Inbox", href: "/inbox", icon: "inbox", count: "3", disabled: true },
     ],
   },
   {
     label: "Projects",
     links: [
       { label: "Website Redesign", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-accent" },
-      { label: "Mobile Application", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-green" },
-      { label: "Customer Portal", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-outline" },
+      { label: "Mobile Application", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-green", disabled: true },
+      { label: "Customer Portal", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-outline", disabled: true },
     ],
   },
   {
@@ -29,16 +29,16 @@ const groups: { label: string; links: { label: string; href: string; icon: strin
       { label: "Boards / Kanban", href: "/projects/website-redesign/board", icon: "view_kanban" },
       { label: "Sprints & Backlog", href: "/projects/website-redesign/sprints", icon: "cycle" },
       { label: "Roadmap & Timeline", href: "/projects/website-redesign/roadmap", icon: "timeline" },
-      { label: "Calendar", href: "/calendar", icon: "calendar_today" },
+      { label: "Calendar", href: "/calendar", icon: "calendar_today", disabled: true },
     ],
   },
   {
     label: "Management",
     links: [
-      { label: "Members & Roles", href: "/members", icon: "group" },
-      { label: "Reports & Analytics", href: "/reports", icon: "insights" },
-      { label: "Integrations", href: "/integrations", icon: "hub" },
-      { label: "Settings", href: "/settings", icon: "settings" },
+      { label: "Members & Roles", href: "/members", icon: "group", disabled: true },
+      { label: "Reports & Analytics", href: "/reports", icon: "insights", disabled: true },
+      { label: "Integrations", href: "/integrations", icon: "hub", disabled: true },
+      { label: "Settings", href: "/settings", icon: "settings", disabled: true },
     ],
   },
 ];
@@ -71,10 +71,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <div className={group.label === "Projects" ? "ml-3 border-l border-border/50 pl-2" : ""}>
                 {group.links.map((link) => {
                   const active = link.href === "/" ? pathname === "/" : link.href === "/my-tasks" ? pathname.startsWith("/my-tasks") : link.href.includes("/board") ? pathname.includes("/board") : link.href.includes("/sprints") ? pathname.includes("/sprints") : link.href.includes("/roadmap") ? pathname.includes("/roadmap") : false;
-                  return <Link key={link.label} href={link.href} onClick={() => setMobileOpen(false)} className={`mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : "text-muted hover:bg-surface-container hover:text-foreground"}`}>
+                  const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
+                  const contents = <>
                     {group.label === "Projects" ? <span className={`size-1.5 rounded-full ${link.dot}`} /> : <Icon name={link.icon} size={18}/>}
                     <span className="truncate">{link.label}</span>{"count" in link && link.count && <span className={`ml-auto rounded-full px-1.5 py-0.5 font-mono text-[11px] ${active ? "bg-white/20 text-white" : "bg-surface-high text-muted"}`}>{link.count}</span>}
-                  </Link>;
+                  </>;
+                  return link.disabled
+                    ? <span key={link.label} aria-disabled="true" title="This screen is not included in the current preview" className={className}>{contents}</span>
+                    : <Link key={link.label} href={link.href} onClick={() => setMobileOpen(false)} className={className}>{contents}</Link>;
                 })}
               </div>
             </div>)}

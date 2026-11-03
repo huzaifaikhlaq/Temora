@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font -- Stitch references these external font families. */
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
