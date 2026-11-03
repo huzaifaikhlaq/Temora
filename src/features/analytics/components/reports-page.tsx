@@ -20,15 +20,15 @@ export function ReportsPage() {
   const [period, setPeriod] = useState("Month");
   const [reportRange, setReportRange] = useState("30");
   const [notice, setNotice] = useState("");
-  const workspaceIssues = state.issues.filter(
-    (issue) => issue.workspaceId === state.activeWorkspaceId,
+  const workspaceTasks = state.tasks.filter(
+    (task) => task.workspaceId === state.activeWorkspaceId,
   );
   const workspaceProjects = state.projects.filter(
     (project) => project.workspaceId === state.activeWorkspaceId && !project.archivedAt,
   );
   const rangeStart = new Date();
   rangeStart.setDate(rangeStart.getDate() - Number(reportRange));
-  const reportIssues = workspaceIssues.filter((issue) => new Date(issue.updatedAt) >= rangeStart);
+  const reportTasks = workspaceTasks.filter((task) => new Date(task.updatedAt) >= rangeStart);
   const closedSprints = state.sprints
     .filter(
       (sprint) => sprint.workspaceId === state.activeWorkspaceId && sprint.status === "Closed",
@@ -37,9 +37,9 @@ export function ReportsPage() {
     .slice(period === "Month" ? -4 : -8);
   const sprintVelocity = closedSprints.map((sprint) => ({
     sprint,
-    points: workspaceIssues
-      .filter((issue) => issue.sprintId === sprint.id && issue.status === "Done")
-      .reduce((sum, issue) => sum + issue.storyPoints, 0),
+    points: workspaceTasks
+      .filter((task) => task.sprintId === sprint.id && task.status === "Done")
+      .reduce((sum, task) => sum + task.storyPoints, 0),
   }));
   const averageVelocity = sprintVelocity.length
     ? Math.round(
@@ -53,21 +53,21 @@ export function ReportsPage() {
     ["To Do", "bg-slate-300"],
   ].map(([status, color]) => [
     status,
-    reportIssues.filter((issue) => issue.status === status).length,
+    reportTasks.filter((task) => task.status === status).length,
     color,
   ]);
 
-  function exportIssuesCsv() {
+  function exportTasksCsv() {
     const rows = [
       ["Key", "Summary", "Project", "Status", "Priority", "Assignee", "Due date"],
-      ...reportIssues.map((issue) => [
-        issue.key,
-        issue.title,
-        workspaceProjects.find((project) => project.id === issue.projectId)?.name ?? "",
-        issue.status,
-        issue.priority,
-        state.members.find((member) => member.id === issue.assigneeId)?.name ?? "",
-        issue.dueDate ?? "",
+      ...reportTasks.map((task) => [
+        task.key,
+        task.title,
+        workspaceProjects.find((project) => project.id === task.projectId)?.name ?? "",
+        task.status,
+        task.priority,
+        state.members.find((member) => member.id === task.assigneeId)?.name ?? "",
+        task.dueDate ?? "",
       ]),
     ];
     const csv = rows
@@ -76,10 +76,10 @@ export function ReportsPage() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "temora-workspace-issues.csv";
+    link.download = "temora-workspace-tasks.csv";
     link.click();
     URL.revokeObjectURL(url);
-    setNotice(`Exported ${reportIssues.length} workspace issues as CSV.`);
+    setNotice(`Exported ${reportTasks.length} workspace tasks as CSV.`);
   }
 
   return (
@@ -99,7 +99,7 @@ export function ReportsPage() {
               <option value="90">Last 90 days</option>
               <option value="365">Last year</option>
             </select>
-            <button className={softButton} onClick={exportIssuesCsv}>
+            <button className={softButton} onClick={exportTasksCsv}>
               <Icon name="file_download" />
               Export
             </button>
@@ -113,15 +113,15 @@ export function ReportsPage() {
       )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Issues updated in range"
-          value={String(reportIssues.length)}
+          label="Tasks updated in range"
+          value={String(reportTasks.length)}
           note={`Last ${reportRange} days`}
           icon="task_alt"
           tone="green"
         />
         <MetricCard
-          label="Completed issues"
-          value={String(reportIssues.filter((issue) => issue.status === "Done").length)}
+          label="Completed tasks"
+          value={String(reportTasks.filter((task) => task.status === "Done").length)}
           note="Current workspace"
           icon="avg_time"
           tone="green"
@@ -133,8 +133,8 @@ export function ReportsPage() {
           icon="speed"
         />
         <MetricCard
-          label="Open issues"
-          value={String(reportIssues.filter((issue) => issue.status !== "Done").length)}
+          label="Open tasks"
+          value={String(reportTasks.filter((task) => task.status !== "Done").length)}
           note="In selected range"
           icon="flag"
           tone="green"
@@ -183,7 +183,7 @@ export function ReportsPage() {
           </div>
         </Panel>
         <Panel>
-          <PanelTitle title="Issues by status" />
+          <PanelTitle title="Tasks by status" />
           <div className="space-y-5 py-3">
             {statusRows.map(([name, value, color]) => (
               <div key={name}>
@@ -191,14 +191,14 @@ export function ReportsPage() {
                   <span>{name}</span>
                   <strong>
                     {value} ·{" "}
-                    {reportIssues.length ? Math.round((value / reportIssues.length) * 100) : 0}%
+                    {reportTasks.length ? Math.round((value / reportTasks.length) * 100) : 0}%
                   </strong>
                 </div>
                 <div className="h-2 rounded-full bg-surface-high">
                   <div
                     className={`h-full rounded-full ${color}`}
                     style={{
-                      width: `${reportIssues.length ? Math.round((value / reportIssues.length) * 100) : 0}%`,
+                      width: `${reportTasks.length ? Math.round((value / reportTasks.length) * 100) : 0}%`,
                     }}
                   />
                 </div>
@@ -209,12 +209,12 @@ export function ReportsPage() {
         <Panel className="xl:col-span-2">
           <PanelTitle title="Project health" />
           <DataTable
-            headings={["Project", "Completion", "Open issues", "Health", "Lead"]}
+            headings={["Project", "Completion", "Open tasks", "Health", "Lead"]}
             rows={workspaceProjects.map((project) => {
-              const projectIssues = workspaceIssues.filter(
-                (issue) => issue.projectId === project.id,
+              const projectTasks = workspaceTasks.filter(
+                (task) => task.projectId === project.id,
               );
-              const openCount = projectIssues.filter((issue) => issue.status !== "Done").length;
+              const openCount = projectTasks.filter((task) => task.status !== "Done").length;
               return [
                 project.name,
                 <span className="font-mono" key="progress">

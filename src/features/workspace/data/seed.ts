@@ -1,4 +1,4 @@
-import type { DemoState, Issue, Member, Project, Workspace } from "@/features/workspace/data/model";
+import type { DemoState, Task, Member, Project, Workspace } from "@/features/workspace/data/model";
 
 export const DEMO_TODAY = new Date().toISOString().slice(0, 10);
 
@@ -198,11 +198,11 @@ const projects: Project[] = [
 
 const work: Array<
   Omit<
-    Issue,
+    Task,
+    | "parentTaskId"
     | "workspaceId"
     | "createdAt"
     | "updatedAt"
-    | "subtaskIds"
     | "commentIds"
     | "blockedByIds"
     | "blocksIds"
@@ -482,12 +482,12 @@ const workspaces: Workspace[] = [
 ];
 
 export function createInitialDemoState(): DemoState {
-  const issues: Issue[] = work.map((item) => ({
+  const parentTasks: Task[] = work.map((item) => ({
     ...item,
+    parentTaskId: null,
     workspaceId: projects.find((project) => project.id === item.projectId)!.workspaceId,
     createdAt: addDays(DEMO_TODAY, -12),
     updatedAt: DEMO_TODAY,
-    subtaskIds: [],
     commentIds: [],
     blockedByIds: [],
     blocksIds: [],
@@ -495,45 +495,73 @@ export function createInitialDemoState(): DemoState {
   const subtasks = [
     {
       id: "sub-101-1",
-      issueId: "TEM-101",
+      taskId: "TEM-101",
       title: "Establish the 12-column responsive grid",
       completed: true,
       assigneeId: "alex-morgan",
     },
     {
       id: "sub-101-2",
-      issueId: "TEM-101",
+      taskId: "TEM-101",
       title: "Export Figma prototype for engineering review",
       completed: true,
       assigneeId: "sarah-chen",
     },
     {
       id: "sub-101-3",
-      issueId: "TEM-101",
+      taskId: "TEM-101",
       title: "Validate typography clamp scale",
       completed: true,
       assigneeId: "maya-patel",
     },
     {
       id: "sub-101-4",
-      issueId: "TEM-101",
+      taskId: "TEM-101",
       title: "Verify hero visual assets with marketing director",
       completed: false,
       assigneeId: "alex-morgan",
     },
   ];
+  const tasks: Task[] = [
+    ...parentTasks,
+    ...subtasks.map((subtask, index): Task => {
+      const parent = parentTasks.find((item) => item.id === subtask.taskId);
+      if (!parent) throw new Error(`Missing parent task ${subtask.taskId}.`);
+      return {
+        id: subtask.id,
+        key: `${parent.key}-S${index + 1}`,
+        parentTaskId: parent.id,
+        workspaceId: parent.workspaceId,
+        projectId: parent.projectId,
+        title: subtask.title,
+        description: "",
+        status: subtask.completed ? "Done" : "To Do",
+        priority: "Medium",
+        assigneeId: subtask.assigneeId,
+        reporterId: parent.reporterId,
+        dueDate: null,
+        storyPoints: 0,
+        sprintId: parent.sprintId,
+        labels: [],
+        commentIds: [],
+        blockedByIds: [],
+        blocksIds: [],
+        createdAt: parent.createdAt,
+        updatedAt: parent.updatedAt,
+      };
+    }),
+  ];
   const comments = [
     {
       id: "comment-101-1",
-      issueId: "TEM-101",
+      taskId: "TEM-101",
       authorId: "sarah-chen",
       body: "The tablet breakpoint is ready for review.",
       createdAt: addDays(DEMO_TODAY, -1),
     },
   ];
-  for (const issue of issues) {
-    issue.subtaskIds = subtasks.filter((item) => item.issueId === issue.id).map((item) => item.id);
-    issue.commentIds = comments.filter((item) => item.issueId === issue.id).map((item) => item.id);
+  for (const task of parentTasks) {
+    task.commentIds = comments.filter((item) => item.taskId === task.id).map((item) => item.id);
   }
   const dependencies = [
     ["TEM-096", "TEM-101"],
@@ -541,22 +569,21 @@ export function createInitialDemoState(): DemoState {
     ["TEM-101", "TEM-112"],
   ] as const;
   for (const [source, target] of dependencies) {
-    const sourceIssue = issues.find((item) => item.id === source);
-    const targetIssue = issues.find((item) => item.id === target);
-    if (sourceIssue && targetIssue) {
-      sourceIssue.blocksIds.push(target);
-      targetIssue.blockedByIds.push(source);
+    const sourceTask = tasks.find((item) => item.id === source);
+    const targetTask = tasks.find((item) => item.id === target);
+    if (sourceTask && targetTask) {
+      sourceTask.blocksIds.push(target);
+      targetTask.blockedByIds.push(source);
     }
   }
   return {
-    version: 1,
+    version: 2,
     activeWorkspaceId: northstar,
     activeMemberId: "alex-morgan",
     workspaces,
     members,
     projects,
-    issues,
-    subtasks,
+    tasks,
     comments,
     sprints: [
       {
@@ -615,7 +642,7 @@ export function createInitialDemoState(): DemoState {
         recipientId: "alex-morgan",
         category: "Mentions",
         actorId: "sarah-chen",
-        issueId: "TEM-101",
+        taskId: "TEM-101",
         message: "mentioned you in Homepage hero exploration",
         createdAt: DEMO_TODAY,
         readAt: null,
@@ -626,7 +653,7 @@ export function createInitialDemoState(): DemoState {
         recipientId: "alex-morgan",
         category: "Assigned to Me",
         actorId: "theo-kim",
-        issueId: "TEM-112",
+        taskId: "TEM-112",
         message: "assigned you Update mobile SDK client library version to v3.1.0",
         createdAt: DEMO_TODAY,
         readAt: null,
@@ -637,7 +664,7 @@ export function createInitialDemoState(): DemoState {
         recipientId: "alex-morgan",
         category: "Comments",
         actorId: "jordan-lee",
-        issueId: "TEM-108",
+        taskId: "TEM-108",
         message: "commented on end-to-end biometric login tests",
         createdAt: DEMO_TODAY,
         readAt: null,
@@ -648,7 +675,7 @@ export function createInitialDemoState(): DemoState {
         recipientId: "alex-morgan",
         category: "System & Sprints",
         actorId: null,
-        issueId: null,
+        taskId: null,
         message: "Sprint 24 has four days remaining",
         createdAt: DEMO_TODAY,
         readAt: null,
@@ -661,7 +688,7 @@ export function createInitialDemoState(): DemoState {
           methodology: "Agile Scrum" as const,
           sprintLengthDays: 14,
           statuses: ["Backlog", "To Do", "In Progress", "In Review", "Done"] as const,
-          issueFields: ["Story points", "Labels", "Due date"],
+          taskFields: ["Story points", "Labels", "Due date"],
           automationRules: [
             {
               id: "RECIPE-094",
@@ -722,6 +749,6 @@ export function createInitialDemoState(): DemoState {
         },
       ]),
     ),
-    counters: { issue: 140, project: 4, workspace: 3, sprint: 25, comment: 1, subtask: 4 },
+    counters: { task: 140, project: 4, workspace: 3, sprint: 25, comment: 1 },
   };
 }

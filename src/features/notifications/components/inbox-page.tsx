@@ -79,8 +79,8 @@ export function InboxPage() {
         {notifications.length > 0 ? (
           notifications.map((item) => {
             const actor = state.members.find((person) => person.id === item.actorId);
-            const issue = state.issues.find(
-              (record) => record.id === item.issueId || record.key === item.issueId,
+            const task = state.tasks.find(
+              (record) => record.id === item.taskId || record.key === item.taskId,
             );
             return (
               <article
@@ -97,9 +97,9 @@ export function InboxPage() {
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted">
                     <span>{item.category}</span>
                     <span>{item.createdAt}</span>
-                    {issue && (
-                      <Link href={`/issues/${issue.key}`} className="font-mono text-accent">
-                        {issue.key}
+                    {task && (
+                      <Link href={`/tasks/${task.key}`} className="font-mono text-accent">
+                        {task.key}
                       </Link>
                     )}
                   </div>

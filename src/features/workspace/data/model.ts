@@ -49,9 +49,10 @@ export interface Project {
   archivedAt?: string;
 }
 
-export interface Issue {
+export interface Task {
   id: EntityId;
   key: string;
+  parentTaskId: EntityId | null;
   workspaceId: EntityId;
   projectId: EntityId;
   title: string;
@@ -64,7 +65,6 @@ export interface Issue {
   storyPoints: number;
   sprintId: EntityId | null;
   labels: string[];
-  subtaskIds: EntityId[];
   commentIds: EntityId[];
   blockedByIds: EntityId[];
   blocksIds: EntityId[];
@@ -73,17 +73,9 @@ export interface Issue {
   updatedAt: string;
 }
 
-export interface Subtask {
+export interface TaskComment {
   id: EntityId;
-  issueId: EntityId;
-  title: string;
-  completed: boolean;
-  assigneeId: EntityId | null;
-}
-
-export interface IssueComment {
-  id: EntityId;
-  issueId: EntityId;
+  taskId: EntityId;
   authorId: EntityId;
   body: string;
   createdAt: string;
@@ -118,7 +110,7 @@ export interface WorkspaceNotification {
   recipientId: EntityId;
   category: NotificationCategory;
   actorId: EntityId | null;
-  issueId: EntityId | null;
+  taskId: EntityId | null;
   message: string;
   createdAt: string;
   readAt: string | null;
@@ -128,7 +120,7 @@ export interface WorkspaceSettings {
   methodology: "Agile Scrum" | "Kanban" | "Custom";
   sprintLengthDays: number;
   statuses: WorkStatus[];
-  issueFields: string[];
+  taskFields: string[];
   automationRules: Array<{ id: string; name: string; enabled: boolean; successRate: number }>;
   rolePermissions?: Record<string, Partial<Record<MemberRole, boolean>>>;
   retrospectiveNotes?: Record<EntityId, RetrospectiveNote[]>;
@@ -136,29 +128,27 @@ export interface WorkspaceSettings {
 }
 
 export interface DemoState {
-  version: 1;
+  version: 2;
   activeWorkspaceId: EntityId;
   activeMemberId: EntityId;
   workspaces: Workspace[];
   members: Member[];
   projects: Project[];
-  issues: Issue[];
-  subtasks: Subtask[];
-  comments: IssueComment[];
+  tasks: Task[];
+  comments: TaskComment[];
   sprints: Sprint[];
   notifications: WorkspaceNotification[];
   settingsByWorkspace: Record<EntityId, WorkspaceSettings>;
   counters: {
-    issue: number;
+    task: number;
     project: number;
     workspace: number;
     sprint: number;
     comment: number;
-    subtask: number;
   };
 }
 
-export interface CreateIssueInput {
+export interface CreateTaskInput {
   workspaceId?: EntityId;
   projectId: EntityId;
   title: string;

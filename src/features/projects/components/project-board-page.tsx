@@ -9,11 +9,11 @@ export function ProjectBoardPage({ projectId }: { projectId: string }) {
   const project = state.projects.find(
     (item) => item.id === projectId && item.workspaceId === state.activeWorkspaceId,
   );
-  const hasIssues = state.issues.some(
-    (issue) => issue.projectId === projectId && issue.workspaceId === state.activeWorkspaceId,
+  const hasTasks = state.tasks.some(
+    (task) => task.projectId === projectId && task.workspaceId === state.activeWorkspaceId,
   );
   if (!project) return <ProjectEmptyState projectId={projectId} />;
-  return hasIssues ? (
+  return hasTasks ? (
     <KanbanBoard projectId={projectId} />
   ) : (
     <ProjectEmptyState projectId={projectId} />

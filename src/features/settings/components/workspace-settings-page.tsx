@@ -32,14 +32,14 @@ export function WorkspaceSettingsPage() {
   const [error, setError] = useState("");
   const workspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId);
   const settings = state.settingsByWorkspace[state.activeWorkspaceId];
-  const issueCounts = useMemo(
+  const taskCounts = useMemo(
     () =>
-      state.issues.reduce<Record<string, number>>((counts, issue) => {
-        if (issue.workspaceId === state.activeWorkspaceId)
-          counts[issue.status] = (counts[issue.status] ?? 0) + 1;
+      state.tasks.reduce<Record<string, number>>((counts, task) => {
+        if (task.workspaceId === state.activeWorkspaceId)
+          counts[task.status] = (counts[task.status] ?? 0) + 1;
         return counts;
       }, {}),
-    [state.issues, state.activeWorkspaceId],
+    [state.tasks, state.activeWorkspaceId],
   );
   if (!workspace || !settings) return null;
   const activeWorkspace = workspace;
@@ -78,10 +78,10 @@ export function WorkspaceSettingsPage() {
   }
   function toggleField(field: string, enabled: boolean) {
     const next = enabled
-      ? [...new Set([...settings.issueFields, field])]
-      : settings.issueFields.filter((item) => item !== field);
-    demoRepository.updateSettings({ issueFields: next });
-    setNotice("Issue fields updated in this browser.");
+      ? [...new Set([...settings.taskFields, field])]
+      : settings.taskFields.filter((item) => item !== field);
+    demoRepository.updateSettings({ taskFields: next });
+    setNotice("Task fields updated in this browser.");
   }
   function toggleRule(ruleId: string) {
     demoRepository.updateSettings({
@@ -208,7 +208,7 @@ export function WorkspaceSettingsPage() {
             <Panel>
               <h2 className="text-lg font-semibold">Workflow statuses</h2>
               <p className="mt-1 text-sm text-muted">
-                Enable status columns used by the workspace’s issue workflow.
+                Enable status columns used by the workspace’s task workflow.
               </p>
               <div className="mt-5 space-y-2">
                 {(["Backlog", "To Do", "In Progress", "In Review", "Done"] as WorkStatus[]).map(
@@ -222,7 +222,7 @@ export function WorkspaceSettingsPage() {
                         checked={settings.statuses.includes(status)}
                         disabled={
                           status === "Done" ||
-                          ((issueCounts[status] ?? 0) > 0 && settings.statuses.includes(status))
+                          ((taskCounts[status] ?? 0) > 0 && settings.statuses.includes(status))
                         }
                         onChange={(event) => toggleStatus(status, event.target.checked)}
                         className="size-4 accent-violet-600"
@@ -233,7 +233,7 @@ export function WorkspaceSettingsPage() {
                         {status}
                       </span>
                       <span className="flex-1 text-sm text-muted">
-                        {issueCounts[status] ?? 0} issues currently use this status
+                        {taskCounts[status] ?? 0} tasks currently use this status
                       </span>
                       {status === "Done" && <span className="text-xs text-muted">Required</span>}
                     </label>
@@ -241,16 +241,16 @@ export function WorkspaceSettingsPage() {
                 )}
               </div>
               <p className="mt-3 text-xs text-muted">
-                Statuses with assigned issues and the required Done status stay enabled to preserve
-                issue data.
+                Statuses with assigned tasks and the required Done status stay enabled to preserve
+                task data.
               </p>
             </Panel>
           )}
           {tab === "Custom Fields" && (
             <Panel>
-              <h2 className="text-lg font-semibold">Issue fields</h2>
+              <h2 className="text-lg font-semibold">Task fields</h2>
               <p className="mt-1 text-sm text-muted">
-                Choose which optional fields appear in issue forms.
+                Choose which optional fields appear in task forms.
               </p>
               <div className="mt-5 space-y-2">
                 {["Story points", "Labels", "Due date"].map((field) => (
@@ -260,7 +260,7 @@ export function WorkspaceSettingsPage() {
                   >
                     <input
                       type="checkbox"
-                      checked={settings.issueFields.includes(field)}
+                      checked={settings.taskFields.includes(field)}
                       onChange={(event) => toggleField(field, event.target.checked)}
                       className="size-4 accent-violet-600"
                     />

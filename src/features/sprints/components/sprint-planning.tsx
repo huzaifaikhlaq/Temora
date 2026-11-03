@@ -8,7 +8,7 @@ import { demoRepository } from "@/features/workspace/data/demo-repository";
 import type { Sprint, WorkStatus } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
-const issueStatuses: WorkStatus[] = ["Backlog", "To Do", "In Progress", "In Review", "Done"];
+const taskStatuses: WorkStatus[] = ["Backlog", "To Do", "In Progress", "In Review", "Done"];
 const input =
   "h-9 rounded-lg border border-border bg-white px-2.5 text-sm outline-none focus:border-accent";
 
@@ -31,25 +31,25 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
     )
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
   const activeSprint = sprints.find((sprint) => sprint.status === "Active");
-  const issues = state.issues.filter(
-    (issue) => issue.projectId === projectId && issue.workspaceId === state.activeWorkspaceId,
+  const tasks = state.tasks.filter(
+    (task) => task.projectId === projectId && task.workspaceId === state.activeWorkspaceId,
   );
   const backlog = useMemo(
     () =>
-      issues.filter(
-        (issue) =>
-          !issue.sprintId &&
-          `${issue.key} ${issue.title}`.toLowerCase().includes(query.toLowerCase()),
+      tasks.filter(
+        (task) =>
+          !task.sprintId &&
+          `${task.key} ${task.title}`.toLowerCase().includes(query.toLowerCase()),
       ),
-    [issues, query],
+    [tasks, query],
   );
-  const activeIssues = activeSprint
-    ? issues.filter((issue) => issue.sprintId === activeSprint.id)
+  const activeTasks = activeSprint
+    ? tasks.filter((task) => task.sprintId === activeSprint.id)
     : [];
-  const totalPoints = activeIssues.reduce((sum, issue) => sum + issue.storyPoints, 0);
-  const donePoints = activeIssues
-    .filter((issue) => issue.status === "Done")
-    .reduce((sum, issue) => sum + issue.storyPoints, 0);
+  const totalPoints = activeTasks.reduce((sum, task) => sum + task.storyPoints, 0);
+  const donePoints = activeTasks
+    .filter((task) => task.status === "Done")
+    .reduce((sum, task) => sum + task.storyPoints, 0);
 
   function createSprint(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,18 +73,18 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
       setError(cause instanceof Error ? cause.message : "Could not create sprint.");
     }
   }
-  function updateIssue(issueId: string, patch: Parameters<typeof demoRepository.updateIssue>[1]) {
+  function updateTask(taskId: string, patch: Parameters<typeof demoRepository.updateTask>[1]) {
     try {
-      demoRepository.updateIssue(issueId, patch);
+      demoRepository.updateTask(taskId, patch);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update issue.");
+      setError(cause instanceof Error ? cause.message : "Could not update task.");
     }
   }
-  function addToSprint(issueId: string, sprintId: string) {
+  function addToSprint(taskId: string, sprintId: string) {
     if (!sprintId) return;
-    updateIssue(issueId, { sprintId });
-    setNotice("Issue added to sprint.");
+    updateTask(taskId, { sprintId });
+    setNotice("Task added to sprint.");
   }
 
   if (!project)
@@ -186,8 +186,8 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
             {[
               ["Points done", `${donePoints} / ${totalPoints} pts`],
               [
-                "Issues",
-                `${activeIssues.filter((issue) => issue.status === "Done").length} / ${activeIssues.length} done`,
+                "Tasks",
+                `${activeTasks.filter((task) => task.status === "Done").length} / ${activeTasks.length} done`,
               ],
               ["Capacity", `${activeSprint.capacityPoints} pts`],
             ].map(([label, value]) => (
@@ -210,7 +210,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
         <Panel>
           <h2 className="font-semibold">No active sprint</h2>
           <p className="mt-1 text-sm text-muted">
-            Start a planned sprint to begin tracking its issues.
+            Start a planned sprint to begin tracking its tasks.
           </p>
         </Panel>
       )}
@@ -219,7 +219,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
           <SprintSection
             key={sprint.id}
             sprint={sprint}
-            issues={issues.filter((issue) => issue.sprintId === sprint.id)}
+            tasks={tasks.filter((task) => task.sprintId === sprint.id)}
             canStart={!activeSprint && sprint.status === "Planned"}
             backlog={backlog}
             onStart={() => {
@@ -231,8 +231,8 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
                 setError(cause instanceof Error ? cause.message : "Could not start sprint.");
               }
             }}
-            onUpdateIssue={updateIssue}
-            onAddIssue={addToSprint}
+            onUpdateTask={updateTask}
+            onAddTask={addToSprint}
           />
         ))}
       </section>
@@ -242,7 +242,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
             <h2 className="text-lg font-semibold">
               Product backlog{" "}
               <span className="ml-1 rounded-full bg-surface-high px-2 font-mono text-xs">
-                {backlog.length} issues
+                {backlog.length} tasks
               </span>
             </h2>
             <p className="mt-1 text-xs text-muted">Unscheduled work in {project.name}.</p>
@@ -256,35 +256,35 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
               className={`${input} w-48`}
             />
             <Link
-              href={`/issues/new?projectId=${encodeURIComponent(project.id)}`}
+              href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
               className="h-9 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white"
             >
-              Create issue
+              Create task
             </Link>
           </div>
         </div>
         <div className="mt-3 divide-y divide-surface-low">
-          {backlog.map((issue) => (
-            <div key={issue.id} className="flex flex-wrap items-center gap-3 py-3 text-sm">
+          {backlog.map((task) => (
+            <div key={task.id} className="flex flex-wrap items-center gap-3 py-3 text-sm">
               <Link
-                href={`/issues/${issue.key}`}
+                href={`/tasks/${task.key}`}
                 className="font-mono text-xs font-semibold text-accent"
               >
-                {issue.key}
+                {task.key}
               </Link>
-              <Link href={`/issues/${issue.key}`} className="min-w-48 flex-1">
-                {issue.title}
+              <Link href={`/tasks/${task.key}`} className="min-w-48 flex-1">
+                {task.title}
               </Link>
-              <span className="text-xs text-muted">{issue.storyPoints} SP</span>
-              <PriorityPill priority={issue.priority} />
+              <span className="text-xs text-muted">{task.storyPoints} SP</span>
+              <PriorityPill priority={task.priority} />
               <span className="text-xs text-muted">
-                {state.members.find((member) => member.id === issue.assigneeId)?.name ??
+                {state.members.find((member) => member.id === task.assigneeId)?.name ??
                   "Unassigned"}
               </span>
               <select
-                aria-label={`Move ${issue.key} to sprint`}
+                aria-label={`Move ${task.key} to sprint`}
                 defaultValue=""
-                onChange={(event) => addToSprint(issue.id, event.target.value)}
+                onChange={(event) => addToSprint(task.id, event.target.value)}
                 className="h-8 rounded border border-border bg-white px-2 text-xs"
               >
                 <option value="">Add to sprint…</option>
@@ -301,7 +301,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
         </div>
         {backlog.length === 0 && (
           <p className="py-8 text-center text-sm text-muted">
-            No backlog issues match this search.
+            No backlog tasks match this search.
           </p>
         )}
       </Panel>
@@ -394,20 +394,20 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
 
 function SprintSection({
   sprint,
-  issues,
+  tasks,
   canStart,
   backlog,
   onStart,
-  onUpdateIssue,
-  onAddIssue,
+  onUpdateTask,
+  onAddTask,
 }: {
   sprint: Sprint;
-  issues: ReturnType<typeof useDemoState>["issues"];
+  tasks: ReturnType<typeof useDemoState>["tasks"];
   canStart: boolean;
-  backlog: ReturnType<typeof useDemoState>["issues"];
+  backlog: ReturnType<typeof useDemoState>["tasks"];
   onStart: () => void;
-  onUpdateIssue: (id: string, patch: Parameters<typeof demoRepository.updateIssue>[1]) => void;
-  onAddIssue: (issueId: string, sprintId: string) => void;
+  onUpdateTask: (id: string, patch: Parameters<typeof demoRepository.updateTask>[1]) => void;
+  onAddTask: (taskId: string, sprintId: string) => void;
 }) {
   const state = useDemoState();
   const [editing, setEditing] = useState(false);
@@ -416,10 +416,10 @@ function SprintSection({
   const [startDate, setStartDate] = useState(sprint.startDate);
   const [endDate, setEndDate] = useState(sprint.endDate);
   const [error, setError] = useState("");
-  const total = issues.reduce((sum, issue) => sum + issue.storyPoints, 0);
-  const completed = issues
-    .filter((issue) => issue.status === "Done")
-    .reduce((sum, issue) => sum + issue.storyPoints, 0);
+  const total = tasks.reduce((sum, task) => sum + task.storyPoints, 0);
+  const completed = tasks
+    .filter((task) => task.status === "Done")
+    .reduce((sum, task) => sum + task.storyPoints, 0);
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
@@ -552,45 +552,45 @@ function SprintSection({
             <span>Status</span>
             <span>Assignee</span>
           </div>
-          {issues.map((issue) => (
+          {tasks.map((task) => (
             <div
-              key={issue.id}
+              key={task.id}
               className="grid grid-cols-[105px_minmax(270px,1fr)_130px_60px_95px_105px_110px] items-center gap-3 border-b border-surface-low px-4 py-3 text-xs hover:bg-surface-low/70"
             >
-              <Link href={`/issues/${issue.key}`} className="font-mono font-semibold text-accent">
-                {issue.key}
+              <Link href={`/tasks/${task.key}`} className="font-mono font-semibold text-accent">
+                {task.key}
               </Link>
-              <Link href={`/issues/${issue.key}`} className="font-medium">
-                {issue.title}
+              <Link href={`/tasks/${task.key}`} className="font-medium">
+                {task.title}
               </Link>
               <span className="truncate text-muted">
-                {state.projects.find((project) => project.id === issue.projectId)?.name}
+                {state.projects.find((project) => project.id === task.projectId)?.name}
               </span>
-              <span>{issue.storyPoints}</span>
-              <PriorityPill priority={issue.priority} />
+              <span>{task.storyPoints}</span>
+              <PriorityPill priority={task.priority} />
               <select
-                aria-label={`${issue.key} status`}
-                value={issue.status}
+                aria-label={`${task.key} status`}
+                value={task.status}
                 onChange={(event) =>
-                  onUpdateIssue(issue.id, { status: event.target.value as WorkStatus })
+                  onUpdateTask(task.id, { status: event.target.value as WorkStatus })
                 }
                 className="rounded border border-border bg-white px-1 py-1 text-[10px]"
               >
-                {issueStatuses.map((status) => (
+                {taskStatuses.map((status) => (
                   <option key={status}>{status}</option>
                 ))}
               </select>
               <select
-                aria-label={`${issue.key} assignee`}
-                value={issue.assigneeId ?? ""}
+                aria-label={`${task.key} assignee`}
+                value={task.assigneeId ?? ""}
                 onChange={(event) =>
-                  onUpdateIssue(issue.id, { assigneeId: event.target.value || null })
+                  onUpdateTask(task.id, { assigneeId: event.target.value || null })
                 }
                 className="max-w-28 rounded border border-border bg-white px-1 py-1 text-[10px]"
               >
                 <option value="">Unassigned</option>
                 {state.members
-                  .filter((member) => member.workspaceId === issue.workspaceId)
+                  .filter((member) => member.workspaceId === task.workspaceId)
                   .map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
@@ -603,20 +603,20 @@ function SprintSection({
       </div>
       <div className="flex flex-wrap items-center gap-2 p-3">
         <select
-          aria-label={`Add backlog issue to ${sprint.name}`}
+          aria-label={`Add backlog task to ${sprint.name}`}
           defaultValue=""
-          onChange={(event) => onAddIssue(event.target.value, sprint.id)}
+          onChange={(event) => onAddTask(event.target.value, sprint.id)}
           className={`${input} max-w-sm`}
         >
-          <option value="">Add backlog issue…</option>
-          {backlog.map((issue) => (
-            <option key={issue.id} value={issue.id}>
-              {issue.key} · {issue.title}
+          <option value="">Add backlog task…</option>
+          {backlog.map((task) => (
+            <option key={task.id} value={task.id}>
+              {task.key} · {task.title}
             </option>
           ))}
         </select>
         <span className="text-xs text-muted">
-          {issues.length} issues · {total} points
+          {tasks.length} tasks · {total} points
         </span>
       </div>
     </section>

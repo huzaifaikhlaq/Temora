@@ -36,16 +36,16 @@ export function ProjectEmptyState({ projectId }: { projectId: string }) {
         </p>
         <h1 className="mt-2 text-2xl font-bold">Your project board is ready</h1>
         <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">
-          Bring your team’s work together. Create an issue to plan the first sprint, then track it
+          Bring your team’s work together. Create an task to plan the first sprint, then track it
           across your board.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
-            href={`/issues/new?projectId=${encodeURIComponent(project.id)}`}
+            href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
           >
             <Icon name="add" />
-            Create first issue
+            Create first task
           </Link>
           <button
             disabled
@@ -53,12 +53,12 @@ export function ProjectEmptyState({ projectId }: { projectId: string }) {
             className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-lg border border-border px-3 text-sm text-muted opacity-60"
           >
             <Icon name="cloud_download" />
-            Import issues (unavailable)
+            Import tasks (unavailable)
           </button>
         </div>
         <div className="mx-auto mt-9 grid max-w-xl gap-3 border-t border-border pt-6 text-left sm:grid-cols-3">
           {[
-            ["01", "Add issues", "Capture the next work item"],
+            ["01", "Add tasks", "Capture the next work item"],
             ["02", "Plan a sprint", "Set a shared team goal"],
             ["03", "Track progress", "Move work across your board"],
           ].map(([number, title, body]) => (

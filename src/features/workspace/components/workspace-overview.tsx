@@ -16,31 +16,31 @@ export function WorkspaceOverview() {
   const state = useDemoState();
   const workspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId);
   const member = state.members.find((item) => item.id === state.activeMemberId);
-  const issues = state.issues.filter((issue) => issue.workspaceId === state.activeWorkspaceId);
+  const tasks = state.tasks.filter((task) => task.workspaceId === state.activeWorkspaceId);
   const projects = state.projects.filter(
     (project) => project.workspaceId === state.activeWorkspaceId && !project.archivedAt,
   );
-  const myIssues = issues
-    .filter((issue) => issue.assigneeId === state.activeMemberId && issue.status !== "Done")
+  const myTasks = tasks
+    .filter((task) => task.assigneeId === state.activeMemberId && task.status !== "Done")
     .slice(0, 5);
   const activeSprint = state.sprints.find(
     (sprint) => sprint.workspaceId === state.activeWorkspaceId && sprint.status === "Active",
   );
-  const sprintIssues = activeSprint
-    ? issues.filter((issue) => issue.sprintId === activeSprint.id)
+  const sprintTasks = activeSprint
+    ? tasks.filter((task) => task.sprintId === activeSprint.id)
     : [];
-  const sprintPoints = sprintIssues.reduce((sum, issue) => sum + issue.storyPoints, 0);
-  const completedPoints = sprintIssues
-    .filter((issue) => issue.status === "Done")
-    .reduce((sum, issue) => sum + issue.storyPoints, 0);
-  const overdue = issues.filter(
-    (issue) =>
-      issue.status !== "Done" &&
-      issue.dueDate &&
-      issue.dueDate < new Date().toISOString().slice(0, 10),
+  const sprintPoints = sprintTasks.reduce((sum, task) => sum + task.storyPoints, 0);
+  const completedPoints = sprintTasks
+    .filter((task) => task.status === "Done")
+    .reduce((sum, task) => sum + task.storyPoints, 0);
+  const overdue = tasks.filter(
+    (task) =>
+      task.status !== "Done" &&
+      task.dueDate &&
+      task.dueDate < new Date().toISOString().slice(0, 10),
   );
   const comments = state.comments
-    .filter((item) => issues.some((issue) => issue.id === item.issueId))
+    .filter((item) => tasks.some((task) => task.id === item.taskId))
     .slice(-5)
     .reverse();
 
@@ -74,11 +74,11 @@ export function WorkspaceOverview() {
             Projects
           </Link>
           <Link
-            href="/issues/new"
+            href="/tasks/new"
             className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong"
           >
             <Icon name="add" size={17} />
-            New Issue
+            New Task
           </Link>
         </div>
       </header>
@@ -90,9 +90,9 @@ export function WorkspaceOverview() {
           icon="folder_open"
         />
         <MetricCard
-          label="Open Issues"
-          value={`${issues.filter((issue) => issue.status !== "Done").length} issues`}
-          note={`${myIssues.length} assigned to you`}
+          label="Open Tasks"
+          value={`${tasks.filter((task) => task.status !== "Done").length} tasks`}
+          note={`${myTasks.length} assigned to you`}
           icon="task_alt"
         />
         <MetricCard
@@ -103,7 +103,7 @@ export function WorkspaceOverview() {
           tone="green"
         />
         <MetricCard
-          label="Overdue Issues"
+          label="Overdue Tasks"
           value={`${overdue.length} overdue`}
           note={overdue.length ? "Needs attention" : "All clear"}
           icon="warning"
@@ -118,36 +118,36 @@ export function WorkspaceOverview() {
               title="My Priority Tasks"
               trailing={
                 <span className="rounded-full bg-surface-high px-2.5 py-1 font-mono text-xs">
-                  {myIssues.length}
+                  {myTasks.length}
                 </span>
               }
             />
             <div className="divide-y divide-surface-low">
-              {myIssues.length ? (
-                myIssues.map((issue) => (
-                  <div key={issue.id} className="flex items-center gap-3 py-3">
+              {myTasks.length ? (
+                myTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-3 py-3">
                     <button
-                      aria-label={`Mark ${issue.key} complete`}
-                      onClick={() => demoRepository.updateIssue(issue.id, { status: "Done" })}
+                      aria-label={`Mark ${task.key} complete`}
+                      onClick={() => demoRepository.updateTask(task.id, { status: "Done" })}
                       className="size-4 shrink-0 rounded border border-border bg-surface-low hover:border-accent"
                     />
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={`/issues/${issue.key}`}
+                        href={`/tasks/${task.key}`}
                         className="font-mono text-xs font-semibold text-accent"
                       >
-                        {issue.key}
+                        {task.key}
                       </Link>
-                      <p className="truncate text-sm font-medium">{issue.title}</p>
+                      <p className="truncate text-sm font-medium">{task.title}</p>
                     </div>
                     <div className="hidden items-center gap-2 sm:flex">
-                      <PriorityPill priority={issue.priority} />
-                      <StatusPill status={issue.status} />
+                      <PriorityPill priority={task.priority} />
+                      <StatusPill status={task.status} />
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="py-6 text-sm text-muted">No open issues assigned to you.</p>
+                <p className="py-6 text-sm text-muted">No open tasks assigned to you.</p>
               )}
             </div>
             <Link
@@ -196,11 +196,11 @@ export function WorkspaceOverview() {
                     </span>
                     <span>
                       {
-                        issues.filter(
-                          (issue) => issue.projectId === project.id && issue.status !== "Done",
+                        tasks.filter(
+                          (task) => task.projectId === project.id && task.status !== "Done",
                         ).length
                       }{" "}
-                      open issues
+                      open tasks
                     </span>
                   </div>
                 </article>
@@ -233,8 +233,8 @@ export function WorkspaceOverview() {
                   </p>
                   <p className="mt-2 text-xs text-muted">
                     {activeSprint.startDate} → {activeSprint.endDate} ·{" "}
-                    {sprintIssues.filter((issue) => issue.status === "Done").length}/
-                    {sprintIssues.length} issues complete
+                    {sprintTasks.filter((task) => task.status === "Done").length}/
+                    {sprintTasks.length} tasks complete
                   </p>
                 </div>
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-high">
@@ -259,22 +259,22 @@ export function WorkspaceOverview() {
             <PanelTitle
               title="Team Workload"
               trailing={
-                <span className="font-mono text-xs text-outline">Open assigned issues</span>
+                <span className="font-mono text-xs text-outline">Open assigned tasks</span>
               }
             />
             <div className="space-y-3">
               {state.members
                 .filter((item) => item.workspaceId === state.activeWorkspaceId)
                 .map((person) => {
-                  const assigned = issues.filter(
-                    (issue) => issue.assigneeId === person.id && issue.status !== "Done",
+                  const assigned = tasks.filter(
+                    (task) => task.assigneeId === person.id && task.status !== "Done",
                   ).length;
                   const capacity = Math.min(100, assigned * 12);
                   return (
                     <div key={person.id}>
                       <div className="mb-1 flex justify-between text-sm">
                         <span>{person.name}</span>
-                        <span className="font-mono text-xs text-accent">{assigned} issues</span>
+                        <span className="font-mono text-xs text-accent">{assigned} tasks</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-slate-200">
                         <div
@@ -300,20 +300,20 @@ export function WorkspaceOverview() {
             {comments.length ? (
               <ol className="ml-2 space-y-4 border-l-2 border-surface-high pl-4">
                 {comments.map((comment) => {
-                  const issue = issues.find((item) => item.id === comment.issueId);
+                  const task = tasks.find((item) => item.id === comment.taskId);
                   return (
                     <li className="relative text-sm leading-5" key={comment.id}>
                       <span className="absolute -left-[22px] top-1 size-3 rounded-full bg-accent ring-4 ring-white" />
                       <Link
-                        href={`/issues/${issue?.key}`}
+                        href={`/tasks/${task?.key}`}
                         className="font-medium hover:text-accent"
                       >
                         {state.members.find((item) => item.id === comment.authorId)?.name ??
                           "Member"}
                       </Link>{" "}
                       commented on{" "}
-                      <Link href={`/issues/${issue?.key}`} className="text-accent">
-                        {issue?.key}
+                      <Link href={`/tasks/${task?.key}`} className="text-accent">
+                        {task?.key}
                       </Link>
                       <p className="mt-1 line-clamp-2 text-xs text-muted">{comment.body}</p>
                       <span className="mt-1 block font-mono text-[10px] text-outline">
@@ -325,7 +325,7 @@ export function WorkspaceOverview() {
               </ol>
             ) : (
               <p className="py-3 text-sm text-muted">
-                Issue comments and updates will appear here.
+                Task comments and updates will appear here.
               </p>
             )}
           </Panel>

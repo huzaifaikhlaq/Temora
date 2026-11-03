@@ -8,53 +8,53 @@ import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 type Relation = "blocks" | "blocked-by" | "relates-to";
 
-export function IssueDependenciesPage({ issueId }: { issueId: string }) {
+export function TaskDependenciesPage({ taskId }: { taskId: string }) {
   const state = useDemoState();
   const [adding, setAdding] = useState(false);
   const [relation, setRelation] = useState<Relation>("blocked-by");
-  const [relatedIssueId, setRelatedIssueId] = useState("");
+  const [relatedTaskId, setRelatedTaskId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const issue = state.issues.find(
+  const task = state.tasks.find(
     (item) =>
-      (item.id === issueId || item.key === issueId) && item.workspaceId === state.activeWorkspaceId,
+      (item.id === taskId || item.key === taskId) && item.workspaceId === state.activeWorkspaceId,
   );
 
-  if (!issue)
+  if (!task)
     return (
       <main className="p-8">
-        <h1 className="text-xl font-semibold">Issue not found</h1>
-        <Link className="mt-3 inline-block text-accent" href="/issues">
-          Back to issues →
+        <h1 className="text-xl font-semibold">Task not found</h1>
+        <Link className="mt-3 inline-block text-accent" href="/tasks">
+          Back to tasks →
         </Link>
       </main>
     );
 
-  const currentIssue = issue!;
-  const workspaceIssues = state.issues.filter(
+  const currentTask = task!;
+  const workspaceTasks = state.tasks.filter(
     (item) => item.workspaceId === state.activeWorkspaceId,
   );
-  const blockedBy = workspaceIssues.filter((item) => currentIssue.blockedByIds.includes(item.id));
-  const blocks = workspaceIssues.filter((item) => currentIssue.blocksIds.includes(item.id));
-  const related = workspaceIssues.filter((item) => currentIssue.relatedIds?.includes(item.id));
+  const blockedBy = workspaceTasks.filter((item) => currentTask.blockedByIds.includes(item.id));
+  const blocks = workspaceTasks.filter((item) => currentTask.blocksIds.includes(item.id));
+  const related = workspaceTasks.filter((item) => currentTask.relatedIds?.includes(item.id));
   const linkedIds = new Set([
-    ...currentIssue.blockedByIds,
-    ...currentIssue.blocksIds,
-    ...(currentIssue.relatedIds ?? []),
+    ...currentTask.blockedByIds,
+    ...currentTask.blocksIds,
+    ...(currentTask.relatedIds ?? []),
   ]);
-  const candidates = workspaceIssues.filter(
-    (item) => item.id !== currentIssue.id && !linkedIds.has(item.id),
+  const candidates = workspaceTasks.filter(
+    (item) => item.id !== currentTask.id && !linkedIds.has(item.id),
   );
-  const activity = state.comments.filter((item) => item.issueId === currentIssue.id);
-  const project = state.projects.find((item) => item.id === currentIssue.projectId);
+  const activity = state.comments.filter((item) => item.taskId === currentTask.id);
+  const project = state.projects.find((item) => item.id === currentTask.projectId);
 
   function addDependency(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!relatedIssueId) return;
+    if (!relatedTaskId) return;
     try {
-      demoRepository.addIssueDependency(currentIssue.id, relatedIssueId, relation);
+      demoRepository.addTaskDependency(currentTask.id, relatedTaskId, relation);
       setAdding(false);
-      setRelatedIssueId("");
+      setRelatedTaskId("");
       setError("");
       setNotice("Dependency saved in this browser’s demo workspace.");
     } catch (cause) {
@@ -64,7 +64,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
 
   function removeDependency(relatedId: string, linkType: Relation) {
     try {
-      demoRepository.removeIssueDependency(currentIssue.id, relatedId, linkType);
+      demoRepository.removeTaskDependency(currentTask.id, relatedId, linkType);
       setError("");
       setNotice("Dependency removed from this browser’s demo workspace.");
     } catch (cause) {
@@ -72,7 +72,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
     }
   }
 
-  const relationSection = (title: string, items: typeof workspaceIssues, linkType: Relation) => (
+  const relationSection = (title: string, items: typeof workspaceTasks, linkType: Relation) => (
     <section>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       <div className="space-y-2">
@@ -82,7 +82,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
               key={item.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
             >
-              <Link className="min-w-0 flex-1" href={`/issues/${item.key}`}>
+              <Link className="min-w-0 flex-1" href={`/tasks/${item.key}`}>
                 <strong className="font-mono text-xs text-accent">{item.key}</strong>
                 <span className="ml-3 text-sm">{item.title}</span>
                 <span className="ml-3 text-xs text-muted">{item.status}</span>
@@ -97,7 +97,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
             </article>
           ))
         ) : (
-          <p className="rounded-lg bg-surface-low p-4 text-sm text-muted">No linked issues</p>
+          <p className="rounded-lg bg-surface-low p-4 text-sm text-muted">No linked tasks</p>
         )}
       </div>
     </section>
@@ -106,25 +106,25 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
   return (
     <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
       <div>
-        <Link href={`/issues/${currentIssue.key}`} className="text-sm text-accent">
-          ← {currentIssue.key}
+        <Link href={`/tasks/${currentTask.key}`} className="text-sm text-accent">
+          ← {currentTask.key}
         </Link>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-outline">
-          {project?.name ?? "Project"} / Issue
+          {project?.name ?? "Project"} / Task
         </p>
-        <h1 className="mt-1 text-2xl font-bold">Issue dependencies &amp; activity</h1>
+        <h1 className="mt-1 text-2xl font-bold">Task dependencies &amp; activity</h1>
         <p className="mt-1 text-sm text-muted">
-          Review and update the work blocking this issue and the work it unblocks.
+          Review and update the work blocking this task and the work it unblocks.
         </p>
       </div>
 
       <section className="rounded-xl border border-border bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <span className="font-mono text-xs font-semibold text-accent">{currentIssue.key}</span>
-            <h2 className="mt-1 text-lg font-semibold">{currentIssue.title}</h2>
+            <span className="font-mono text-xs font-semibold text-accent">{currentTask.key}</span>
+            <h2 className="mt-1 text-lg font-semibold">{currentTask.title}</h2>
             <p className="mt-1 text-sm text-muted">
-              {currentIssue.status} · {currentIssue.priority} priority · {currentIssue.storyPoints}{" "}
+              {currentTask.status} · {currentTask.priority} priority · {currentTask.storyPoints}{" "}
               story points
             </p>
           </div>
@@ -157,14 +157,14 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
               </select>
             </label>
             <label className="text-xs font-semibold">
-              Issue
+              Task
               <select
                 required
-                value={relatedIssueId}
-                onChange={(event) => setRelatedIssueId(event.target.value)}
+                value={relatedTaskId}
+                onChange={(event) => setRelatedTaskId(event.target.value)}
                 className="mt-1 h-9 w-full rounded-lg border border-border bg-white px-2 text-sm font-normal"
               >
-                <option value="">Select an issue</option>
+                <option value="">Select an task</option>
                 {candidates.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.key} · {item.title}
@@ -174,7 +174,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
             </label>
             <button
               type="submit"
-              disabled={!relatedIssueId}
+              disabled={!relatedTaskId}
               className="mt-5 h-9 rounded-lg bg-accent px-3 text-sm font-semibold text-white disabled:opacity-50"
             >
               Add
@@ -183,7 +183,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
               type="button"
               onClick={() => {
                 setAdding(false);
-                setRelatedIssueId("");
+                setRelatedTaskId("");
               }}
               className="mt-5 h-9 rounded-lg border border-border bg-white px-3 text-sm"
             >
@@ -191,7 +191,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
             </button>
             {candidates.length === 0 && (
               <p className="text-xs text-muted sm:col-span-4">
-                All issues in this workspace are already linked.
+                All tasks in this workspace are already linked.
               </p>
             )}
           </form>
@@ -210,7 +210,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
       )}
 
       <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-semibold">Issue dependency graph</h2>
+        <h2 className="font-semibold">Task dependency graph</h2>
         <p className="mt-1 text-xs text-muted">
           Links are stored in the shared browser demo state. Cyclic blocking relationships are
           prevented.
@@ -218,7 +218,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           {relationSection("Blocked by", blockedBy, "blocked-by")}
           {relationSection("Blocks downstream", blocks, "blocks")}
-          {relationSection("Related issues", related, "relates-to")}
+          {relationSection("Related tasks", related, "relates-to")}
         </div>
       </section>
 
@@ -240,7 +240,7 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
             </article>
           ))
         ) : (
-          <p className="mt-3 text-sm text-muted">No comments have been recorded for this issue.</p>
+          <p className="mt-3 text-sm text-muted">No comments have been recorded for this task.</p>
         )}
       </section>
     </main>

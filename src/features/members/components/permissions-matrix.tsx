@@ -9,7 +9,7 @@ import type { MemberRole } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 type PermissionGroup =
-  "Workspace & Billing" | "Project & Issue Access" | "API & Integrations" | "Security";
+  "Workspace & Billing" | "Project & Task Access" | "API & Integrations" | "Security";
 type Permission = { name: string; group: PermissionGroup };
 
 const roles: MemberRole[] = ["Owner", "Admin", "Project lead", "Member", "Viewer"];
@@ -17,9 +17,9 @@ const permissions: Permission[] = [
   { name: "View workspace", group: "Workspace & Billing" },
   { name: "Manage workspace settings", group: "Workspace & Billing" },
   { name: "Manage billing & seats", group: "Workspace & Billing" },
-  { name: "Create and edit issues", group: "Project & Issue Access" },
-  { name: "Delete issues", group: "Project & Issue Access" },
-  { name: "Manage sprint cycles", group: "Project & Issue Access" },
+  { name: "Create and edit tasks", group: "Project & Task Access" },
+  { name: "Delete tasks", group: "Project & Task Access" },
+  { name: "Manage sprint cycles", group: "Project & Task Access" },
   { name: "Create API keys", group: "API & Integrations" },
   { name: "View security audit logs", group: "Security" },
 ];
@@ -31,8 +31,8 @@ function defaultPermission(permission: Permission, role: MemberRole): boolean {
     permission.name === "Manage billing & seats"
   )
     return role === "Owner" || role === "Admin";
-  if (permission.name === "Create and edit issues") return role !== "Viewer";
-  if (permission.name === "Delete issues" || permission.name === "Create API keys")
+  if (permission.name === "Create and edit tasks") return role !== "Viewer";
+  if (permission.name === "Delete tasks" || permission.name === "Create API keys")
     return role === "Owner" || role === "Admin";
   if (permission.name === "Manage sprint cycles")
     return role === "Owner" || role === "Admin" || role === "Project lead";
@@ -42,7 +42,7 @@ function defaultPermission(permission: Permission, role: MemberRole): boolean {
 const tabs = [
   "All scopes",
   "Workspace & Billing",
-  "Project & Issue Access",
+  "Project & Task Access",
   "API & Integrations",
   "Security",
 ] as const;

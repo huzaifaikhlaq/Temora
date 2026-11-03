@@ -16,24 +16,24 @@ export function MyTasksView() {
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState("All");
   const [projectId, setProjectId] = useState("All projects");
-  const issues = useMemo(
+  const tasks = useMemo(
     () =>
-      state.issues.filter(
-        (issue) =>
-          issue.workspaceId === state.activeWorkspaceId &&
-          issue.assigneeId === state.activeMemberId &&
-          (projectId === "All projects" || issue.projectId === projectId) &&
-          (priority === "All" || issue.priority === priority) &&
-          `${issue.key} ${issue.title}`.toLowerCase().includes(query.toLowerCase()),
+      state.tasks.filter(
+        (task) =>
+          task.workspaceId === state.activeWorkspaceId &&
+          task.assigneeId === state.activeMemberId &&
+          (projectId === "All projects" || task.projectId === projectId) &&
+          (priority === "All" || task.priority === priority) &&
+          `${task.key} ${task.title}`.toLowerCase().includes(query.toLowerCase()),
       ),
-    [state.issues, state.activeWorkspaceId, state.activeMemberId, projectId, priority, query],
+    [state.tasks, state.activeWorkspaceId, state.activeMemberId, projectId, priority, query],
   );
-  const open = issues.filter((issue) => issue.status !== "Done");
-  const completed = state.issues.filter(
-    (issue) =>
-      issue.workspaceId === state.activeWorkspaceId &&
-      issue.assigneeId === state.activeMemberId &&
-      issue.status === "Done",
+  const open = tasks.filter((task) => task.status !== "Done");
+  const completed = state.tasks.filter(
+    (task) =>
+      task.workspaceId === state.activeWorkspaceId &&
+      task.assigneeId === state.activeMemberId &&
+      task.status === "Done",
   );
   const assigned = state.members.find((member) => member.id === state.activeMemberId);
   const projects = state.projects.filter(
@@ -43,9 +43,9 @@ export function MyTasksView() {
     tab === "Board"
       ? statuses.map((status) => ({
           title: status,
-          tasks: issues.filter((issue) => issue.status === status),
+          tasks: tasks.filter((task) => task.status === status),
         }))
-      : [{ title: "Assigned to me", tasks: issues }];
+      : [{ title: "Assigned to me", tasks: tasks }];
 
   return (
     <div className="mx-auto max-w-[1540px] space-y-5 p-4 sm:p-6">
@@ -71,7 +71,7 @@ export function MyTasksView() {
         </div>
         <div className="flex gap-2">
           <Link
-            href="/issues/new"
+            href="/tasks/new"
             className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
           >
             <Icon name="add_task" size={17} />
@@ -99,9 +99,9 @@ export function MyTasksView() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ["Assigned to me", String(open.length)],
-          ["Urgent", String(open.filter((issue) => issue.priority === "Urgent").length)],
+          ["Urgent", String(open.filter((task) => task.priority === "Urgent").length)],
           ["Completed", String(completed.length)],
-          ["Story points", `${open.reduce((sum, issue) => sum + issue.storyPoints, 0)} pts`],
+          ["Story points", `${open.reduce((sum, task) => sum + task.storyPoints, 0)} pts`],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl bg-white p-3 shadow-sm">
             <span className="block text-xs text-muted">{label}</span>
@@ -152,23 +152,23 @@ export function MyTasksView() {
           <span>
             Done <strong className="ml-1 text-green">{completed.length}</strong>
           </span>
-          <span>{issues.length} matching tasks</span>
+          <span>{tasks.length} matching tasks</span>
         </div>
         {tab === "Calendar" ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {issues
-              .filter((issue) => issue.dueDate)
+            {tasks
+              .filter((task) => task.dueDate)
               .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
-              .map((issue) => (
+              .map((task) => (
                 <Link
-                  key={issue.id}
-                  href={`/issues/${issue.key}`}
+                  key={task.id}
+                  href={`/tasks/${task.key}`}
                   className="rounded-lg border border-border p-3 hover:border-accent"
                 >
-                  <span className="font-mono text-xs text-accent">{issue.dueDate}</span>
-                  <p className="mt-1 font-medium">{issue.title}</p>
+                  <span className="font-mono text-xs text-accent">{task.dueDate}</span>
+                  <p className="mt-1 font-medium">{task.title}</p>
                   <p className="mt-1 text-xs text-muted">
-                    {issue.key} · {issue.status}
+                    {task.key} · {task.status}
                   </p>
                 </Link>
               ))}
@@ -186,51 +186,51 @@ export function MyTasksView() {
                     {group.tasks.length}
                   </span>
                 </div>
-                {group.tasks.map((issue) => (
+                {group.tasks.map((task) => (
                   <div
-                    key={issue.id}
+                    key={task.id}
                     className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-surface-low py-3 sm:grid-cols-[minmax(0,1.7fr)_1fr_110px_90px_64px_auto]"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <button
-                        aria-label={`Mark ${issue.key} complete`}
-                        onClick={() => demoRepository.updateIssue(issue.id, { status: "Done" })}
+                        aria-label={`Mark ${task.key} complete`}
+                        onClick={() => demoRepository.updateTask(task.id, { status: "Done" })}
                         className="size-4 shrink-0 rounded border border-border bg-white hover:border-accent"
                       />
-                      <Link href={`/issues/${issue.key}`} className="min-w-0">
+                      <Link href={`/tasks/${task.key}`} className="min-w-0">
                         <span className="font-mono text-[11px] font-semibold text-accent">
-                          {issue.key}
+                          {task.key}
                         </span>
-                        <span className="ml-2 truncate text-sm font-medium">{issue.title}</span>
+                        <span className="ml-2 truncate text-sm font-medium">{task.title}</span>
                       </Link>
                     </span>
                     <Link
-                      href={`/projects/${issue.projectId}`}
+                      href={`/projects/${task.projectId}`}
                       className="hidden truncate text-xs text-muted hover:text-accent sm:block"
                     >
-                      {projects.find((project) => project.id === issue.projectId)?.name ??
+                      {projects.find((project) => project.id === task.projectId)?.name ??
                         "Project"}
                     </Link>
                     <span className="hidden sm:block">
-                      <StatusPill status={issue.status} />
+                      <StatusPill status={task.status} />
                     </span>
                     <span className="hidden sm:block">
-                      <PriorityPill priority={issue.priority} />
+                      <PriorityPill priority={task.priority} />
                     </span>
-                    <span className="text-xs text-muted">{issue.dueDate ?? "—"}</span>
+                    <span className="text-xs text-muted">{task.dueDate ?? "—"}</span>
                     <select
-                      aria-label={`${issue.key} status`}
-                      value={issue.status}
+                      aria-label={`${task.key} status`}
+                      value={task.status}
                       onChange={(event) =>
-                        demoRepository.updateIssue(issue.id, {
+                        demoRepository.updateTask(task.id, {
                           status: event.target.value as WorkStatus,
                         })
                       }
                       className="h-8 rounded border border-border bg-white px-1 text-xs"
                     >
-                      <option value={issue.status}>{issue.status}</option>
+                      <option value={task.status}>{task.status}</option>
                       {statuses
-                        .filter((status) => status !== issue.status)
+                        .filter((status) => status !== task.status)
                         .map((status) => (
                           <option key={status}>{status}</option>
                         ))}
@@ -241,7 +241,7 @@ export function MyTasksView() {
             ))}
           </div>
         )}
-        {issues.length === 0 && (
+        {tasks.length === 0 && (
           <p className="py-10 text-center text-sm text-muted">No tasks match these filters.</p>
         )}
       </Panel>

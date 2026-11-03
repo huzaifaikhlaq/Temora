@@ -10,7 +10,7 @@ import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 const statuses = ["Backlog", "To Do", "In Progress", "In Review", "Done"] as const;
 const priorities = ["Urgent", "High", "Medium", "Low"] as const;
 
-export function IssuesDirectory() {
+export function TasksDirectory() {
   const state = useDemoState();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All statuses");
@@ -21,25 +21,25 @@ export function IssuesDirectory() {
   const projects = state.projects.filter(
     (item) => item.workspaceId === state.activeWorkspaceId && !item.archivedAt,
   );
-  const issues = useMemo(
+  const tasks = useMemo(
     () =>
-      state.issues.filter(
-        (issue) =>
-          issue.workspaceId === state.activeWorkspaceId &&
-          (project === "All projects" || issue.projectId === project) &&
-          (status === "All statuses" || issue.status === status) &&
-          (priority === "All priorities" || issue.priority === priority) &&
-          `${issue.key} ${issue.title} ${issue.labels.join(" ")}`
+      state.tasks.filter(
+        (task) =>
+          task.workspaceId === state.activeWorkspaceId &&
+          (project === "All projects" || task.projectId === project) &&
+          (status === "All statuses" || task.status === status) &&
+          (priority === "All priorities" || task.priority === priority) &&
+          `${task.key} ${task.title} ${task.labels.join(" ")}`
             .toLowerCase()
             .includes(query.toLowerCase()),
       ),
-    [state.issues, state.activeWorkspaceId, project, status, priority, query],
+    [state.tasks, state.activeWorkspaceId, project, status, priority, query],
   );
 
   function setSelectedStatus(nextStatus: WorkStatus) {
-    selected.forEach((issueId) => demoRepository.updateIssue(issueId, { status: nextStatus }));
+    selected.forEach((taskId) => demoRepository.updateTask(taskId, { status: nextStatus }));
     setSelected([]);
-    setNotice(`Selected issues moved to ${nextStatus}.`);
+    setNotice(`Selected tasks moved to ${nextStatus}.`);
   }
 
   return (
@@ -48,44 +48,44 @@ export function IssuesDirectory() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[.16em] text-outline">
             {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Workspace
-            issues
+            tasks
           </p>
-          <h1 className="mt-1 text-2xl font-bold">All issues</h1>
+          <h1 className="mt-1 text-2xl font-bold">All tasks</h1>
           <p className="mt-1 text-sm text-muted">
-            Search and review issues across your active projects.
+            Search and review tasks across your active projects.
           </p>
         </div>
         <Link
-          href="/issues/new"
+          href="/tasks/new"
           className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
         >
           <Icon name="add" />
-          Create issue
+          Create task
         </Link>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric
-          label="Total issues"
+          label="Total tasks"
           value={String(
-            state.issues.filter((issue) => issue.workspaceId === state.activeWorkspaceId).length,
+            state.tasks.filter((task) => task.workspaceId === state.activeWorkspaceId).length,
           )}
         />
         <Metric
           label="In progress"
           value={String(
-            state.issues.filter(
-              (issue) =>
-                issue.workspaceId === state.activeWorkspaceId && issue.status === "In Progress",
+            state.tasks.filter(
+              (task) =>
+                task.workspaceId === state.activeWorkspaceId && task.status === "In Progress",
             ).length,
           )}
         />
         <Metric
           label="High priority"
           value={String(
-            state.issues.filter(
-              (issue) =>
-                issue.workspaceId === state.activeWorkspaceId &&
-                (issue.priority === "High" || issue.priority === "Urgent"),
+            state.tasks.filter(
+              (task) =>
+                task.workspaceId === state.activeWorkspaceId &&
+                (task.priority === "High" || task.priority === "Urgent"),
             ).length,
           )}
         />
@@ -93,7 +93,7 @@ export function IssuesDirectory() {
       <section className="overflow-hidden rounded-xl border border-border bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
           <input
-            aria-label="Search issues"
+            aria-label="Search tasks"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search key, summary, or label…"
@@ -139,7 +139,7 @@ export function IssuesDirectory() {
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-accent/5 px-4 py-2 text-sm">
             <strong>{selected.length} selected</strong>
             <select
-              aria-label="Move selected issues"
+              aria-label="Move selected tasks"
               className="h-8 rounded border border-border bg-white px-2"
               defaultValue=""
               onChange={(event) => {
@@ -170,18 +170,22 @@ export function IssuesDirectory() {
               </tr>
             </thead>
             <tbody>
-              {issues.map((issue) => (
-                <tr key={issue.id} className="border-t border-border/70 hover:bg-surface-low/50">
+              {tasks.map((task) => {
+                const parentTask = task.parentTaskId
+                  ? state.tasks.find((item) => item.id === task.parentTaskId)
+                  : undefined;
+                return (
+                  <tr key={task.id} className="border-t border-border/70 hover:bg-surface-low/50">
                   <td className="px-3 py-3">
                     <input
-                      aria-label={`Select ${issue.key}`}
+                      aria-label={`Select ${task.key}`}
                       type="checkbox"
-                      checked={selected.includes(issue.id)}
+                      checked={selected.includes(task.id)}
                       onChange={(event) =>
                         setSelected((items) =>
                           event.target.checked
-                            ? [...items, issue.id]
-                            : items.filter((id) => id !== issue.id),
+                            ? [...items, task.id]
+                            : items.filter((id) => id !== task.id),
                         )
                       }
                     />
@@ -189,27 +193,35 @@ export function IssuesDirectory() {
                   <td className="px-3 py-3">
                     <Link
                       className="font-mono text-xs font-semibold text-accent"
-                      href={`/issues/${issue.key}`}
+                      href={`/tasks/${task.key}`}
                     >
-                      {issue.key}
+                      {task.key}
                     </Link>
                   </td>
                   <td className="max-w-sm px-3 py-3">
-                    <Link className="font-medium hover:text-accent" href={`/issues/${issue.key}`}>
-                      {issue.title}
+                    <Link className="font-medium hover:text-accent" href={`/tasks/${task.key}`}>
+                      {task.title}
                     </Link>
-                    <p className="mt-1 text-xs text-muted">{issue.labels.join(" · ")}</p>
+                    <p className="mt-1 text-xs text-muted">{task.labels.join(" · ")}</p>
+                    {parentTask && (
+                      <p className="mt-1 text-xs text-muted">
+                        Subtask of{" "}
+                        <Link className="text-accent hover:underline" href={`/tasks/${parentTask.key}`}>
+                          {parentTask.key}
+                        </Link>
+                      </p>
+                    )}
                   </td>
                   <td className="px-3 py-3">
-                    {projects.find((item) => item.id === issue.projectId)?.name ?? "—"}
+                    {projects.find((item) => item.id === task.projectId)?.name ?? "—"}
                   </td>
                   <td className="px-3 py-3">
                     <select
-                      aria-label={`${issue.key} status`}
+                      aria-label={`${task.key} status`}
                       className="rounded border border-border bg-white px-2 py-1 text-xs"
-                      value={issue.status}
+                      value={task.status}
                       onChange={(event) =>
-                        demoRepository.updateIssue(issue.id, {
+                        demoRepository.updateTask(task.id, {
                           status: event.target.value as WorkStatus,
                         })
                       }
@@ -221,12 +233,12 @@ export function IssuesDirectory() {
                   </td>
                   <td className="px-3 py-3">
                     <select
-                      aria-label={`${issue.key} priority`}
+                      aria-label={`${task.key} priority`}
                       className="rounded border border-border bg-white px-2 py-1 text-xs"
-                      value={issue.priority}
+                      value={task.priority}
                       onChange={(event) =>
-                        demoRepository.updateIssue(issue.id, {
-                          priority: event.target.value as typeof issue.priority,
+                        demoRepository.updateTask(task.id, {
+                          priority: event.target.value as typeof task.priority,
                         })
                       }
                     >
@@ -236,37 +248,38 @@ export function IssuesDirectory() {
                     </select>
                   </td>
                   <td className="px-3 py-3">
-                    {state.members.find((member) => member.id === issue.assigneeId)?.name ??
+                    {state.members.find((member) => member.id === task.assigneeId)?.name ??
                       "Unassigned"}
                   </td>
                   <td className="px-3 py-3">
-                    {state.sprints.find((sprint) => sprint.id === issue.sprintId)?.name ??
+                    {state.sprints.find((sprint) => sprint.id === task.sprintId)?.name ??
                       "Backlog"}
                   </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        {issues.length === 0 && (
+        {tasks.length === 0 && (
           <div className="p-10 text-center">
-            <h2 className="font-semibold">No matching issues</h2>
+            <h2 className="font-semibold">No matching tasks</h2>
             <p className="mt-1 text-sm text-muted">
-              Change the filters or create an issue for this project.
+              Change the filters or create an task for this project.
             </p>
             <Link
               className="mt-3 inline-block text-sm font-semibold text-accent"
-              href="/issues/new"
+              href="/tasks/new"
             >
-              Create issue →
+              Create task →
             </Link>
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 text-xs text-muted">
           <span>
-            Showing {issues.length} of{" "}
-            {state.issues.filter((issue) => issue.workspaceId === state.activeWorkspaceId).length}{" "}
-            issues
+            Showing {tasks.length} of{" "}
+            {state.tasks.filter((task) => task.workspaceId === state.activeWorkspaceId).length}{" "}
+            tasks
           </span>
           <span>Demo workspace data is stored in this browser.</span>
         </div>

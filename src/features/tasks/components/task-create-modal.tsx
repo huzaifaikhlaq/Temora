@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { IssueCreateForm } from "@/features/issues/components/issue-create-form";
+import { TaskCreateForm } from "@/features/tasks/components/task-create-form";
 
-export function IssueCreateModal() {
+export function TaskCreateModal() {
   const router = useRouter();
 
   useEffect(() => {
@@ -25,10 +25,10 @@ export function IssueCreateModal() {
       <section
         role="dialog"
         aria-modal="true"
-        aria-labelledby="issue-create-title"
+        aria-labelledby="task-create-title"
         className="max-h-[calc(100vh-1.5rem)] w-full max-w-6xl overflow-y-auto rounded-2xl border border-border bg-surface-low shadow-2xl sm:max-h-[calc(100vh-3rem)]"
       >
-        <IssueCreateForm modal />
+        <TaskCreateForm modal />
       </section>
     </div>
   );

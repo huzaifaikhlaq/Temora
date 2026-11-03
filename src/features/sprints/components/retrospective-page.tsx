@@ -48,13 +48,13 @@ export function RetrospectivePage({ sprintId }: { sprintId: string }) {
     state.settingsByWorkspace[state.activeWorkspaceId]?.retrospectiveNotes?.[currentSprint.id] ??
     [];
   const project = state.projects.find((item) => item.id === currentSprint.projectId);
-  const issues = state.issues.filter(
-    (issue) => issue.sprintId === currentSprint.id && issue.workspaceId === state.activeWorkspaceId,
+  const tasks = state.tasks.filter(
+    (task) => task.sprintId === currentSprint.id && task.workspaceId === state.activeWorkspaceId,
   );
-  const committedPoints = issues.reduce((total, issue) => total + issue.storyPoints, 0);
-  const donePoints = issues
-    .filter((issue) => issue.status === "Done")
-    .reduce((total, issue) => total + issue.storyPoints, 0);
+  const committedPoints = tasks.reduce((total, task) => total + task.storyPoints, 0);
+  const donePoints = tasks
+    .filter((task) => task.status === "Done")
+    .reduce((total, task) => total + task.storyPoints, 0);
   const actionItems = notes.filter((note) => note.category === "Action items");
 
   function addNote(event: FormEvent<HTMLFormElement>) {
@@ -135,7 +135,7 @@ export function RetrospectivePage({ sprintId }: { sprintId: string }) {
         <h2 className="mt-1 text-xl font-bold">{currentSprint.goal || "Sprint review"}</h2>
         <p className="mt-1 text-sm text-muted">
           {dateLabel(currentSprint.startDate)}–{dateLabel(currentSprint.endDate)} ·{" "}
-          {committedPoints} points in sprint issues
+          {committedPoints} points in sprint tasks
         </p>
       </Panel>
 
@@ -143,13 +143,13 @@ export function RetrospectivePage({ sprintId }: { sprintId: string }) {
         <MetricCard
           label="Points completed"
           value={`${donePoints} / ${committedPoints}`}
-          note="Based on current issue status"
+          note="Based on current task status"
           icon="bolt"
         />
         <MetricCard
           label="Sprint carryover"
-          value={`${issues.filter((issue) => issue.status !== "Done").length} issues`}
-          note="Issues not marked done"
+          value={`${tasks.filter((task) => task.status !== "Done").length} tasks`}
+          note="Tasks not marked done"
           icon="sync_alt"
         />
         <MetricCard

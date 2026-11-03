@@ -20,7 +20,7 @@ export function ApplicationStatePage({ stateKind }: { stateKind: "not-found" | "
   async function copyDiagnostics() {
     try {
       await navigator.clipboard.writeText(
-        `Temora frontend preview\nPath: ${window.location.pathname}\nWorkspace: ${demoState.activeWorkspaceId}\nIssue: ${window.location.pathname.includes("issues/") ? window.location.pathname.split("/").at(-1) : "n/a"}`,
+        `Temora frontend preview\nPath: ${window.location.pathname}\nWorkspace: ${demoState.activeWorkspaceId}\nTask: ${window.location.pathname.includes("tasks/") ? window.location.pathname.split("/").at(-1) : "n/a"}`,
       );
       setNotice("Page diagnostics copied to the clipboard.");
     } catch {
@@ -44,7 +44,7 @@ export function ApplicationStatePage({ stateKind }: { stateKind: "not-found" | "
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">
           {notFound
-            ? "The requested issue or resource may have moved, been archived, or no longer exists."
+            ? "The requested task or resource may have moved, been archived, or no longer exists."
             : "This is a permission-state preview. No authorization service enforces roles or receives access requests."}
         </p>
         <div className="mt-6 flex justify-center gap-2">

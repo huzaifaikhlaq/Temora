@@ -23,12 +23,12 @@ export function ProjectWorkspacePage({
   const project = state.projects.find(
     (item) => item.id === projectId && item.workspaceId === state.activeWorkspaceId,
   );
-  const issues = useMemo(
+  const tasks = useMemo(
     () =>
-      state.issues.filter(
-        (issue) => issue.projectId === projectId && issue.workspaceId === state.activeWorkspaceId,
+      state.tasks.filter(
+        (task) => task.projectId === projectId && task.workspaceId === state.activeWorkspaceId,
       ),
-    [state.issues, projectId, state.activeWorkspaceId],
+    [state.tasks, projectId, state.activeWorkspaceId],
   );
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
@@ -57,7 +57,7 @@ export function ProjectWorkspacePage({
   const workspace = state.workspaces.find((item) => item.id === project.workspaceId)!;
   const members = state.members.filter((member) => member.workspaceId === project.workspaceId);
   const projectMembers = members.filter((member) => project.memberIds.includes(member.id));
-  const openIssues = issues.filter((issue) => issue.status !== "Done");
+  const openTasks = tasks.filter((task) => task.status !== "Done");
   const currentSprint = state.sprints.find(
     (sprint) => sprint.projectId === project.id && sprint.status === "Active",
   );
@@ -188,9 +188,9 @@ export function ProjectWorkspacePage({
               tone="green"
             />
             <MetricCard
-              label="Open issues"
-              value={String(openIssues.length)}
-              note={`${issues.length} total`}
+              label="Open tasks"
+              value={String(openTasks.length)}
+              note={`${tasks.length} total`}
               icon="checklist"
             />
             <MetricCard
@@ -209,30 +209,30 @@ export function ProjectWorkspacePage({
           <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
             <Panel>
               <PanelTitle
-                title="Recent issues"
+                title="Recent tasks"
                 trailing={
-                  <Link href="/issues/new" className="text-sm font-semibold text-accent">
-                    Create issue
+                  <Link href="/tasks/new" className="text-sm font-semibold text-accent">
+                    Create task
                   </Link>
                 }
               />
-              {issues.slice(0, 6).map((issue) => (
+              {tasks.slice(0, 6).map((task) => (
                 <Link
-                  key={issue.id}
-                  href={`/issues/${issue.key}`}
+                  key={task.id}
+                  href={`/tasks/${task.key}`}
                   className="flex flex-wrap items-center gap-3 border-b border-border py-3 text-sm last:border-0"
                 >
-                  <span className="font-mono text-xs text-accent">{issue.key}</span>
-                  <span className="min-w-40 flex-1 font-medium">{issue.title}</span>
+                  <span className="font-mono text-xs text-accent">{task.key}</span>
+                  <span className="min-w-40 flex-1 font-medium">{task.title}</span>
                   <span className="rounded bg-surface-low px-2 py-1 text-xs text-muted">
-                    {issue.status}
+                    {task.status}
                   </span>
-                  <span className="text-xs text-muted">{issue.priority}</span>
+                  <span className="text-xs text-muted">{task.priority}</span>
                 </Link>
               ))}
-              {!issues.length && (
+              {!tasks.length && (
                 <p className="py-8 text-center text-sm text-muted">
-                  No issues yet. Add your first issue to start the board.
+                  No tasks yet. Add your first task to start the board.
                 </p>
               )}
             </Panel>
@@ -379,7 +379,7 @@ export function ProjectWorkspacePage({
             <div className="mt-6 border-t border-border pt-5">
               <h2 className="font-semibold text-red-700">Archive project</h2>
               <p className="mt-1 text-xs leading-5 text-muted">
-                Archived projects are removed from active project lists. Their issues remain in demo
+                Archived projects are removed from active project lists. Their tasks remain in demo
                 storage.
               </p>
               <button

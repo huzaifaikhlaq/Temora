@@ -35,14 +35,14 @@ export function CalendarPage() {
       if (!date) return;
       byDate.set(date, [...(byDate.get(date) ?? []), title]);
     };
-    state.issues
-      .filter((issue) => issue.workspaceId === state.activeWorkspaceId)
-      .forEach((issue) => add(issue.dueDate, `${issue.key} · ${issue.title}`));
+    state.tasks
+      .filter((task) => task.workspaceId === state.activeWorkspaceId)
+      .forEach((task) => add(task.dueDate, `${task.key} · ${task.title}`));
     state.sprints
       .filter((sprint) => sprint.workspaceId === state.activeWorkspaceId)
       .forEach((sprint) => add(sprint.startDate, `${sprint.name} starts`));
     return byDate;
-  }, [state.activeWorkspaceId, state.issues, state.sprints]);
+  }, [state.activeWorkspaceId, state.tasks, state.sprints]);
   const dateLabel =
     period === "Day"
       ? calendarDate.toLocaleDateString(undefined, {
@@ -73,9 +73,9 @@ export function CalendarPage() {
         title="Planning Calendar"
         subtitle="See sprint cycles, project milestones, and task due dates across your workspace."
         action={
-          <Link className={button} href="/issues/new">
+          <Link className={button} href="/tasks/new">
             <Icon name="add" />
-            New Issue / Deadline
+            New Task / Deadline
           </Link>
         }
       />
@@ -149,7 +149,7 @@ export function CalendarPage() {
                     key={`${event}-${eventIndex}`}
                     href={
                       event.split(" · ")[0].startsWith("TEM-")
-                        ? `/issues/${event.split(" · ")[0]}`
+                        ? `/tasks/${event.split(" · ")[0]}`
                         : "/projects"
                     }
                     className={`mt-2 block truncate rounded px-1.5 py-1 text-[10px] font-medium ${eventIndex === 0 ? "bg-accent/10 text-accent" : "bg-emerald-50 text-emerald-800"}`}

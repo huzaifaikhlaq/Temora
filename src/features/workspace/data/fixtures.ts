@@ -15,15 +15,15 @@ export interface Task {
 }
 
 const snapshot = createInitialDemoState();
-const taskRows: Task[] = snapshot.issues.map((issue) => ({
-  key: issue.key,
-  title: issue.title,
-  project: snapshot.projects.find((project) => project.id === issue.projectId)?.name ?? "Unknown",
-  status: issue.status,
-  priority: issue.priority,
-  due: issue.dueDate ?? "No due date",
-  points: issue.storyPoints,
-  assignee: snapshot.members.find((member) => member.id === issue.assigneeId)?.name ?? "Unassigned",
+const taskRows: Task[] = snapshot.tasks.map((task) => ({
+  key: task.key,
+  title: task.title,
+  project: snapshot.projects.find((project) => project.id === task.projectId)?.name ?? "Unknown",
+  status: task.status,
+  priority: task.priority,
+  due: task.dueDate ?? "No due date",
+  points: task.storyPoints,
+  assignee: snapshot.members.find((member) => member.id === task.assigneeId)?.name ?? "Unassigned",
 }));
 
 export const tasks = taskRows;
@@ -33,7 +33,7 @@ export const projects = snapshot.projects.map((project) => ({
   category: project.category,
   percent: project.progress,
   lead: snapshot.members.find((member) => member.id === project.leadId)?.name ?? "Unassigned",
-  open: snapshot.issues.filter((issue) => issue.projectId === project.id && issue.status !== "Done")
+  open: snapshot.tasks.filter((task) => task.projectId === project.id && task.status !== "Done")
     .length,
   due: project.dueDate,
   color: project.color,

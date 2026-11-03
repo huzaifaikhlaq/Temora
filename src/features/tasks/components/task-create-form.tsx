@@ -12,7 +12,7 @@ const input =
 const primary =
   "inline-flex h-9 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong";
 
-export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
+export function TaskCreateForm({ modal = false }: { modal?: boolean }) {
   const state = useDemoState();
   const search = useSearchParams();
   const router = useRouter();
@@ -36,10 +36,10 @@ export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  function createIssue(event: FormEvent<HTMLFormElement>) {
+  function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      const issue = demoRepository.createIssue({
+      const task = demoRepository.createTask({
         projectId,
         title,
         description,
@@ -54,17 +54,17 @@ export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
         dueDate: dueDate || null,
         subtasks: subtasks.filter((item) => item.trim()),
       });
-      window.localStorage.removeItem("temora-issue-draft-v1");
-      router.push(`/issues/${issue.key}`);
+      window.localStorage.removeItem("temora-task-draft-v1");
+      router.push(`/tasks/${task.key}`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the issue.");
+      setError(cause instanceof Error ? cause.message : "Could not create the task.");
     }
   }
 
   function saveDraft() {
     try {
       window.localStorage.setItem(
-        "temora-issue-draft-v1",
+        "temora-task-draft-v1",
         JSON.stringify({
           projectId,
           title,
@@ -94,35 +94,35 @@ export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
           <p
             className={`${modal ? "text-[10px]" : "text-xs"} font-semibold uppercase tracking-[.16em] text-outline`}
           >
-            {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Issues
+            {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Tasks
           </p>
           <h1
-            id={modal ? "issue-create-title" : undefined}
+            id={modal ? "task-create-title" : undefined}
             className={`${modal ? "mt-1 text-xl" : "mt-1 text-2xl"} font-bold`}
           >
-            Create issue
+            Create task
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Add a clear, actionable issue to a project in this workspace.
+            Add a clear, actionable task to a project in this workspace.
           </p>
         </div>
         {modal ? (
           <button
             type="button"
             onClick={() => router.back()}
-            aria-label="Close create issue"
+            aria-label="Close create task"
             className="rounded-lg p-2 text-muted hover:bg-surface-low"
           >
             <Icon name="close" />
           </button>
         ) : (
-          <Link href="/issues" className="rounded-lg border border-border px-3 py-2 text-sm">
+          <Link href="/tasks" className="rounded-lg border border-border px-3 py-2 text-sm">
             Cancel
           </Link>
         )}
       </header>
       <form
-        onSubmit={createIssue}
+        onSubmit={createTask}
         className={`grid gap-4 ${modal ? "lg:grid-cols-[minmax(0,1fr)_280px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}
       >
         <section
@@ -200,7 +200,7 @@ export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
             >
               Save draft
             </button>
-            <button className={primary}>Create issue</button>
+            <button className={primary}>Create task</button>
           </div>
           {error && (
             <p role="alert" className="mt-3 text-sm text-red-700">
@@ -310,11 +310,11 @@ export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
           </label>
           {project && (
             <p className="text-xs leading-5 text-muted">
-              This issue will be added to {project.name} ({project.key}).
+              This task will be added to {project.name} ({project.key}).
             </p>
           )}
           <p className="text-xs leading-5 text-muted">
-            This frontend preview saves issue data in this browser only. It does not send email or
+            This frontend preview saves task data in this browser only. It does not send email or
             contact a service.
           </p>
         </aside>

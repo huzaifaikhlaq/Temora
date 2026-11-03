@@ -21,12 +21,12 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
       (item.id === sprintId || item.id === `sprint-${sprintId}`) &&
       item.workspaceId === state.activeWorkspaceId,
   );
-  const issues = useMemo(
+  const tasks = useMemo(
     () =>
-      state.issues.filter(
-        (issue) => issue.sprintId === sprint?.id && issue.workspaceId === state.activeWorkspaceId,
+      state.tasks.filter(
+        (task) => task.sprintId === sprint?.id && task.workspaceId === state.activeWorkspaceId,
       ),
-    [state.issues, state.activeWorkspaceId, sprint?.id],
+    [state.tasks, state.activeWorkspaceId, sprint?.id],
   );
   if (!sprint)
     return (
@@ -39,12 +39,12 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
     );
 
   const project = state.projects.find((item) => item.id === sprint.projectId);
-  const completed = issues
-    .filter((issue) => issue.status === "Done")
-    .reduce((total, issue) => total + issue.storyPoints, 0);
-  const total = issues.reduce((sum, issue) => sum + issue.storyPoints, 0);
+  const completed = tasks
+    .filter((task) => task.status === "Done")
+    .reduce((total, task) => total + task.storyPoints, 0);
+  const total = tasks.reduce((sum, task) => sum + task.storyPoints, 0);
   const remaining = total - completed;
-  const remainingIssues = issues.filter((issue) => issue.status !== "Done");
+  const remainingTasks = tasks.filter((task) => task.status !== "Done");
   const start = new Date(`${sprint.startDate}T12:00:00`);
   const end = new Date(`${sprint.endDate}T12:00:00`);
   const today = new Date(`${DEMO_TODAY}T12:00:00`);
@@ -66,7 +66,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
           </p>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Sprint burndown report</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Current remaining points are computed from issue status. Daily history and scope changes
+            Current remaining points are computed from task status. Daily history and scope changes
             are not tracked in this demo.
           </p>
         </div>
@@ -97,21 +97,21 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Committed issues"
-          value={String(issues.length)}
+          label="Committed tasks"
+          value={String(tasks.length)}
           note={`${total} story points`}
           icon="assignment"
         />
         <MetricCard
           label="Points completed"
           value={`${completed} / ${total}`}
-          note="Issues marked Done"
+          note="Tasks marked Done"
           icon="task_alt"
         />
         <MetricCard
           label="Points remaining"
           value={String(remaining)}
-          note={`${remainingIssues.length} open issues`}
+          note={`${remainingTasks.length} open tasks`}
           icon="trending_down"
         />
         <MetricCard
@@ -218,7 +218,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
               <tbody>
                 <tr className="border-b border-border/70">
                   <th scope="row" className="px-3 py-3 font-medium">
-                    Current issue state
+                    Current task state
                   </th>
                   <td className="px-3 py-3">{formatDate(DEMO_TODAY)}</td>
                   <td className="px-3 py-3">{remaining} pts</td>
@@ -230,21 +230,21 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
           </div>
         </Panel>
         <Panel className="h-fit">
-          <PanelTitle title="Issues remaining" />
+          <PanelTitle title="Tasks remaining" />
           <div className="space-y-3">
-            {remainingIssues.map((issue) => (
+            {remainingTasks.map((task) => (
               <Link
-                key={issue.id}
-                href={`/issues/${issue.key}`}
+                key={task.id}
+                href={`/tasks/${task.key}`}
                 className="block rounded-lg border border-border p-3 hover:border-accent"
               >
-                <span className="font-mono text-xs font-semibold text-accent">{issue.key}</span>
-                <span className="ml-2 text-xs text-muted">{issue.storyPoints} pts</span>
-                <p className="mt-1 text-sm">{issue.title}</p>
+                <span className="font-mono text-xs font-semibold text-accent">{task.key}</span>
+                <span className="ml-2 text-xs text-muted">{task.storyPoints} pts</span>
+                <p className="mt-1 text-sm">{task.title}</p>
               </Link>
             ))}
-            {remainingIssues.length === 0 && (
-              <p className="text-sm text-muted">All sprint issues are marked Done.</p>
+            {remainingTasks.length === 0 && (
+              <p className="text-sm text-muted">All sprint tasks are marked Done.</p>
             )}
           </div>
           <div className="mt-4 border-t border-border pt-4 text-xs text-muted">

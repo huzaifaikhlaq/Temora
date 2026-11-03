@@ -1,9 +1,9 @@
 import { addDays, createInitialDemoState, DEMO_TODAY } from "@/features/workspace/data/seed";
 import type {
-  CreateIssueInput,
+  CreateTaskInput,
   DemoState,
   EntityId,
-  Issue,
+  Task,
   Member,
   Project,
   ProjectStatus,
@@ -16,7 +16,8 @@ import type {
   WorkspaceTeamSize,
 } from "@/features/workspace/data/model";
 
-const STORAGE_KEY = "temora-demo-state-v1";
+const STORAGE_KEY = "temora-demo-state-v2";
+const LEGACY_STORAGE_KEY = "temora-demo-state-v1";
 const initialState = createInitialDemoState();
 let state = initialState;
 let hydrated = false;
@@ -56,20 +57,27 @@ export const demoRepository = {
     if (hydrated || typeof window === "undefined") return;
     hydrated = true;
     window.addEventListener("storage", (event) => {
-      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      if (![STORAGE_KEY, LEGACY_STORAGE_KEY].includes(event.key ?? "") || !event.newValue) return;
       try {
-        const next: unknown = JSON.parse(event.newValue);
-        if (!isDemoState(next)) return;
-        state = next;
-        listeners.forEach((listener) => listener());
+        const next = migrateDemoState(JSON.parse(event.newValue));
+        if (!next) return;
+        if (event.key === LEGACY_STORAGE_KEY) {
+          persist(next);
+        } else {
+          state = next;
+          listeners.forEach((listener) => listener());
+        }
       } catch {
         // A malformed update in another tab does not replace the current state.
       }
     });
     try {
-      const parsed: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (isDemoState(parsed)) {
-        state = parsed;
+      const current: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
+      const legacy: unknown = JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) ?? "null");
+      const restored = migrateDemoState(current) ?? migrateDemoState(legacy);
+      if (restored) {
+        state = restored;
+        if (current === null && legacy !== null) persist(restored);
         listeners.forEach((listener) => listener());
       }
     } catch {
@@ -264,7 +272,7 @@ export const demoRepository = {
     });
   },
 
-  createIssue(input: CreateIssueInput) {
+  createTask(input: CreateTaskInput) {
     const workspaceId = input.workspaceId ?? state.activeWorkspaceId;
     const project = state.projects.find(
       (item) =>
@@ -274,7 +282,7 @@ export const demoRepository = {
     );
     if (!project) throw new Error("Choose an active project in this workspace.");
     const title = input.title.trim();
-    if (title.length < 3) throw new Error("Issue summary must have at least three characters.");
+    if (title.length < 3) throw new Error("Task summary must have at least three characters.");
     const workspace = scopedWorkspace(workspaceId);
     const reporterId = input.reporterId ?? state.activeMemberId;
     if (!workspace.memberIds.includes(reporterId))
@@ -291,13 +299,14 @@ export const demoRepository = {
       );
       if (!sprint) throw new Error("Choose an open sprint in the selected project.");
     }
-    const id = `TEM-${state.counters.issue + 1}`;
-    const issue: Issue = {
+    const id = `TEM-${state.counters.task + 1}`;
+    const task: Task = {
       id,
       key: id,
       workspaceId,
       projectId: project.id,
       title,
+      parentTaskId: null,
       description: input.description?.trim() ?? "",
       status: input.status ?? "Backlog",
       priority: input.priority ?? "Medium",
@@ -307,7 +316,6 @@ export const demoRepository = {
       storyPoints: input.storyPoints ?? 0,
       sprintId: input.sprintId ?? null,
       labels: input.labels ?? [],
-      subtaskIds: [],
       commentIds: [],
       blockedByIds: [],
       blocksIds: [],
@@ -316,19 +324,19 @@ export const demoRepository = {
     };
     let next = {
       ...state,
-      issues: [...state.issues, issue],
-      counters: { ...state.counters, issue: state.counters.issue + 1 },
+      tasks: [...state.tasks, task],
+      counters: { ...state.counters, task: state.counters.task + 1 },
     };
-    for (const title of input.subtasks ?? []) next = addSubtaskTo(next, issue.id, title, null);
+    for (const title of input.subtasks ?? []) next = addSubtaskTo(next, task.id, title, null);
     persist(next);
-    return issue;
+    return task;
   },
 
-  updateIssue(
-    issueId: EntityId,
+  updateTask(
+    taskId: EntityId,
     patch: Partial<
       Pick<
-        Issue,
+        Task,
         | "title"
         | "description"
         | "status"
@@ -341,30 +349,30 @@ export const demoRepository = {
       >
     >,
   ) {
-    const issue = findIssue(issueId);
+    const task = findTask(taskId);
     if (patch.title !== undefined && patch.title.trim().length < 3)
-      throw new Error("Issue summary must have at least three characters.");
+      throw new Error("Task summary must have at least three characters.");
     if (patch.storyPoints !== undefined && patch.storyPoints < 0)
       throw new Error("Story points cannot be negative.");
     if (
       patch.assigneeId &&
-      !scopedWorkspace(issue.workspaceId).memberIds.includes(patch.assigneeId)
+      !scopedWorkspace(task.workspaceId).memberIds.includes(patch.assigneeId)
     )
       throw new Error("Assignee must belong to this workspace.");
     if (patch.sprintId) {
       const sprint = state.sprints.find(
         (item) =>
           item.id === patch.sprintId &&
-          item.workspaceId === issue.workspaceId &&
-          item.projectId === issue.projectId &&
+          item.workspaceId === task.workspaceId &&
+          item.projectId === task.projectId &&
           item.status !== "Closed",
       );
-      if (!sprint) throw new Error("Choose an open sprint in this issue’s project.");
+      if (!sprint) throw new Error("Choose an open sprint in this task’s project.");
     }
     persist({
       ...state,
-      issues: state.issues.map((item) =>
-        item.id === issueId
+      tasks: state.tasks.map((item) =>
+        item.id === taskId
           ? {
               ...item,
               ...patch,
@@ -376,23 +384,23 @@ export const demoRepository = {
     });
   },
 
-  addIssueDependency(
-    issueId: EntityId,
-    relatedIssueId: EntityId,
+  addTaskDependency(
+    taskId: EntityId,
+    relatedTaskId: EntityId,
     relation: "blocks" | "blocked-by" | "relates-to",
   ) {
-    const issue = findIssue(issueId);
-    const related = findIssue(relatedIssueId);
-    if (issue.id === related.id) throw new Error("An issue cannot depend on itself.");
-    if (issue.workspaceId !== related.workspaceId)
+    const task = findTask(taskId);
+    const related = findTask(relatedTaskId);
+    if (task.id === related.id) throw new Error("An task cannot depend on itself.");
+    if (task.workspaceId !== related.workspaceId)
       throw new Error("Dependencies must stay within the active workspace.");
     if (relation === "relates-to") {
-      if (issue.relatedIds?.includes(related.id) || related.relatedIds?.includes(issue.id))
-        throw new Error("These issues are already related.");
+      if (task.relatedIds?.includes(related.id) || related.relatedIds?.includes(task.id))
+        throw new Error("These tasks are already related.");
       persist({
         ...state,
-        issues: state.issues.map((item) =>
-          item.id === issue.id
+        tasks: state.tasks.map((item) =>
+          item.id === task.id
             ? {
                 ...item,
                 relatedIds: [...(item.relatedIds ?? []), related.id],
@@ -401,7 +409,7 @@ export const demoRepository = {
             : item.id === related.id
               ? {
                   ...item,
-                  relatedIds: [...(item.relatedIds ?? []), issue.id],
+                  relatedIds: [...(item.relatedIds ?? []), task.id],
                   updatedAt: DEMO_TODAY,
                 }
               : item,
@@ -409,22 +417,22 @@ export const demoRepository = {
       });
       return;
     }
-    const blocker = relation === "blocks" ? issue : related;
-    const blocked = relation === "blocks" ? related : issue;
+    const blocker = relation === "blocks" ? task : related;
+    const blocked = relation === "blocks" ? related : task;
     if (blocker.blocksIds.includes(blocked.id)) throw new Error("This dependency already exists.");
 
     const reachesBlocker = (startId: EntityId, visited = new Set<EntityId>()): boolean => {
       if (startId === blocker.id) return true;
       if (visited.has(startId)) return false;
       visited.add(startId);
-      const current = state.issues.find((item) => item.id === startId);
+      const current = state.tasks.find((item) => item.id === startId);
       return current?.blocksIds.some((nextId) => reachesBlocker(nextId, visited)) ?? false;
     };
     if (reachesBlocker(blocked.id)) throw new Error("This dependency would create a cycle.");
 
     persist({
       ...state,
-      issues: state.issues.map((item) => {
+      tasks: state.tasks.map((item) => {
         if (item.id === blocker.id)
           return { ...item, blocksIds: [...item.blocksIds, blocked.id], updatedAt: DEMO_TODAY };
         if (item.id === blocked.id)
@@ -438,22 +446,22 @@ export const demoRepository = {
     });
   },
 
-  removeIssueDependency(
-    issueId: EntityId,
-    relatedIssueId: EntityId,
+  removeTaskDependency(
+    taskId: EntityId,
+    relatedTaskId: EntityId,
     relation: "blocks" | "blocked-by" | "relates-to",
   ) {
-    const issue = findIssue(issueId);
-    const related = findIssue(relatedIssueId);
-    if (issue.workspaceId !== related.workspaceId)
+    const task = findTask(taskId);
+    const related = findTask(relatedTaskId);
+    if (task.workspaceId !== related.workspaceId)
       throw new Error("Dependencies must stay within the active workspace.");
     if (relation === "relates-to") {
-      if (!issue.relatedIds?.includes(related.id) || !related.relatedIds?.includes(issue.id))
-        throw new Error("These issues are not related.");
+      if (!task.relatedIds?.includes(related.id) || !related.relatedIds?.includes(task.id))
+        throw new Error("These tasks are not related.");
       persist({
         ...state,
-        issues: state.issues.map((item) =>
-          item.id === issue.id
+        tasks: state.tasks.map((item) =>
+          item.id === task.id
             ? {
                 ...item,
                 relatedIds: item.relatedIds?.filter((id) => id !== related.id),
@@ -462,7 +470,7 @@ export const demoRepository = {
             : item.id === related.id
               ? {
                   ...item,
-                  relatedIds: item.relatedIds?.filter((id) => id !== issue.id),
+                  relatedIds: item.relatedIds?.filter((id) => id !== task.id),
                   updatedAt: DEMO_TODAY,
                 }
               : item,
@@ -470,12 +478,12 @@ export const demoRepository = {
       });
       return;
     }
-    const blocker = relation === "blocks" ? issue : related;
-    const blocked = relation === "blocks" ? related : issue;
+    const blocker = relation === "blocks" ? task : related;
+    const blocked = relation === "blocks" ? related : task;
     if (!blocker.blocksIds.includes(blocked.id)) throw new Error("This dependency does not exist.");
     persist({
       ...state,
-      issues: state.issues.map((item) => {
+      tasks: state.tasks.map((item) => {
         if (item.id === blocker.id)
           return {
             ...item,
@@ -493,71 +501,55 @@ export const demoRepository = {
     });
   },
 
-  deleteIssue(issueId: EntityId) {
-    findIssue(issueId);
+  deleteTask(taskId: EntityId) {
+    findTask(taskId);
+    const deletedTaskIds = new Set([taskId]);
+    let foundChild = true;
+    while (foundChild) {
+      foundChild = false;
+      for (const task of state.tasks) {
+        if (task.parentTaskId && deletedTaskIds.has(task.parentTaskId) && !deletedTaskIds.has(task.id)) {
+          deletedTaskIds.add(task.id);
+          foundChild = true;
+        }
+      }
+    }
     persist({
       ...state,
-      issues: state.issues
-        .filter((item) => item.id !== issueId)
+      tasks: state.tasks
+        .filter((item) => !deletedTaskIds.has(item.id))
         .map((item) => ({
           ...item,
-          blockedByIds: item.blockedByIds.filter((id) => id !== issueId),
-          blocksIds: item.blocksIds.filter((id) => id !== issueId),
-          relatedIds: item.relatedIds?.filter((id) => id !== issueId),
+          blockedByIds: item.blockedByIds.filter((id) => !deletedTaskIds.has(id)),
+          blocksIds: item.blocksIds.filter((id) => !deletedTaskIds.has(id)),
+          relatedIds: item.relatedIds?.filter((id) => !deletedTaskIds.has(id)),
         })),
-      subtasks: state.subtasks.filter((item) => item.issueId !== issueId),
-      comments: state.comments.filter((item) => item.issueId !== issueId),
-      notifications: state.notifications.filter((item) => item.issueId !== issueId),
+      comments: state.comments.filter((item) => !deletedTaskIds.has(item.taskId)),
+      notifications: state.notifications.filter(
+        (item) => !item.taskId || !deletedTaskIds.has(item.taskId),
+      ),
     });
   },
 
-  addSubtask(issueId: EntityId, title: string) {
-    findIssue(issueId);
-    const next = addSubtaskTo(state, issueId, title, state.activeMemberId);
+  addSubtask(taskId: EntityId, title: string) {
+    const parent = findTask(taskId);
+    if (parent.parentTaskId) throw new Error("Subtasks cannot have their own subtasks.");
+    const subtaskId = `TEM-${state.counters.task + 1}`;
+    const next = addSubtaskTo(state, taskId, title, state.activeMemberId);
+    const subtask = next.tasks.find((item) => item.id === subtaskId);
+    if (!subtask) throw new Error("Subtask was not created.");
     persist(next);
-    return next.subtasks[next.subtasks.length - 1];
+    return subtask;
   },
 
-  updateSubtask(
-    subtaskId: EntityId,
-    patch: Partial<Pick<DemoState["subtasks"][number], "title" | "completed" | "assigneeId">>,
-  ) {
-    const subtask = state.subtasks.find((item) => item.id === subtaskId);
-    if (!subtask) throw new Error("Subtask not found.");
-    findIssue(subtask.issueId);
-    const title = patch.title?.trim();
-    if (patch.title !== undefined && !title) throw new Error("Subtask title cannot be empty.");
-    persist({
-      ...state,
-      subtasks: state.subtasks.map((item) =>
-        item.id === subtaskId ? { ...item, ...patch, ...(title ? { title } : {}) } : item,
-      ),
-    });
-  },
-
-  deleteSubtask(subtaskId: EntityId) {
-    const subtask = state.subtasks.find((item) => item.id === subtaskId);
-    if (!subtask) throw new Error("Subtask not found.");
-    findIssue(subtask.issueId);
-    persist({
-      ...state,
-      subtasks: state.subtasks.filter((item) => item.id !== subtaskId),
-      issues: state.issues.map((issue) =>
-        issue.id === subtask.issueId
-          ? { ...issue, subtaskIds: issue.subtaskIds.filter((id) => id !== subtaskId) }
-          : issue,
-      ),
-    });
-  },
-
-  addComment(issueId: EntityId, body: string) {
-    const issue = findIssue(issueId);
+  addComment(taskId: EntityId, body: string) {
+    const task = findTask(taskId);
     const text = body.trim();
     if (!text) throw new Error("Comment cannot be empty.");
     const id = nextId("comment", state.counters.comment);
     const comment = {
       id,
-      issueId,
+      taskId,
       authorId: state.activeMemberId,
       body: text,
       createdAt: DEMO_TODAY,
@@ -565,14 +557,14 @@ export const demoRepository = {
     persist({
       ...state,
       comments: [...state.comments, comment],
-      issues: state.issues.map((item) =>
-        item.id === issueId
+      tasks: state.tasks.map((item) =>
+        item.id === taskId
           ? { ...item, commentIds: [...item.commentIds, id], updatedAt: DEMO_TODAY }
           : item,
       ),
       counters: { ...state.counters, comment: state.counters.comment + 1 },
     });
-    return issue;
+    return task;
   },
 
   createSprint(input: {
@@ -667,18 +659,18 @@ export const demoRepository = {
       );
       if (!destination) throw new Error("Choose a destination sprint in the same project.");
     }
-    const issues = state.issues.map((issue) =>
-      issue.sprintId === sprintId && issue.status !== "Done"
+    const tasks = state.tasks.map((task) =>
+      task.sprintId === sprintId && task.status !== "Done"
         ? {
-            ...issue,
+            ...task,
             sprintId: destinationSprintId,
-            status: destinationSprintId ? issue.status : ("Backlog" as const),
+            status: destinationSprintId ? task.status : ("Backlog" as const),
           }
-        : issue,
+        : task,
     );
     persist({
       ...state,
-      issues,
+      tasks,
       sprints: state.sprints.map((item) =>
         item.id === sprintId ? { ...item, status: "Closed", completedAt: DEMO_TODAY } : item,
       ),
@@ -909,22 +901,43 @@ export const demoRepository = {
 
 function addSubtaskTo(
   current: DemoState,
-  issueId: EntityId,
+  taskId: EntityId,
   title: string,
   assigneeId: EntityId | null,
 ): DemoState {
-  const issue = current.issues.find((item) => item.id === issueId);
-  if (!issue) throw new Error("Issue not found.");
+  const parent = current.tasks.find((item) => item.id === taskId);
+  if (!parent) throw new Error("Task not found.");
+  if (parent.parentTaskId) throw new Error("Subtasks cannot have their own subtasks.");
   const text = title.trim();
   if (!text) throw new Error("Subtask title cannot be empty.");
-  const id = nextId("subtask", current.counters.subtask);
+  if (text.length < 3) throw new Error("Subtask title must have at least three characters.");
+  const id = nextId("TEM-", current.counters.task);
+  const subtask: Task = {
+    id,
+    key: id,
+    parentTaskId: parent.id,
+    workspaceId: parent.workspaceId,
+    projectId: parent.projectId,
+    title: text,
+    description: "",
+    status: "To Do",
+    priority: "Medium",
+    assigneeId,
+    reporterId: parent.reporterId,
+    dueDate: null,
+    storyPoints: 0,
+    sprintId: parent.sprintId,
+    labels: [],
+    commentIds: [],
+    blockedByIds: [],
+    blocksIds: [],
+    createdAt: DEMO_TODAY,
+    updatedAt: DEMO_TODAY,
+  };
   return {
     ...current,
-    subtasks: [...current.subtasks, { id, issueId, title: text, completed: false, assigneeId }],
-    issues: current.issues.map((item) =>
-      item.id === issueId ? { ...item, subtaskIds: [...item.subtaskIds, id] } : item,
-    ),
-    counters: { ...current.counters, subtask: current.counters.subtask + 1 },
+    tasks: [...current.tasks, subtask],
+    counters: { ...current.counters, task: current.counters.task + 1 },
   };
 }
 
@@ -936,13 +949,13 @@ function findProject(projectId: EntityId) {
   return project;
 }
 
-function findIssue(issueId: EntityId) {
-  const issue = state.issues.find(
+function findTask(taskId: EntityId) {
+  const task = state.tasks.find(
     (item) =>
-      (item.id === issueId || item.key === issueId) && item.workspaceId === state.activeWorkspaceId,
+      (item.id === taskId || item.key === taskId) && item.workspaceId === state.activeWorkspaceId,
   );
-  if (!issue) throw new Error("Issue not found in the active workspace.");
-  return issue;
+  if (!task) throw new Error("Task not found in the active workspace.");
+  return task;
 }
 
 function findSprint(sprintId: EntityId) {
@@ -976,7 +989,7 @@ function defaultSettings(): WorkspaceSettings {
     methodology: "Agile Scrum",
     sprintLengthDays: 14,
     statuses: ["Backlog", "To Do", "In Progress", "In Review", "Done"],
-    issueFields: ["Story points", "Labels", "Due date"],
+    taskFields: ["Story points", "Labels", "Due date"],
     automationRules: [],
     security: {
       mfaRequired: true,
@@ -990,17 +1003,141 @@ function isDemoState(value: unknown): value is DemoState {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<DemoState>;
   return (
-    candidate.version === 1 &&
+    candidate.version === 2 &&
     typeof candidate.activeWorkspaceId === "string" &&
     Array.isArray(candidate.workspaces) &&
     Array.isArray(candidate.projects) &&
-    Array.isArray(candidate.issues) &&
+    Array.isArray(candidate.tasks) &&
     Array.isArray(candidate.members) &&
     Array.isArray(candidate.sprints) &&
-    Array.isArray(candidate.subtasks) &&
     Array.isArray(candidate.comments) &&
     Array.isArray(candidate.notifications) &&
     !!candidate.settingsByWorkspace &&
     !!candidate.counters
   );
+}
+
+interface LegacySubtask {
+  id: EntityId;
+  issueId: EntityId;
+  title: string;
+  completed: boolean;
+  assigneeId: EntityId | null;
+}
+
+function migrateDemoState(value: unknown): DemoState | null {
+  if (isDemoState(value)) return value;
+  if (!value || typeof value !== "object") return null;
+  const legacy = value as {
+    version?: unknown;
+    activeWorkspaceId?: unknown;
+    issues?: unknown;
+    subtasks?: unknown;
+    comments?: unknown;
+    notifications?: unknown;
+    settingsByWorkspace?: unknown;
+    counters?: unknown;
+    [key: string]: unknown;
+  };
+  if (
+    legacy.version !== 1 ||
+    !Array.isArray(legacy.issues) ||
+    !Array.isArray(legacy.subtasks) ||
+    !Array.isArray(legacy.comments) ||
+    !Array.isArray(legacy.notifications) ||
+    !Array.isArray(legacy.workspaces) ||
+    !Array.isArray(legacy.members) ||
+    !Array.isArray(legacy.projects) ||
+    !Array.isArray(legacy.sprints) ||
+    typeof legacy.activeWorkspaceId !== "string" ||
+    typeof legacy.activeMemberId !== "string" ||
+    !legacy.settingsByWorkspace ||
+    !legacy.counters
+  )
+    return null;
+
+  const oldTasks = legacy.issues as Array<Omit<Task, "parentTaskId"> & { subtaskIds?: EntityId[] }>;
+  const oldSubtasks = legacy.subtasks as LegacySubtask[];
+  const parentTasks = oldTasks.map(({ subtaskIds: _subtaskIds, ...task }) => ({
+    ...task,
+    parentTaskId: null,
+  }));
+  const childIndexes = new Map<EntityId, number>();
+  const childTasks = oldSubtasks.flatMap((subtask) => {
+    const parent = parentTasks.find((item) => item.id === subtask.issueId);
+    if (!parent) return [];
+    const index = (childIndexes.get(parent.id) ?? 0) + 1;
+    childIndexes.set(parent.id, index);
+    return [
+      {
+        id: subtask.id,
+        key: `${parent.key}-S${index}`,
+        parentTaskId: parent.id,
+        workspaceId: parent.workspaceId,
+        projectId: parent.projectId,
+        title: subtask.title,
+        description: "",
+        status: subtask.completed ? ("Done" as const) : ("To Do" as const),
+        priority: "Medium" as const,
+        assigneeId: subtask.assigneeId,
+        reporterId: parent.reporterId,
+        dueDate: null,
+        storyPoints: 0,
+        sprintId: parent.sprintId,
+        labels: [],
+        commentIds: [],
+        blockedByIds: [],
+        blocksIds: [],
+        createdAt: parent.createdAt,
+        updatedAt: parent.updatedAt,
+      },
+    ];
+  });
+  const oldSettings = legacy.settingsByWorkspace as Record<
+    EntityId,
+    WorkspaceSettings & { issueFields?: string[] }
+  >;
+  const settingsByWorkspace = Object.fromEntries(
+    Object.entries(oldSettings).map(([workspaceId, settings]) => {
+      const { issueFields, ...currentSettings } = settings;
+      return [
+        workspaceId,
+        { ...currentSettings, taskFields: settings.taskFields ?? issueFields ?? [] },
+      ];
+    }),
+  );
+  const oldCounters = legacy.counters as DemoState["counters"] & {
+    issue?: number;
+    subtask?: number;
+  };
+  const comments = (legacy.comments as Array<Omit<DemoState["comments"][number], "taskId"> & { issueId: EntityId }>).map(
+    ({ issueId, ...comment }) => ({ ...comment, taskId: issueId }),
+  );
+  const notifications = (
+    legacy.notifications as Array<
+      Omit<DemoState["notifications"][number], "taskId"> & { issueId: EntityId | null }
+    >
+  ).map(({ issueId, ...notification }) => ({ ...notification, taskId: issueId }));
+
+  const oldState = legacy as Partial<DemoState>;
+  return {
+    version: 2,
+    activeWorkspaceId: legacy.activeWorkspaceId,
+    activeMemberId: oldState.activeMemberId as string,
+    workspaces: oldState.workspaces as DemoState["workspaces"],
+    members: oldState.members as DemoState["members"],
+    projects: oldState.projects as DemoState["projects"],
+    tasks: [...parentTasks, ...childTasks],
+    sprints: oldState.sprints as DemoState["sprints"],
+    comments,
+    notifications,
+    settingsByWorkspace,
+    counters: {
+      task: (oldCounters.issue ?? 0) + oldSubtasks.length,
+      project: oldCounters.project ?? 0,
+      workspace: oldCounters.workspace ?? 0,
+      sprint: oldCounters.sprint ?? 0,
+      comment: oldCounters.comment ?? 0,
+    },
+  };
 }

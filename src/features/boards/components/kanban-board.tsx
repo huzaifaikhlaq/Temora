@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { PriorityPill } from "@/components/shared/dashboard-ui";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
-import type { Issue, WorkStatus } from "@/features/workspace/data/model";
+import type { Task, WorkStatus } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 const defaultColumns: WorkStatus[] = ["Backlog", "To Do", "In Progress", "In Review", "Done"];
@@ -33,27 +33,27 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     (item) => item.id === projectId && item.workspaceId === state.activeWorkspaceId,
   );
   const members = state.members.filter((member) => member.workspaceId === state.activeWorkspaceId);
-  const issues = useMemo(
+  const tasks = useMemo(
     () =>
-      state.issues.filter(
-        (issue) => issue.projectId === projectId && issue.workspaceId === state.activeWorkspaceId,
+      state.tasks.filter(
+        (task) => task.projectId === projectId && task.workspaceId === state.activeWorkspaceId,
       ),
-    [state.issues, projectId, state.activeWorkspaceId],
+    [state.tasks, projectId, state.activeWorkspaceId],
   );
 
-  function moveIssue(destination: WorkStatus, event: DragEvent<HTMLElement>) {
+  function moveTask(destination: WorkStatus, event: DragEvent<HTMLElement>) {
     event.preventDefault();
     if (!dragId) return;
-    const issue = issues.find((item) => item.id === dragId);
-    if (issue && issue.status !== destination)
-      demoRepository.updateIssue(issue.id, { status: destination });
+    const task = tasks.find((item) => item.id === dragId);
+    if (task && task.status !== destination)
+      demoRepository.updateTask(task.id, { status: destination });
     setDragId(null);
   }
 
-  function addIssue(event?: FormEvent) {
+  function addTask(event?: FormEvent) {
     event?.preventDefault();
     try {
-      demoRepository.createIssue({
+      demoRepository.createTask({
         projectId,
         title,
         status: composer ?? "In Progress",
@@ -67,7 +67,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
       setComposer(null);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the issue.");
+      setError(cause instanceof Error ? cause.message : "Could not create the task.");
     }
   }
 
@@ -138,7 +138,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                 className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
               >
                 <Icon name="add" size={17} />
-                Add Issue
+                Add Task
               </button>
             </div>
           </div>
@@ -167,11 +167,11 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
             </nav>
             <div className="flex flex-wrap items-center gap-2">
               <label className="relative">
-                <span className="sr-only">Search issues</span>
+                <span className="sr-only">Search tasks</span>
                 <Icon name="search" size={15} className="absolute left-2 top-2 text-outline" />
                 <input
                   className="h-8 w-40 rounded-lg border border-border pl-7 pr-2 text-xs"
-                  placeholder="Search issues"
+                  placeholder="Search tasks"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
@@ -204,11 +204,11 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
       <div className="mx-auto w-full max-w-[1600px] flex-1 overflow-x-auto p-4 sm:p-6">
         <div className="flex min-h-[500px] min-w-[1500px] gap-3">
           {columns.map((columnName) => {
-            const cards = issues.filter(
-              (issue) =>
-                issue.status === columnName &&
-                (priority === "All" || issue.priority === priority) &&
-                `${issue.key} ${issue.title} ${issue.labels.join(" ")}`
+            const cards = tasks.filter(
+              (task) =>
+                task.status === columnName &&
+                (priority === "All" || task.priority === priority) &&
+                `${task.key} ${task.title} ${task.labels.join(" ")}`
                   .toLowerCase()
                   .includes(query.toLowerCase()),
             );
@@ -217,7 +217,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
               <section
                 key={columnName}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => moveIssue(columnName, event)}
+                onDrop={(event) => moveTask(columnName, event)}
                 className={`flex w-[292px] shrink-0 flex-col rounded-xl ${columnName === "In Progress" ? "bg-accent/5 ring-1 ring-accent/20" : "bg-surface-container/70"}`}
               >
                 <header className="flex items-center justify-between px-3 py-3">
@@ -229,7 +229,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                     </span>
                   </div>
                   <button
-                    aria-label={`Add issue to ${columnName}`}
+                    aria-label={`Add task to ${columnName}`}
                     onClick={() => {
                       setComposer(columnName);
                       setError("");
@@ -242,7 +242,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                 <div className="flex-1 space-y-2 px-2 pb-2">
                   {composerOpen && (
                     <form
-                      onSubmit={addIssue}
+                      onSubmit={addTask}
                       className="rounded-lg border border-accent/50 bg-white p-3 shadow-sm"
                     >
                       <textarea
@@ -269,34 +269,34 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                           type="submit"
                           className="rounded bg-accent px-2 py-1 text-xs font-semibold text-white"
                         >
-                          Add issue
+                          Add task
                         </button>
                       </div>
                     </form>
                   )}
-                  {cards.map((issue) => (
-                    <IssueCard
-                      key={issue.id}
-                      issue={issue}
+                  {cards.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
                       members={members}
                       columns={columns}
-                      onDragStart={() => setDragId(issue.id)}
+                      onDragStart={() => setDragId(task.id)}
                       onDragEnd={() => setDragId(null)}
                       onError={setError}
-                      dragging={dragId === issue.id}
+                      dragging={dragId === task.id}
                     />
                   ))}
                   {!cards.length && !composerOpen && (
                     <p className="rounded-lg border border-dashed border-border/80 p-4 text-center text-xs text-muted">
-                      No issues in this column
+                      No tasks in this column
                     </p>
                   )}
                 </div>
                 {columnName === "Done" && (
                   <footer className="border-t border-border/40 px-3 py-3 font-mono text-[10px] text-muted">
-                    {issues
-                      .filter((issue) => issue.status === "Done")
-                      .reduce((sum, issue) => sum + issue.storyPoints, 0)}{" "}
+                    {tasks
+                      .filter((task) => task.status === "Done")
+                      .reduce((sum, task) => sum + task.storyPoints, 0)}{" "}
                     story points complete
                   </footer>
                 )}
@@ -309,8 +309,8 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
   );
 }
 
-function IssueCard({
-  issue,
+function TaskCard({
+  task,
   members,
   columns,
   onDragStart,
@@ -318,7 +318,7 @@ function IssueCard({
   onError,
   dragging,
 }: {
-  issue: Issue;
+  task: Task;
   members: ReturnType<typeof useDemoState>["members"];
   columns: WorkStatus[];
   onDragStart: () => void;
@@ -326,15 +326,15 @@ function IssueCard({
   onError: (value: string) => void;
   dragging: boolean;
 }) {
-  const assignee = members.find((member) => member.id === issue.assigneeId);
-  function removeIssue() {
-    if (!window.confirm(`Delete ${issue.key}? This will also remove its subtasks and comments.`))
+  const assignee = members.find((member) => member.id === task.assigneeId);
+  function removeTask() {
+    if (!window.confirm(`Delete ${task.key}? This will also remove its subtasks and comments.`))
       return;
     try {
-      demoRepository.deleteIssue(issue.id);
+      demoRepository.deleteTask(task.id);
       onError("");
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "Could not delete the issue.");
+      onError(cause instanceof Error ? cause.message : "Could not delete the task.");
     }
   }
   return (
@@ -346,38 +346,38 @@ function IssueCard({
     >
       <div className="mb-2 flex items-center justify-between">
         <Link
-          href={`/issues/${issue.key}`}
+          href={`/tasks/${task.key}`}
           className="font-mono text-[10px] font-semibold text-accent hover:underline"
         >
-          {issue.key}
+          {task.key}
         </Link>
         <details className="relative">
           <summary
-            aria-label={`More actions for ${issue.key}`}
+            aria-label={`More actions for ${task.key}`}
             className="grid size-6 cursor-pointer list-none place-items-center rounded text-muted hover:bg-surface-low"
           >
             <Icon name="more_horiz" size={15} />
           </summary>
           <button
             className="absolute right-0 z-10 w-28 rounded border border-border bg-white px-3 py-2 text-left text-xs text-red-700 shadow"
-            onClick={removeIssue}
+            onClick={removeTask}
           >
-            Delete issue
+            Delete task
           </button>
         </details>
       </div>
       <Link
-        href={`/issues/${issue.key}`}
+        href={`/tasks/${task.key}`}
         className="block text-sm font-medium leading-5 text-foreground hover:text-accent"
       >
-        {issue.title}
+        {task.title}
       </Link>
       <div className="mt-3 flex items-center justify-between">
-        <PriorityPill priority={issue.priority} />
+        <PriorityPill priority={task.priority} />
         <span className="flex items-center gap-1 font-mono text-[10px] text-outline">
           <Icon name="calendar_today" size={13} />
-          {issue.dueDate
-            ? new Date(`${issue.dueDate}T12:00:00Z`).toLocaleDateString(undefined, {
+          {task.dueDate
+            ? new Date(`${task.dueDate}T12:00:00Z`).toLocaleDateString(undefined, {
                 month: "short",
                 day: "numeric",
                 timeZone: "UTC",
@@ -386,14 +386,14 @@ function IssueCard({
         </span>
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-surface-low pt-2">
-        <label className="sr-only" htmlFor={`status-${issue.id}`}>
-          Status for {issue.key}
+        <label className="sr-only" htmlFor={`status-${task.id}`}>
+          Status for {task.key}
         </label>
         <select
-          id={`status-${issue.id}`}
-          value={issue.status}
+          id={`status-${task.id}`}
+          value={task.status}
           onChange={(event) =>
-            demoRepository.updateIssue(issue.id, { status: event.target.value as WorkStatus })
+            demoRepository.updateTask(task.id, { status: event.target.value as WorkStatus })
           }
           className="max-w-36 rounded bg-surface-low px-1.5 py-1 text-[10px]"
         >

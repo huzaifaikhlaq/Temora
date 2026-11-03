@@ -19,12 +19,12 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
   const [destination, setDestination] = useState("");
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState("");
-  const issues = sprint ? state.issues.filter((issue) => issue.sprintId === sprint.id) : [];
-  const openIssues = issues.filter((issue) => issue.status !== "Done");
-  const points = issues.reduce((sum, issue) => sum + issue.storyPoints, 0);
-  const completePoints = issues
-    .filter((issue) => issue.status === "Done")
-    .reduce((sum, issue) => sum + issue.storyPoints, 0);
+  const tasks = sprint ? state.tasks.filter((task) => task.sprintId === sprint.id) : [];
+  const openTasks = tasks.filter((task) => task.status !== "Done");
+  const points = tasks.reduce((sum, task) => sum + task.storyPoints, 0);
+  const completePoints = tasks
+    .filter((task) => task.status === "Done")
+    .reduce((sum, task) => sum + task.storyPoints, 0);
   const destinations = state.sprints.filter(
     (item) => item.projectId === sprint?.projectId && item.status === "Planned",
   );
@@ -49,7 +49,7 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
           </h1>
           <p className="mt-2 text-sm text-muted">
             {completed
-              ? "Open issues were moved to your selected destination."
+              ? "Open tasks were moved to your selected destination."
               : "Start a sprint from project planning before completing it."}
           </p>
           <Link
@@ -87,12 +87,12 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {[
             [
-              "Completed issues",
-              `${issues.filter((issue) => issue.status === "Done").length} · ${completePoints} pts`,
+              "Completed tasks",
+              `${tasks.filter((task) => task.status === "Done").length} · ${completePoints} pts`,
             ],
             [
               "Incomplete / open",
-              `${openIssues.length} · ${openIssues.reduce((sum, issue) => sum + issue.storyPoints, 0)} pts`,
+              `${openTasks.length} · ${openTasks.reduce((sum, task) => sum + task.storyPoints, 0)} pts`,
             ],
             [
               "Velocity achievement",
@@ -106,25 +106,25 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
           ))}
         </div>
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <strong>{openIssues.length} issues are incomplete</strong>
+          <strong>{openTasks.length} tasks are incomplete</strong>
           <p className="mt-1">Select a destination for open work before closing this sprint.</p>
         </div>
         <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
-          {openIssues.map((issue) => (
+          {openTasks.map((task) => (
             <div
-              key={issue.id}
+              key={task.id}
               className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3"
             >
-              <span className="font-mono text-xs font-semibold text-accent">{issue.key}</span>
-              <span className="flex-1 text-sm">{issue.title}</span>
+              <span className="font-mono text-xs font-semibold text-accent">{task.key}</span>
+              <span className="flex-1 text-sm">{task.title}</span>
               <span className="text-xs text-muted">
-                {issue.status} · {issue.storyPoints} pts
+                {task.status} · {task.storyPoints} pts
               </span>
             </div>
           ))}
         </div>
         <label className="mt-4 block text-sm font-medium">
-          Move incomplete issues to
+          Move incomplete tasks to
           <select
             className={select}
             value={destination}

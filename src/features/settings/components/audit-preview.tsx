@@ -12,7 +12,7 @@ type AuditEvent = {
   actor: string;
   event: string;
   resource: string;
-  category: "Issue snapshot" | "Comment";
+  category: "Task snapshot" | "Comment";
 };
 
 function downloadCsv(events: AuditEvent[]) {
@@ -38,20 +38,20 @@ export function AuditPreview() {
   const [rangeDays, setRangeDays] = useState("30");
   const members = state.members.filter((member) => member.workspaceId === state.activeWorkspaceId);
   const events = useMemo(() => {
-    const issueEvents: AuditEvent[] = state.issues
-      .filter((issue) => issue.workspaceId === state.activeWorkspaceId)
-      .map((issue) => ({
-        id: `issue-${issue.id}`,
-        date: issue.updatedAt,
+    const taskEvents: AuditEvent[] = state.tasks
+      .filter((task) => task.workspaceId === state.activeWorkspaceId)
+      .map((task) => ({
+        id: `task-${task.id}`,
+        date: task.updatedAt,
         actor: "Actor not recorded",
-        event: `Latest issue snapshot · ${issue.status}`,
-        resource: `${issue.key} · ${issue.title}`,
-        category: "Issue snapshot",
+        event: `Latest task snapshot · ${task.status}`,
+        resource: `${task.key} · ${task.title}`,
+        category: "Task snapshot",
       }));
     const commentEvents: AuditEvent[] = state.comments
       .filter((comment) =>
-        state.issues.some(
-          (issue) => issue.id === comment.issueId && issue.workspaceId === state.activeWorkspaceId,
+        state.tasks.some(
+          (task) => task.id === comment.taskId && task.workspaceId === state.activeWorkspaceId,
         ),
       )
       .map((comment) => ({
@@ -59,11 +59,11 @@ export function AuditPreview() {
         date: comment.createdAt,
         actor: members.find((member) => member.id === comment.authorId)?.name ?? "Workspace member",
         event: "Comment added",
-        resource: state.issues.find((issue) => issue.id === comment.issueId)?.key ?? "Issue",
+        resource: state.tasks.find((task) => task.id === comment.taskId)?.key ?? "Task",
         category: "Comment",
       }));
-    return [...issueEvents, ...commentEvents].sort((a, b) => b.date.localeCompare(a.date));
-  }, [state.issues, state.comments, state.activeWorkspaceId, members]);
+    return [...taskEvents, ...commentEvents].sort((a, b) => b.date.localeCompare(a.date));
+  }, [state.tasks, state.comments, state.activeWorkspaceId, members]);
   const filteredEvents = useMemo(() => {
     const minDate = new Date();
     minDate.setDate(minDate.getDate() - Number(rangeDays));
@@ -127,15 +127,15 @@ export function AuditPreview() {
       </header>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-        The activity below is assembled from issue and comment records. It is not a security audit
-        log and does not prove who changed an issue.
+        The activity below is assembled from task and comment records. It is not a security audit
+        log and does not prove who changed an task.
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Visible activity records"
           value={String(filteredEvents.length)}
-          note="From issue snapshots and comments"
+          note="From task snapshots and comments"
           icon="history"
         />
         <MetricCard
@@ -171,7 +171,7 @@ export function AuditPreview() {
             <input
               id="audit-search"
               className="h-9 min-w-52 rounded-lg border border-border bg-white px-3 text-sm"
-              placeholder="Search actor, event, issue…"
+              placeholder="Search actor, event, task…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -185,7 +185,7 @@ export function AuditPreview() {
               className="h-9 rounded-lg border border-border bg-white px-3 text-sm"
             >
               <option>All activity</option>
-              <option>Issue snapshot</option>
+              <option>Task snapshot</option>
               <option>Comment</option>
             </select>
             <label className="sr-only" htmlFor="audit-range">

@@ -11,7 +11,7 @@ type AutomationTab = "Rules" | "Custom Fields" | "Templates" | "Execution Histor
 const templates = [
   "Assign a bug to its project lead",
   "Add a sprint-start notification",
-  "Flag issues with a past due date",
+  "Flag tasks with a past due date",
 ];
 
 export function AutomationRulesPage() {
@@ -25,7 +25,7 @@ export function AutomationRulesPage() {
   const [notice, setNotice] = useState("");
   const settings = state.settingsByWorkspace[state.activeWorkspaceId];
   const rules = settings?.automationRules ?? [];
-  const fields = settings?.issueFields ?? [];
+  const fields = settings?.taskFields ?? [];
 
   function saveRule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,7 +88,7 @@ export function AutomationRulesPage() {
       setError("That custom field already exists.");
       return;
     }
-    demoRepository.updateSettings({ issueFields: [...fields, name] });
+    demoRepository.updateSettings({ taskFields: [...fields, name] });
     setFieldName("");
     setCreatingField(false);
     setError("");
@@ -96,7 +96,7 @@ export function AutomationRulesPage() {
   }
 
   function removeField(name: string) {
-    demoRepository.updateSettings({ issueFields: fields.filter((field) => field !== name) });
+    demoRepository.updateSettings({ taskFields: fields.filter((field) => field !== name) });
     setNotice("Custom field removed from this browser’s demo settings.");
   }
 
@@ -112,7 +112,7 @@ export function AutomationRulesPage() {
             Custom fields &amp; automation
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Manage browser-local issue fields and rule definitions. Rules do not execute or connect
+            Manage browser-local task fields and rule definitions. Rules do not execute or connect
             to external services.
           </p>
         </div>
@@ -154,7 +154,7 @@ export function AutomationRulesPage() {
           icon="pause_circle"
         />
         <MetricCard
-          label="Custom issue fields"
+          label="Custom task fields"
           value={String(fields.length)}
           note="Shared workspace settings"
           icon="data_object"
@@ -243,7 +243,7 @@ export function AutomationRulesPage() {
         <Panel>
           <h2 className="font-semibold">Custom fields registry</h2>
           <p className="mt-1 text-xs text-muted">
-            These names are stored in workspace settings; issue forms do not yet render custom field
+            These names are stored in workspace settings; task forms do not yet render custom field
             values.
           </p>
           <ul className="mt-4 divide-y divide-border">
@@ -261,7 +261,7 @@ export function AutomationRulesPage() {
             ))}
           </ul>
           {fields.length === 0 && (
-            <p className="mt-3 text-sm text-muted">No custom issue fields are configured.</p>
+            <p className="mt-3 text-sm text-muted">No custom task fields are configured.</p>
           )}
         </Panel>
       )}
@@ -334,7 +334,7 @@ export function AutomationRulesPage() {
                 value={ruleName}
                 onChange={(event) => setRuleName(event.target.value)}
                 className="mt-1 h-10 w-full rounded-lg border border-border px-3 text-sm"
-                placeholder="e.g. Assign urgent issues"
+                placeholder="e.g. Assign urgent tasks"
               />
             </label>
             <div className="flex justify-end gap-2">
@@ -376,7 +376,7 @@ export function AutomationRulesPage() {
               />
             </label>
             <p className="text-xs text-muted">
-              The demo stores the field name. Field types and issue-level values are not modeled
+              The demo stores the field name. Field types and task-level values are not modeled
               yet.
             </p>
             <div className="flex justify-end gap-2">

@@ -51,11 +51,11 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
   const rows = projects.map((project, index) => ({
     project,
     index,
-    issues: state.issues.filter(
-      (issue) => issue.projectId === project.id && issue.workspaceId === state.activeWorkspaceId,
+    tasks: state.tasks.filter(
+      (task) => task.projectId === project.id && task.workspaceId === state.activeWorkspaceId,
     ),
   }));
-  const dueIssues = rows.flatMap((row) => row.issues.filter((issue) => issue.dueDate));
+  const dueTasks = rows.flatMap((row) => row.tasks.filter((task) => task.dueDate));
 
   function positionFor(dateValue: string | null) {
     if (!dateValue) return null;
@@ -70,16 +70,16 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
 
   function exportRoadmap() {
     const records = [
-      ["Project", "Key", "Status", "Progress", "Issue", "Due date"],
-      ...rows.flatMap(({ project, issues }) =>
-        issues.length
-          ? issues.map((issue) => [
+      ["Project", "Key", "Status", "Progress", "Task", "Due date"],
+      ...rows.flatMap(({ project, tasks }) =>
+        tasks.length
+          ? tasks.map((task) => [
               project.name,
               project.key,
               project.status,
               String(project.progress),
-              issue.key,
-              issue.dueDate ?? "",
+              task.key,
+              task.dueDate ?? "",
             ])
           : [
               [
@@ -142,7 +142,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
               {activeProject ? `${activeProject.name} roadmap` : "Workspace roadmap"}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Project progress and issue due dates from this workspace’s demo data.
+              Project progress and task due dates from this workspace’s demo data.
             </p>
           </div>
           <div className="flex gap-2">
@@ -253,18 +253,18 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
           </button>
         </div>
         <span className="text-xs text-muted">
-          {rows.length} projects · {dueIssues.length} dated issues
+          {rows.length} projects · {dueTasks.length} dated tasks
         </span>
       </div>
       <div className="flex min-h-0 flex-1 overflow-hidden" id="roadmap">
         <aside className="hidden w-[340px] shrink-0 flex-col border-r border-border/50 bg-white md:flex">
           <div className="grid h-[62px] grid-cols-[1fr_62px_72px] items-center border-b border-border/50 bg-surface-low px-4 text-[10px] font-semibold uppercase tracking-wider text-outline">
-            <span>Projects &amp; Issues</span>
+            <span>Projects &amp; Tasks</span>
             <span>Progress</span>
             <span>Status</span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {rows.map(({ project, index, issues }) => (
+            {rows.map(({ project, index, tasks }) => (
               <section key={project.id} className="border-b border-surface-low">
                 <div className="grid min-h-[76px] grid-cols-[1fr_62px_72px] items-center gap-1 px-3">
                   <button
@@ -302,16 +302,16 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
                   </span>
                 </div>
                 {!collapsed.includes(project.id) &&
-                  issues.map((issue) => (
+                  tasks.map((task) => (
                     <Link
-                      key={issue.id}
-                      href={`/issues/${issue.key}`}
+                      key={task.id}
+                      href={`/tasks/${task.key}`}
                       className="flex items-center gap-2 border-t border-surface-low bg-surface-low/30 px-7 py-2 text-[10px] text-muted hover:text-accent"
                     >
                       <Icon name="subdirectory_arrow_right" size={13} />
-                      <span className="font-mono text-accent">{issue.key}</span>
-                      <span className="min-w-0 flex-1 truncate">{issue.title}</span>
-                      <span className="font-mono">{issue.dueDate ?? "No due date"}</span>
+                      <span className="font-mono text-accent">{task.key}</span>
+                      <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                      <span className="font-mono">{task.dueDate ?? "No due date"}</span>
                     </Link>
                   ))}
               </section>
@@ -350,7 +350,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
             <div
               className="pointer-events-none absolute inset-x-0 top-8 z-0 grid divide-x divide-surface-container"
               style={{
-                height: `${rows.reduce((sum, row) => sum + 76 + row.issues.length * 32, 0)}px`,
+                height: `${rows.reduce((sum, row) => sum + 76 + row.tasks.length * 32, 0)}px`,
                 gridTemplateColumns: `repeat(${months.length}, minmax(0, 1fr))`,
               }}
             >
@@ -366,7 +366,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
               ))}
             </div>
             <div className="relative z-10">
-              {rows.map(({ project, index, issues }) => {
+              {rows.map(({ project, index, tasks }) => {
                 const duePosition = positionFor(project.dueDate);
                 const todayPosition = positionFor(now.toISOString().slice(0, 10));
                 return (
@@ -400,24 +400,24 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
                       )}
                     </div>
                     {!collapsed.includes(project.id) &&
-                      issues.map((issue) => {
-                        const issuePosition = positionFor(issue.dueDate);
+                      tasks.map((task) => {
+                        const taskPosition = positionFor(task.dueDate);
                         return (
                           <div
-                            key={issue.id}
+                            key={task.id}
                             className="relative h-8 border-t border-surface-low/70 bg-surface-low/20"
                           >
-                            {issuePosition !== null && (
+                            {taskPosition !== null && (
                               <Link
-                                href={`/issues/${issue.key}`}
+                                href={`/tasks/${task.key}`}
                                 className="absolute top-1 flex h-6 items-center gap-2 overflow-hidden rounded bg-indigo-100 px-2 font-mono text-[9px] text-indigo-950"
                                 style={{
-                                  left: Math.min(issuePosition, totalWidth - 180),
+                                  left: Math.min(taskPosition, totalWidth - 180),
                                   width: 180,
                                 }}
                               >
-                                <span className="font-semibold">{issue.key}</span>
-                                <span className="truncate">{issue.title}</span>
+                                <span className="font-semibold">{task.key}</span>
+                                <span className="truncate">{task.title}</span>
                               </Link>
                             )}
                           </div>
@@ -442,11 +442,11 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-white px-4 py-3 text-xs sm:px-6">
         <span className="font-mono text-outline">
-          Projects: <strong className="text-foreground">{rows.length}</strong> · Issues with due
-          dates: <strong className="text-foreground">{dueIssues.length}</strong>
+          Projects: <strong className="text-foreground">{rows.length}</strong> · Tasks with due
+          dates: <strong className="text-foreground">{dueTasks.length}</strong>
         </span>
         <span className="text-muted">
-          Timeline uses project and issue due dates in this workspace.
+          Timeline uses project and task due dates in this workspace.
         </span>
       </footer>
     </div>

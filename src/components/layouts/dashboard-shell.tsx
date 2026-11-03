@@ -25,8 +25,8 @@ const groups: {
       { label: "Overview", href: "/", icon: "grid_view" },
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
       { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
-      { label: "All Issues", href: "/issues", icon: "checklist" },
-      { label: "Create Issue", href: "/issues/new", icon: "add" },
+      { label: "All Tasks", href: "/tasks", icon: "checklist" },
+      { label: "Create Task", href: "/tasks/new", icon: "add" },
     ],
   },
   {
@@ -57,7 +57,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const workspaceProjects = state.projects.filter(
     (item) => item.workspaceId === state.activeWorkspaceId && !item.archivedAt,
   );
-  const workspaceIssues = state.issues.filter(
+  const workspaceTasks = state.tasks.filter(
     (item) => item.workspaceId === state.activeWorkspaceId,
   );
   const workspaceProjectIds = new Set(workspaceProjects.map((item) => item.id));
@@ -78,7 +78,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const unreadCount = state.notifications.filter(
     (item) => item.workspaceId === state.activeWorkspaceId && !item.readAt,
   ).length;
-  const taskCount = state.issues.filter(
+  const taskCount = state.tasks.filter(
     (item) =>
       item.workspaceId === state.activeWorkspaceId &&
       item.assigneeId === state.activeMemberId &&
@@ -116,14 +116,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           icon: "view_kanban",
         },
         {
-          label: "Issue Dependencies",
-          href: workspaceIssues.find((issue) => issue.key === "TEM-101")
-            ? "/issues/TEM-101/dependencies"
-            : workspaceIssues[0]
-              ? `/issues/${workspaceIssues[0].key}/dependencies`
-              : "/issues",
+          label: "Task Dependencies",
+          href: workspaceTasks.find((task) => task.key === "TEM-101")
+            ? "/tasks/TEM-101/dependencies"
+            : workspaceTasks[0]
+              ? `/tasks/${workspaceTasks[0].key}/dependencies`
+              : "/tasks",
           icon: "account_tree",
-          disabled: workspaceIssues.length === 0,
+          disabled: workspaceTasks.length === 0,
         },
         {
           label: "Sprints & Backlog",
@@ -168,10 +168,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       ? "Overview"
       : pathname.startsWith("/my-tasks")
         ? "My Tasks"
-        : pathname === "/issues"
-          ? "All Issues"
-          : pathname === "/issues/new"
-            ? "Create Issue"
+        : pathname === "/tasks"
+          ? "All Tasks"
+          : pathname === "/tasks/new"
+            ? "Create Task"
             : pathname.endsWith("/dependencies")
               ? "Dependencies & Audit Trail"
               : pathname.startsWith("/sprints/") && pathname.endsWith("/complete")
@@ -192,7 +192,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                               ? "Sprint Planning"
                               : pathname.includes("/board")
                                 ? (currentProject?.name ?? "Project Board")
-                                : pathname.startsWith("/issues/")
+                                : pathname.startsWith("/tasks/")
                                   ? pathname.split("/").at(-1)
                                   : pathname === "/projects"
                                     ? "Projects Directory"
@@ -413,11 +413,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </label>
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href="/issues/new"
+              href="/tasks/new"
               className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong"
             >
               <Icon name="add" size={18} />
-              <span className="hidden sm:inline">Create Issue</span>
+              <span className="hidden sm:inline">Create Task</span>
             </Link>
             <Link
               href="/inbox"
@@ -464,17 +464,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           >
             <div className="flex items-center justify-between">
               <h2 id="create-title" className="text-lg font-semibold">
-                Create an issue
+                Create an task
               </h2>
               <button aria-label="Close" onClick={() => setCreateOpen(false)}>
                 <Icon name="close" />
               </button>
             </div>
             <p className="mt-1 text-sm text-muted">
-              Issues are saved in this browser’s demo data only.
+              Tasks are saved in this browser’s demo data only.
             </p>
             <label className="mt-4 block text-sm font-medium">
-              Issue title
+              Task title
               <input
                 autoFocus
                 value={quickTitle}
@@ -493,14 +493,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             )}
             <div className="mt-4 flex justify-end gap-2">
               <Link
-                href="/issues/new"
+                href="/tasks/new"
                 onClick={() => {
                   setCreateOpen(false);
                   setQuickError("");
                 }}
                 className="mr-auto self-center text-xs font-medium text-accent hover:underline"
               >
-                Open full issue form
+                Open full task form
               </Link>
               <button
                 onClick={() => {
@@ -515,31 +515,31 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 onClick={() => {
                   const project = workspaceProjects[0];
                   if (!quickTitle.trim()) {
-                    setQuickError("Enter an issue title.");
+                    setQuickError("Enter an task title.");
                     return;
                   }
                   if (!project) {
-                    setQuickError("Create a project before adding an issue.");
+                    setQuickError("Create a project before adding an task.");
                     return;
                   }
                   try {
-                    const issue = demoRepository.createIssue({
+                    const task = demoRepository.createTask({
                       projectId: project.id,
                       title: quickTitle.trim(),
                     });
                     setQuickTitle("");
                     setQuickError("");
                     setCreateOpen(false);
-                    router.push(`/issues/${issue.key}`);
+                    router.push(`/tasks/${task.key}`);
                   } catch (error) {
                     setQuickError(
-                      error instanceof Error ? error.message : "Could not create the issue.",
+                      error instanceof Error ? error.message : "Could not create the task.",
                     );
                   }
                 }}
                 className="h-9 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
               >
-                Create issue
+                Create task
               </button>
             </div>
           </section>
