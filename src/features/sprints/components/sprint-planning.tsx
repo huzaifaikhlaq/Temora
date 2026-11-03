@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { Icon } from "@/components/shared/icon";
-import { Panel, PriorityPill, StatusPill } from "@/components/shared/dashboard-ui";
+import { Panel, PriorityPill } from "@/components/shared/dashboard-ui";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import type { Sprint, WorkStatus } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";

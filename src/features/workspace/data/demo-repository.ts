@@ -9,7 +9,9 @@ import type {
   ProjectStatus,
   Sprint,
   Workspace,
+  WorkspaceIndustry,
   WorkspaceSettings,
+  WorkspaceTeamSize,
 } from "@/features/workspace/data/model";
 
 const STORAGE_KEY = "temora-demo-state-v1";
@@ -72,7 +74,13 @@ export const demoRepository = {
     persist({ ...state, activeWorkspaceId: workspaceId });
   },
 
-  createWorkspace(input: { name: string; plan?: Workspace["plan"] }) {
+  createWorkspace(input: {
+    name: string;
+    plan?: Workspace["plan"];
+    teamSize?: WorkspaceTeamSize;
+    industry?: WorkspaceIndustry;
+    methodology?: WorkspaceSettings["methodology"];
+  }) {
     const name = input.name.trim();
     if (name.length < 2) throw new Error("Enter a workspace name with at least two characters.");
     const id = nextId("workspace", state.counters.workspace);
@@ -85,6 +93,8 @@ export const demoRepository = {
       name,
       slug: slugify(name),
       plan: input.plan ?? "Free",
+      ...(input.teamSize ? { teamSize: input.teamSize } : {}),
+      ...(input.industry ? { industry: input.industry } : {}),
       memberIds: [memberId],
       projectIds: [],
       createdAt: DEMO_TODAY,
@@ -93,7 +103,10 @@ export const demoRepository = {
       ...state,
       workspaces: [...state.workspaces, workspace],
       members: [...state.members, member],
-      settingsByWorkspace: { ...state.settingsByWorkspace, [id]: defaultSettings() },
+      settingsByWorkspace: {
+        ...state.settingsByWorkspace,
+        [id]: { ...defaultSettings(), methodology: input.methodology ?? "Agile Scrum" },
+      },
       activeWorkspaceId: id,
       activeMemberId: memberId,
       counters: { ...state.counters, workspace: state.counters.workspace + 1 },

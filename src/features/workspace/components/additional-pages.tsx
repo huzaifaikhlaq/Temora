@@ -99,7 +99,6 @@ function Table({ headings, rows }: { headings: string[]; rows: React.ReactNode[]
 export function AdditionalPage({ kind }: { kind: PageKind }) {
   const demoState = useDemoState();
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState("General");
   const [period, setPeriod] = useState("Month");
   const [reportRange, setReportRange] = useState("30");
   const [notice, setNotice] = useState("");

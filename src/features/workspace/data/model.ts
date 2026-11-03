@@ -4,12 +4,20 @@ export type WorkStatus = "Backlog" | "To Do" | "In Progress" | "In Review" | "Do
 export type Priority = "Urgent" | "High" | "Medium" | "Low";
 export type ProjectStatus = "In Progress" | "Planning" | "In Review" | "Archived";
 export type MemberRole = "Owner" | "Admin" | "Project lead" | "Member" | "Viewer";
+export type WorkspaceTeamSize = "1–10" | "11–50" | "51–200" | "200+";
+export type WorkspaceIndustry =
+  | "Product & Engineering"
+  | "Design Agency & Creative Labs"
+  | "SaaS Enterprise Platform"
+  | "Fintech & Regulated Systems";
 
 export interface Workspace {
   id: EntityId;
   name: string;
   slug: string;
   plan: "Free" | "Pro" | "Team" | "Enterprise";
+  teamSize?: WorkspaceTeamSize;
+  industry?: WorkspaceIndustry;
   memberIds: EntityId[];
   projectIds: EntityId[];
   createdAt: string;
