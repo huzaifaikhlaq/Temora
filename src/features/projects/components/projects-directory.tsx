@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
-import { MetricCard, Panel, PanelTitle } from "@/components/shared/dashboard-ui";
+import { MetricCard, Panel } from "@/components/shared/dashboard-ui";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 

@@ -1,5 +1,5 @@
 import { addDays, createInitialDemoState, DEMO_TODAY } from "@/features/workspace/data/seed";
-import type { CreateIssueInput, DemoState, EntityId, Issue, Project, ProjectStatus, Sprint, Workspace, WorkspaceSettings } from "@/features/workspace/data/model";
+import type { CreateIssueInput, DemoState, EntityId, Issue, Member, Project, ProjectStatus, Sprint, Workspace, WorkspaceSettings } from "@/features/workspace/data/model";
 
 const STORAGE_KEY = "temora-demo-state-v1";
 const initialState = createInitialDemoState();

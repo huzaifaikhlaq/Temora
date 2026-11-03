@@ -3,7 +3,7 @@
 import { useMemo, useState, type DragEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
-import { PriorityPill, StatusPill } from "@/components/shared/dashboard-ui";
+import { PriorityPill } from "@/components/shared/dashboard-ui";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import type { Issue, WorkStatus } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";

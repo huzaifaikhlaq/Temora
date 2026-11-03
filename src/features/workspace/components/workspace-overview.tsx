@@ -1,4 +1,5 @@
 import { Icon } from "@/components/shared/icon";
+import Link from "next/link";
 import {
   MetricCard,
   Panel,
@@ -98,9 +99,9 @@ function PriorityTasks() {
       </div>
       <div className="mt-3 flex justify-between text-xs text-outline">
         <span>Press ⌘+T to add task to personal queue</span>
-        <a href="/my-tasks" className="font-semibold text-accent hover:underline">
+        <Link href="/my-tasks" className="font-semibold text-accent hover:underline">
           View all 14 assigned →
-        </a>
+        </Link>
       </div>
     </Panel>
   );
