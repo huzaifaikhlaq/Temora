@@ -1,10 +1,12 @@
-"use client"
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
+import { demoRepository } from "@/features/workspace/data/demo-repository";
+import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 const groups: {
   label: string;
@@ -24,34 +26,7 @@ const groups: {
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
       { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
       { label: "All Issues", href: "/issues", icon: "checklist" },
-    ],
-  },
-  {
-    label: "Projects",
-    links: [
-      { label: "All Projects", href: "/projects", icon: "folder_open" },
-      {
-        label: "Website Redesign",
-        href: "/projects/website-redesign/board",
-        icon: "circle",
-        dot: "bg-accent",
-      },
-      {
-        label: "Mobile Application",
-        href: "/projects/mobile-application/board",
-        icon: "circle",
-        dot: "bg-green",
-      },
-      {
-        label: "Customer Portal",
-        href: "/projects/customer-portal/board",
-        icon: "circle",
-        dot: "bg-outline",
-      },
-      { label: "Design System", href: "/projects/design-system/board", icon: "circle", dot: "bg-amber-500" },
-      { label: "Customer Mobile App v2", href: "/projects/customer-mobile-app-v2/board", icon: "circle", dot: "bg-sky-500" },
-      { label: "Platform Core", href: "/projects/platform-core/board", icon: "circle", dot: "bg-violet-500" },
-      { label: "Core Engine", href: "/projects/core-engine/board", icon: "circle", dot: "bg-orange-500" },
+      { label: "Create Issue", href: "/issues/new", icon: "add" },
     ],
   },
   {
@@ -83,9 +58,124 @@ const groups: {
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const state = useDemoState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [quickTitle, setQuickTitle] = useState("");
+  const [quickError, setQuickError] = useState("");
+  const activeWorkspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId);
+  const activeMember = state.members.find((item) => item.id === state.activeMemberId);
+  const workspaceProjects = state.projects.filter(
+    (item) => item.workspaceId === state.activeWorkspaceId && !item.archivedAt,
+  );
+  const workspaceIssues = state.issues.filter(
+    (item) => item.workspaceId === state.activeWorkspaceId,
+  );
+  const workspaceProjectIds = new Set(workspaceProjects.map((item) => item.id));
+  const workspaceSprints = state.sprints.filter(
+    (item) =>
+      item.workspaceId === state.activeWorkspaceId && workspaceProjectIds.has(item.projectId),
+  );
+  const planningProject =
+    workspaceProjects.find((project) =>
+      workspaceSprints.some(
+        (sprint) => sprint.projectId === project.id && sprint.status === "Active",
+      ),
+    ) ?? workspaceProjects[0];
+  const activeSprint = workspaceSprints.find((sprint) => sprint.status === "Active");
+  const referenceSprint =
+    activeSprint ??
+    [...workspaceSprints].sort((first, second) => second.endDate.localeCompare(first.endDate))[0];
+  const unreadCount = state.notifications.filter(
+    (item) => item.workspaceId === state.activeWorkspaceId && !item.readAt,
+  ).length;
+  const taskCount = state.issues.filter(
+    (item) =>
+      item.workspaceId === state.activeWorkspaceId &&
+      item.assigneeId === state.activeMemberId &&
+      item.status !== "Done",
+  ).length;
+  const navGroups: typeof groups = [
+    {
+      label: "Workspace",
+      links: groups[0].links.map((link) =>
+        link.href === "/my-tasks"
+          ? { ...link, count: String(taskCount) }
+          : link.href === "/inbox"
+            ? { ...link, count: String(unreadCount) }
+            : link,
+      ),
+    },
+    {
+      label: "Projects",
+      links: [
+        { label: "All Projects", href: "/projects", icon: "folder_open" },
+        ...workspaceProjects.map((project) => ({
+          label: project.name,
+          href: `/projects/${project.id}/board`,
+          icon: "circle",
+          dot: project.color,
+        })),
+      ],
+    },
+    {
+      label: "Planning",
+      links: [
+        {
+          label: "Boards / Kanban",
+          href: planningProject ? `/projects/${planningProject.id}/board` : "/projects",
+          icon: "view_kanban",
+        },
+        {
+          label: "Issue Dependencies",
+          href: workspaceIssues.find((issue) => issue.key === "TEM-101")
+            ? "/issues/TEM-101/dependencies"
+            : workspaceIssues[0]
+              ? `/issues/${workspaceIssues[0].key}/dependencies`
+              : "/issues",
+          icon: "account_tree",
+          disabled: workspaceIssues.length === 0,
+        },
+        {
+          label: "Sprints & Backlog",
+          href: planningProject ? `/projects/${planningProject.id}/sprints` : "/projects",
+          icon: "cycle",
+        },
+        {
+          label: "Complete Sprint",
+          href: activeSprint ? `/sprints/${activeSprint.id}/complete` : "/projects",
+          icon: "task_alt",
+          disabled: !activeSprint,
+        },
+        {
+          label: "Sprint Retrospective",
+          href: referenceSprint ? `/sprints/${referenceSprint.id}/retrospective` : "/projects",
+          icon: "replay",
+          disabled: !referenceSprint,
+        },
+        {
+          label: "Roadmap & Timeline",
+          href: planningProject ? `/projects/${planningProject.id}/roadmap` : "/projects",
+          icon: "timeline",
+        },
+        {
+          label: "Burndown Report",
+          href: referenceSprint ? `/reports/sprints/${referenceSprint.id}` : "/reports",
+          icon: "bar_chart",
+          disabled: !referenceSprint,
+        },
+        { label: "Calendar", href: "/calendar", icon: "calendar_today" },
+      ],
+    },
+    ...groups.filter((group) => group.label === "Management"),
+  ];
+  const currentProject = state.projects.find(
+    (project) =>
+      project.workspaceId === state.activeWorkspaceId &&
+      (pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`)),
+  );
   const pageTitle =
     pathname === "/"
       ? "Overview"
@@ -109,33 +199,33 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                         ? "Custom Fields & Automation"
                         : pathname.includes("/security/audit-logs")
                           ? "Security & Audit Logs"
-        : pathname.includes("/roadmap")
-          ? "Roadmap & Timeline"
-          : pathname.includes("/sprints")
-            ? "Sprint Planning"
-            : pathname.includes("/board")
-              ? "Website Redesign"
-              : pathname.startsWith("/issues/")
-                ? pathname.split("/").at(-1)
-                : pathname === "/projects"
-                  ? "Projects Directory"
-                  : pathname === "/projects/new"
-                    ? "New Project"
-                    : pathname === "/inbox"
-                      ? "Inbox"
-                      : pathname === "/calendar"
-                        ? "Planning Calendar"
-                        : pathname === "/members"
-                          ? "Members & Permissions"
-                          : pathname === "/reports"
-                            ? "Reports & Analytics"
-                            : pathname === "/integrations"
-                              ? "Integrations"
-                              : pathname === "/billing"
-                                ? "Billing & Subscription"
-                                : pathname === "/settings"
-                                  ? "Workspace Settings"
-                                  : "Temora";
+                          : pathname.includes("/roadmap")
+                            ? "Roadmap & Timeline"
+                            : pathname.includes("/sprints")
+                              ? "Sprint Planning"
+                              : pathname.includes("/board")
+                                ? (currentProject?.name ?? "Project Board")
+                                : pathname.startsWith("/issues/")
+                                  ? pathname.split("/").at(-1)
+                                  : pathname === "/projects"
+                                    ? "Projects Directory"
+                                    : pathname === "/projects/new"
+                                      ? "New Project"
+                                      : pathname === "/inbox"
+                                        ? "Inbox"
+                                        : pathname === "/calendar"
+                                          ? "Planning Calendar"
+                                          : pathname === "/members"
+                                            ? "Members & Permissions"
+                                            : pathname === "/reports"
+                                              ? "Reports & Analytics"
+                                              : pathname === "/integrations"
+                                                ? "Integrations"
+                                                : pathname === "/billing"
+                                                  ? "Billing & Subscription"
+                                                  : pathname === "/settings"
+                                                    ? "Workspace Settings"
+                                                    : "Temora";
 
   return (
     <div className="min-h-screen bg-surface-low text-foreground">
@@ -175,8 +265,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                   NS
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">Northstar Studio</span>
-                  <span className="block font-mono text-[11px] text-muted">Pro Plan</span>
+                  <span className="block truncate text-sm font-semibold">
+                    {activeWorkspace?.name ?? "Workspace"}
+                  </span>
+                  <span className="block font-mono text-[11px] text-muted">
+                    {activeWorkspace?.plan ?? "Free"} Plan
+                  </span>
                 </span>
               </span>
               <Icon name="unfold_more" size={18} className="text-muted" />
@@ -184,15 +278,28 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {menuOpen && (
               <div className="mt-2 rounded-lg border border-border bg-white p-2 text-xs shadow-lg">
                 <p className="px-2 py-1 font-semibold">Switch workspace</p>
-                <button
-                  className="w-full rounded px-2 py-1.5 text-left hover:bg-surface-low"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Northstar Studio <span className="float-right text-accent">✓</span>
-                </button>
+                {state.workspaces.map((workspace) => (
+                  <button
+                    key={workspace.id}
+                    className="w-full rounded px-2 py-1.5 text-left hover:bg-surface-low"
+                    onClick={() => {
+                      demoRepository.switchWorkspace(workspace.id);
+                      setMenuOpen(false);
+                      router.replace("/");
+                    }}
+                  >
+                    {workspace.name}
+                    {workspace.id === state.activeWorkspaceId && (
+                      <span className="float-right text-accent">✓</span>
+                    )}
+                  </button>
+                ))}
                 <button
                   className="w-full rounded px-2 py-1.5 text-left text-muted hover:bg-surface-low"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    router.push("/workspace/setup");
+                  }}
                 >
                   Create workspace…
                 </button>
@@ -207,7 +314,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </button>
           </div>
           <nav className="space-y-3 px-2 py-4">
-            {groups.map((group) => (
+            {navGroups.map((group) => (
               <div key={group.label}>
                 <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-outline">
                   {group.label}
@@ -219,17 +326,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 >
                   {group.links.map((link) => {
                     const active =
-                      link.href === "/"
-                        ? pathname === "/"
-                        : link.href === "/my-tasks"
-                          ? pathname.startsWith("/my-tasks")
-                          : link.href.includes("/board")
-                            ? pathname.includes("/board")
-                            : link.href.includes("/sprints")
-                              ? pathname.includes("/sprints")
-                              : link.href.includes("/roadmap")
-                                ? pathname.includes("/roadmap")
-                                : pathname === link.href;
+                      link.href === "/my-tasks"
+                        ? pathname.startsWith("/my-tasks")
+                        : pathname === link.href;
                     const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
                     const contents = (
                       <>
@@ -291,8 +390,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               unoptimized
             />
             <span>
-              <span className="block text-sm font-semibold">Alex Morgan</span>
-              <span className="block font-mono text-[11px] text-outline">Admin</span>
+              <span className="block text-sm font-semibold">{activeMember?.name ?? "Member"}</span>
+              <span className="block font-mono text-[11px] text-outline">
+                {activeMember?.role ?? "Member"}
+              </span>
             </span>
             <Icon name="more_vert" size={18} className="ml-auto text-muted" />
           </button>
@@ -309,7 +410,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <Icon name="menu" />
             </button>
-            <span className="hidden sm:inline">Northstar Studio</span>
+            <span className="hidden sm:inline">{activeWorkspace?.name ?? "Workspace"}</span>
             <span className="text-outline">/</span>
             <span className="truncate font-semibold text-foreground">{pageTitle}</span>
           </div>
@@ -331,21 +432,30 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <Icon name="add" size={18} />
               <span className="hidden sm:inline">Create Issue</span>
             </Link>
-            <button
-              aria-label="Notifications"
+            <Link
+              href="/inbox"
+              aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
               className="relative rounded p-1 text-muted hover:bg-surface-low"
             >
               <Icon name="notifications" />
-              <i className="absolute right-1 top-1 size-2 rounded-full bg-red" />
-            </button>
+              {unreadCount > 0 && (
+                <i className="absolute right-1 top-1 size-2 rounded-full bg-red" />
+              )}
+            </Link>
             <button
               aria-label="Help"
               className="hidden rounded p-1 text-muted hover:bg-surface-low sm:block"
             >
               <Icon name="help" />
             </button>
-            <span className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">
-              AM
+            <span
+              className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent"
+              aria-label={activeMember?.name ?? "Member"}
+            >
+              {activeMember?.name
+                .split(" ")
+                .map((part) => part[0])
+                .join("") ?? "M"}
             </span>
           </div>
         </header>
@@ -374,32 +484,72 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               </button>
             </div>
             <p className="mt-1 text-sm text-muted">
-              This is a local preview. Issues are not saved to a service.
+              Issues are saved in this browser’s demo data only.
             </p>
             <label className="mt-4 block text-sm font-medium">
               Issue title
               <input
                 autoFocus
+                value={quickTitle}
+                onChange={(event) => {
+                  setQuickTitle(event.target.value);
+                  setQuickError("");
+                }}
                 className="mt-1 h-10 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                 placeholder="What needs to be done?"
               />
             </label>
+            {quickError && (
+              <p role="alert" className="mt-2 text-sm text-red">
+                {quickError}
+              </p>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <Link
                 href="/issues/new"
-                onClick={() => setCreateOpen(false)}
+                onClick={() => {
+                  setCreateOpen(false);
+                  setQuickError("");
+                }}
                 className="mr-auto self-center text-xs font-medium text-accent hover:underline"
               >
                 Open full issue form
               </Link>
               <button
-                onClick={() => setCreateOpen(false)}
+                onClick={() => {
+                  setCreateOpen(false);
+                  setQuickError("");
+                }}
                 className="h-9 rounded-lg border border-border px-3 text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setCreateOpen(false)}
+                onClick={() => {
+                  const project = workspaceProjects[0];
+                  if (!quickTitle.trim()) {
+                    setQuickError("Enter an issue title.");
+                    return;
+                  }
+                  if (!project) {
+                    setQuickError("Create a project before adding an issue.");
+                    return;
+                  }
+                  try {
+                    const issue = demoRepository.createIssue({
+                      projectId: project.id,
+                      title: quickTitle.trim(),
+                    });
+                    setQuickTitle("");
+                    setQuickError("");
+                    setCreateOpen(false);
+                    router.push(`/issues/${issue.key}`);
+                  } catch (error) {
+                    setQuickError(
+                      error instanceof Error ? error.message : "Could not create the issue.",
+                    );
+                  }
+                }}
                 className="h-9 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
               >
                 Create issue

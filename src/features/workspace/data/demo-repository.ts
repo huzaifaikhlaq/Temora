@@ -71,8 +71,12 @@ export const demoRepository = {
   },
 
   switchWorkspace(workspaceId: EntityId) {
-    scopedWorkspace(workspaceId);
-    persist({ ...state, activeWorkspaceId: workspaceId });
+    const workspace = scopedWorkspace(workspaceId);
+    const activeMemberId = workspace.memberIds.includes(state.activeMemberId)
+      ? state.activeMemberId
+      : workspace.memberIds[0];
+    if (!activeMemberId) throw new Error("This workspace has no members to select.");
+    persist({ ...state, activeWorkspaceId: workspaceId, activeMemberId });
   },
 
   createWorkspace(input: {

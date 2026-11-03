@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { Icon } from "@/components/shared/icon";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
@@ -11,7 +12,7 @@ const input =
 const primary =
   "inline-flex h-9 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong";
 
-export function IssueCreateForm() {
+export function IssueCreateForm({ modal = false }: { modal?: boolean }) {
   const state = useDemoState();
   const search = useSearchParams();
   const router = useRouter();
@@ -27,6 +28,7 @@ export function IssueCreateForm() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"Urgent" | "High" | "Medium" | "Low">("Medium");
   const [assigneeId, setAssigneeId] = useState("");
+  const [labelsText, setLabelsText] = useState("");
   const [sprintId, setSprintId] = useState("");
   const [storyPoints, setStoryPoints] = useState(3);
   const [dueDate, setDueDate] = useState("");
@@ -43,6 +45,10 @@ export function IssueCreateForm() {
         description,
         priority,
         assigneeId: assigneeId || null,
+        labels: labelsText
+          .split(",")
+          .map((label) => label.trim())
+          .filter(Boolean),
         sprintId: sprintId || null,
         storyPoints,
         dueDate: dueDate || null,
@@ -65,6 +71,7 @@ export function IssueCreateForm() {
           description,
           priority,
           assigneeId,
+          labelsText,
           sprintId,
           storyPoints,
           dueDate,
@@ -79,23 +86,48 @@ export function IssueCreateForm() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+    <div
+      className={modal ? "space-y-4 p-4 sm:p-6" : "mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8"}
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.16em] text-outline">
+          <p
+            className={`${modal ? "text-[10px]" : "text-xs"} font-semibold uppercase tracking-[.16em] text-outline`}
+          >
             {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Issues
           </p>
-          <h1 className="mt-1 text-2xl font-bold">Create issue</h1>
+          <h1
+            id={modal ? "issue-create-title" : undefined}
+            className={`${modal ? "mt-1 text-xl" : "mt-1 text-2xl"} font-bold`}
+          >
+            Create issue
+          </h1>
           <p className="mt-1 text-sm text-muted">
             Add a clear, actionable issue to a project in this workspace.
           </p>
         </div>
-        <Link href="/issues" className="rounded-lg border border-border px-3 py-2 text-sm">
-          Cancel
-        </Link>
+        {modal ? (
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Close create issue"
+            className="rounded-lg p-2 text-muted hover:bg-surface-low"
+          >
+            <Icon name="close" />
+          </button>
+        ) : (
+          <Link href="/issues" className="rounded-lg border border-border px-3 py-2 text-sm">
+            Cancel
+          </Link>
+        )}
       </header>
-      <form onSubmit={createIssue} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="rounded-xl border border-border bg-white p-5 sm:p-6">
+      <form
+        onSubmit={createIssue}
+        className={`grid gap-4 ${modal ? "lg:grid-cols-[minmax(0,1fr)_280px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}
+      >
+        <section
+          className={`rounded-xl border border-border bg-white ${modal ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}
+        >
           <label className="block text-sm font-semibold">
             Summary *
             <input
@@ -181,7 +213,9 @@ export function IssueCreateForm() {
             </p>
           )}
         </section>
-        <aside className="h-fit space-y-4 rounded-xl border border-border bg-white p-5">
+        <aside
+          className={`h-fit space-y-4 rounded-xl border border-border bg-white ${modal ? "p-4" : "p-5"}`}
+        >
           <label className="block text-xs font-semibold text-muted">
             Project
             <select
@@ -216,6 +250,16 @@ export function IssueCreateForm() {
                   </option>
                 ))}
             </select>
+          </label>
+          <label className="block text-xs font-semibold text-muted">
+            Labels
+            <input
+              className={`${input} mt-1`}
+              value={labelsText}
+              onChange={(event) => setLabelsText(event.target.value)}
+              placeholder="e.g. frontend, mobile"
+            />
+            <span className="mt-1 block font-normal">Separate labels with commas.</span>
           </label>
           <label className="block text-xs font-semibold text-muted">
             Priority
@@ -275,6 +319,6 @@ export function IssueCreateForm() {
           </p>
         </aside>
       </form>
-    </main>
+    </div>
   );
 }

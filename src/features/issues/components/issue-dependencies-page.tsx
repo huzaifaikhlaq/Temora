@@ -124,7 +124,8 @@ export function IssueDependenciesPage({ issueId }: { issueId: string }) {
             <span className="font-mono text-xs font-semibold text-accent">{currentIssue.key}</span>
             <h2 className="mt-1 text-lg font-semibold">{currentIssue.title}</h2>
             <p className="mt-1 text-sm text-muted">
-              {currentIssue.status} · {currentIssue.priority} priority · {currentIssue.storyPoints} story points
+              {currentIssue.status} · {currentIssue.priority} priority · {currentIssue.storyPoints}{" "}
+              story points
             </p>
           </div>
           <button

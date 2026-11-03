@@ -163,6 +163,16 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
                   />
                   <circle
                     cx={currentX}
+                    cy={chartY(idealRemaining)}
+                    r="4"
+                    fill="#aaa8bd"
+                    stroke="white"
+                    strokeWidth="2"
+                  >
+                    <title>{Math.round(idealRemaining)} points on the ideal guideline</title>
+                  </circle>
+                  <circle
+                    cx={currentX}
                     cy={chartY(remaining)}
                     r="7"
                     fill="#493ee5"
