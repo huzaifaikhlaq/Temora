@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +23,7 @@ const groups: {
       { label: "Overview", href: "/", icon: "grid_view" },
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
       { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
+      { label: "All Issues", href: "/issues", icon: "checklist" },
     ],
   },
   {
@@ -55,8 +56,12 @@ const groups: {
     label: "Planning",
     links: [
       { label: "Boards / Kanban", href: "/projects/website-redesign/board", icon: "view_kanban" },
+      { label: "Issue Dependencies", href: "/issues/TEM-101/dependencies", icon: "account_tree" },
       { label: "Sprints & Backlog", href: "/projects/website-redesign/sprints", icon: "cycle" },
+      { label: "Complete Sprint", href: "/sprints/24/complete", icon: "task_alt" },
+      { label: "Sprint Retrospective", href: "/sprints/24/retrospective", icon: "replay" },
       { label: "Roadmap & Timeline", href: "/projects/website-redesign/roadmap", icon: "timeline" },
+      { label: "Burndown Report", href: "/reports/sprints/24", icon: "bar_chart" },
       { label: "Calendar", href: "/calendar", icon: "calendar_today" },
     ],
   },
@@ -64,9 +69,12 @@ const groups: {
     label: "Management",
     links: [
       { label: "Members & Roles", href: "/members", icon: "group" },
+      { label: "Permissions Matrix", href: "/roles", icon: "admin_panel_settings" },
       { label: "Reports & Analytics", href: "/reports", icon: "insights" },
       { label: "Integrations", href: "/integrations", icon: "hub" },
       { label: "Settings", href: "/settings", icon: "settings" },
+      { label: "Automation Rules", href: "/settings/automation", icon: "auto_mode" },
+      { label: "Security & Audit", href: "/security/audit-logs", icon: "shield" },
     ],
   },
 ];
@@ -81,6 +89,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       ? "Overview"
       : pathname.startsWith("/my-tasks")
         ? "My Tasks"
+        : pathname === "/issues"
+          ? "All Issues"
+          : pathname === "/issues/new"
+            ? "Create Issue"
+            : pathname.endsWith("/dependencies")
+              ? "Dependencies & Audit Trail"
+              : pathname === "/sprints/24/complete"
+                ? "Complete Sprint"
+                : pathname.endsWith("/retrospective")
+                  ? "Sprint Retrospective"
+                  : pathname.includes("/reports/sprints/")
+                    ? "Sprint Burndown Report"
+                    : pathname === "/roles"
+                      ? "Roles & Permissions"
+                      : pathname.includes("/settings/automation")
+                        ? "Custom Fields & Automation"
+                        : pathname.includes("/security/audit-logs")
+                          ? "Security & Audit Logs"
         : pathname.includes("/roadmap")
           ? "Roadmap & Timeline"
           : pathname.includes("/sprints")
@@ -296,13 +322,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </kbd>
           </label>
           <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={() => setCreateOpen(true)}
+            <Link
+              href="/issues/new"
               className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong"
             >
               <Icon name="add" size={18} />
               <span className="hidden sm:inline">Create Issue</span>
-            </button>
+            </Link>
             <button
               aria-label="Notifications"
               className="relative rounded p-1 text-muted hover:bg-surface-low"
@@ -357,6 +383,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               />
             </label>
             <div className="mt-4 flex justify-end gap-2">
+              <Link
+                href="/issues/new"
+                onClick={() => setCreateOpen(false)}
+                className="mr-auto self-center text-xs font-medium text-accent hover:underline"
+              >
+                Open full issue form
+              </Link>
               <button
                 onClick={() => setCreateOpen(false)}
                 className="h-9 rounded-lg border border-border px-3 text-sm"

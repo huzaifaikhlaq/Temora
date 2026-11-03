@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { MetricCard, Panel, PanelTitle } from "@/components/shared/dashboard-ui";
+import { AdvancedPage, type AdvancedPageKind } from "@/features/workspace/components/advanced-pages";
 
 type PageKind =
   | "projects"
@@ -17,7 +18,16 @@ type PageKind =
   | "settings"
   | "empty"
   | "not-found"
-  | "forbidden";
+  | "forbidden"
+  | "create-issue"
+  | "issues"
+  | "dependencies"
+  | "burndown"
+  | "complete-sprint"
+  | "roles"
+  | "retrospective"
+  | "automation"
+  | "audit";
 const shell = "mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8";
 const button =
   "inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-semibold text-white hover:bg-accent-strong";
@@ -100,6 +110,21 @@ function Table({ headings, rows }: { headings: string[]; rows: React.ReactNode[]
 }
 
 export function AdditionalPage({ kind }: { kind: PageKind }) {
+  if (
+    [
+      "create-issue",
+      "issues",
+      "dependencies",
+      "burndown",
+      "complete-sprint",
+      "roles",
+      "retrospective",
+      "automation",
+      "audit",
+    ].includes(kind)
+  ) {
+    return <AdvancedPage kind={kind as AdvancedPageKind} />;
+  }
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [read, setRead] = useState<number[]>([]);
@@ -534,6 +559,9 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                 <button className="text-accent" onClick={() => setNotice("Issue link copied.")}>
                   Share link
                 </button>
+                <Link className="text-accent" href="/issues/TEM-101/dependencies">
+                  Dependencies & history
+                </Link>
               </div>
               <p className="mt-6 leading-7 text-muted">
                 Create a flexible homepage layout that adapts across desktop, tablet, and mobile
