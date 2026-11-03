@@ -12,7 +12,7 @@ const groups: { label: string; links: { label: string; href: string; icon: strin
     links: [
       { label: "Overview", href: "/", icon: "grid_view" },
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
-      { label: "Inbox", href: "/inbox", icon: "inbox", count: "3", disabled: true },
+      { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
     ],
   },
   {
@@ -29,16 +29,16 @@ const groups: { label: string; links: { label: string; href: string; icon: strin
       { label: "Boards / Kanban", href: "/projects/website-redesign/board", icon: "view_kanban" },
       { label: "Sprints & Backlog", href: "/projects/website-redesign/sprints", icon: "cycle" },
       { label: "Roadmap & Timeline", href: "/projects/website-redesign/roadmap", icon: "timeline" },
-      { label: "Calendar", href: "/calendar", icon: "calendar_today", disabled: true },
+      { label: "Calendar", href: "/calendar", icon: "calendar_today" },
     ],
   },
   {
     label: "Management",
     links: [
-      { label: "Members & Roles", href: "/members", icon: "group", disabled: true },
-      { label: "Reports & Analytics", href: "/reports", icon: "insights", disabled: true },
-      { label: "Integrations", href: "/integrations", icon: "hub", disabled: true },
-      { label: "Settings", href: "/settings", icon: "settings", disabled: true },
+      { label: "Members & Roles", href: "/members", icon: "group" },
+      { label: "Reports & Analytics", href: "/reports", icon: "insights" },
+      { label: "Integrations", href: "/integrations", icon: "hub" },
+      { label: "Settings", href: "/settings", icon: "settings" },
     ],
   },
 ];
@@ -70,7 +70,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-outline">{group.label}</div>
               <div className={group.label === "Projects" ? "ml-3 border-l border-border/50 pl-2" : ""}>
                 {group.links.map((link) => {
-                  const active = link.href === "/" ? pathname === "/" : link.href === "/my-tasks" ? pathname.startsWith("/my-tasks") : link.href.includes("/board") ? pathname.includes("/board") : link.href.includes("/sprints") ? pathname.includes("/sprints") : link.href.includes("/roadmap") ? pathname.includes("/roadmap") : false;
+                  const active = link.href === "/" ? pathname === "/" : link.href === "/my-tasks" ? pathname.startsWith("/my-tasks") : link.href.includes("/board") ? pathname.includes("/board") : link.href.includes("/sprints") ? pathname.includes("/sprints") : link.href.includes("/roadmap") ? pathname.includes("/roadmap") : pathname === link.href;
                   const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
                   const contents = <>
                     {group.label === "Projects" ? <span className={`size-1.5 rounded-full ${link.dot}`} /> : <Icon name={link.icon} size={18}/>}

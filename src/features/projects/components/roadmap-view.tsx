@@ -7,21 +7,360 @@ import { initiatives } from "@/features/workspace/data/fixtures";
 const subItems = [
   ["Core UI Kit Migration (Figma to Code)", "Geist Font & Spacing Scales"],
   ["Homepage Responsive Grid & Scrims", "Interactive Product Demos & Video"],
-  ["Stripe Webhooks & Invoice Portal", "Role Permissions & Team Seats"],
+  ["Stripe Webhooks & Invoice Portal", "Role Permissions & Team Seapts"],
   ["Navigation Drawer Touch Fixes", "Offline Task Cache & IndexedDB Sync"],
   [],
 ];
 
-const months = ["Aug 2024", "Sep 2024", "Oct 2024", "Nov 2024", "Dec 2024", "Jan 2025", "Feb 2025"];
+const months = [
+  "Aug 2024",
+  "Sep 2024",
+  "Oct 2024",
+  "Nov 2024",
+  "Dec 2024",
+  "Jan 2025",
+  "Feb 2025",
+];
 
 export function RoadmapView() {
   const timeline = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState("Month");
   const [collapsed, setCollapsed] = useState<number[]>([]);
-  function toggle(index: number) { setCollapsed((current) => current.includes(index) ? current.filter((entry) => entry !== index) : [...current, index]); }
-  return <div className="flex min-h-[calc(100vh-56px)] flex-col"><div className="border-b border-border/50 bg-white px-4 py-4 sm:px-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="mb-1 text-xs text-muted">Northstar Studio / Projects / Website Redesign</div><h1 className="text-xl font-semibold sm:text-2xl">Website Redesign &amp; Multi-Project Roadmap</h1><div className="mt-2 flex items-center gap-2"><span className="rounded bg-emerald-100 px-2 py-0.5 font-mono text-[10px] text-green">Sprint 14 Active</span><span className="grid size-6 place-items-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">SC</span><span className="grid size-6 place-items-center rounded-full bg-amber-100 text-[9px] font-bold text-amber-800">DK</span><span className="font-mono text-xs text-outline">+4</span></div></div><div className="flex gap-2"><button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm"><Icon name="share" size={16}/>Share</button><button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm"><Icon name="file_download" size={16}/>Export Gantt</button><button className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"><Icon name="add" size={16}/>New Initiative</button></div></div><nav className="mt-3 flex gap-4 overflow-x-auto text-sm">{[["Overview", "dashboard"], ["Board", "view_kanban"], ["Backlog", "inventory_2"], ["Sprints", "cycle"], ["List", "view_list"], ["Calendar", "calendar_month"], ["Roadmap", "timeline"], ["Settings", "settings"]].map(([label, icon]) => <a key={label} href={label === "Board" ? "/projects/website-redesign/board" : label === "Sprints" ? "/projects/website-redesign/sprints" : "#roadmap"} className={`flex shrink-0 items-center gap-1 border-b-2 py-2 ${label === "Roadmap" ? "border-accent font-semibold text-accent" : "border-transparent text-muted"}`}><Icon name={icon} size={16}/>{label}</a>)}</nav></div>
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 bg-white px-4 py-2 sm:px-6"><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-lg bg-surface-high p-0.5">{["Month", "Quarter", "Year"].map((option) => <button key={option} onClick={() => setScale(option)} className={`rounded-md px-3 py-1.5 text-xs ${scale === option ? "bg-white font-semibold shadow-sm" : "text-muted"}`}>{option}</button>)}</div><button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">Q3 2024 – Q1 2025 <Icon name="expand_more" size={14} className="ml-1 align-[-3px]"/></button><button onClick={() => timeline.current?.scrollTo({ left: 540, behavior: "smooth" })} className="h-8 rounded-lg border border-border px-2.5 text-xs font-medium text-accent">Jump to Today</button></div><div className="flex flex-wrap gap-2"><button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">Group: Initiatives <Icon name="expand_more" size={14}/></button><button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">Lead: All Leads <Icon name="expand_more" size={14}/></button><button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">Status: Active &amp; Planned <Icon name="expand_more" size={14}/></button></div></div>
-    <div className="flex min-h-0 flex-1 overflow-hidden" id="roadmap"><aside className="hidden w-[340px] shrink-0 flex-col border-r border-border/50 bg-white md:flex"><div className="grid h-[62px] grid-cols-[1fr_62px_72px] items-center border-b border-border/50 bg-surface-low px-4 text-[10px] font-semibold uppercase tracking-wider text-outline"><span>Initiatives &amp; Workstreams</span><span>Progress</span><span>Health</span></div><div className="flex-1 overflow-y-auto">{initiatives.map((initiative, index) => <section key={initiative.name} className="border-b border-surface-low"><div className="grid min-h-[76px] grid-cols-[1fr_62px_72px] items-center gap-1 px-3"><button onClick={() => toggle(index)} className="flex min-w-0 items-center gap-1.5 text-left"><Icon name={collapsed.includes(index) ? "chevron_right" : "expand_more"} size={16} className="shrink-0 text-muted"/><span className={`material-symbols-outlined shrink-0 text-[17px] ${initiative.color.replace("bg-", "text-")}`}>{["palette", "campaign", "credit_card", "smartphone", "security"][index]}</span><span className="min-w-0"><span className="block truncate text-xs font-semibold">{index + 1}. {initiative.name}</span><span className="block truncate font-mono text-[10px] text-outline">{initiative.initials} {initiative.owner}</span></span></button><span className="font-mono text-[10px] font-semibold">{initiative.progress}%</span><span className={`text-[10px] ${initiative.health === "At Risk" ? "text-amber-700" : initiative.health === "Planned" ? "text-outline" : "text-green"}`}>{initiative.health}</span></div>{!collapsed.includes(index) && subItems[index].map((item, child) => <div key={item} className="flex h-8 items-center gap-2 border-t border-surface-low/70 pl-10 pr-2 text-[10px] text-muted"><Icon name="subdirectory_arrow_right" size={13} className="shrink-0 text-outline"/><span className="min-w-0 flex-1 truncate">{item}</span><span className="font-mono text-outline">{[["100%", "85%"], ["90%", "58%"], ["50%", "40%"], ["45%", "15%"], ["", ""]][index][child]}</span></div>)}</section>)}</div><div className="flex items-center justify-between bg-surface-low px-4 py-3 text-xs"><span className="flex items-center gap-2 font-semibold"><Icon name="analytics" size={17} className="text-accent"/>Initiatives Completion</span><span className="font-mono font-bold text-accent">63.2% Total</span></div></aside>
-      <div ref={timeline} className="min-w-0 flex-1 overflow-auto bg-white"><div className="relative min-h-full min-w-[1400px]"><div className="sticky top-0 z-20 bg-white/95 backdrop-blur"><div className="grid h-8 grid-cols-7 divide-x divide-surface-container text-center font-mono text-[11px] font-semibold text-muted">{months.map((month, index) => <div className={`flex items-center justify-center ${index === 2 ? "bg-accent/5 text-accent" : ""}`} key={month}>{scale === "Year" ? (index === 0 ? "2024" : index === 5 ? "2025" : "") : scale === "Quarter" ? ["Q3 2024", "", "Q4 2024", "", "", "Q1 2025", ""][index] : month}</div>)}</div><div className="grid h-6 grid-cols-7 divide-x divide-surface-container bg-surface-low text-center font-mono text-[9px] text-outline">{["Sprint 12 (Closed)", "Sprint 13 (Closed)", "Sprint 14 (Active)", "Sprint 15 (Planned)", "Sprint 16 (Planned)", "Sprint 17 (Backlog)", "Sprint 18 (Backlog)"].map((sprint, index) => <div key={sprint} className={`truncate px-1 pt-1 ${index === 2 ? "bg-accent/10 font-semibold text-accent" : ""}`}>{sprint}</div>)}</div></div><div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid h-full grid-cols-7 divide-x divide-surface-container"><i/><i/><i className="bg-accent/[0.025]"/><i/><i/><i/><i/></div><div className="pointer-events-none absolute bottom-0 left-[540px] top-0 z-20 flex w-0.5 flex-col items-center bg-accent/80"><span className="sticky top-[68px] mt-[68px] -ml-1 w-28 -translate-x-1/2 rounded-full bg-accent px-2 py-1 text-center font-mono text-[9px] font-bold text-white">Today · Oct 24</span></div><div className="relative z-10 pt-8">{initiatives.map((initiative, index) => <section key={initiative.name} className="border-b border-surface-container"><div className="relative h-[76px]">{index === 0 && <span className="absolute left-[580px] top-1 z-20 rounded bg-white px-2 py-1 font-mono text-[9px] shadow-sm">◆ Oct 31: Alpha Release</span>}{index === 1 && <span className="absolute left-[700px] top-1 z-20 rounded bg-white px-2 py-1 font-mono text-[9px] text-indigo-600 shadow-sm">◆ Nov 15: Public Rebrand</span>}<div className={`absolute top-5 flex h-9 items-center justify-between overflow-hidden rounded-md px-3 text-white shadow-sm ${initiative.color}`} style={{ left: initiative.start, width: initiative.width }}><span className="truncate text-xs font-semibold">{initiative.name}</span><span className="ml-2 shrink-0 font-mono text-[10px] font-bold">{initiative.progress}% · {initiative.initials}</span><span className="absolute inset-y-0 left-0 -z-0 bg-black/15" style={{ width: `${initiative.progress}%` }}/></div></div>{!collapsed.includes(index) && subItems[index].map((item, child) => <div key={item} className="relative h-8 bg-surface-low/30"><div className={`absolute top-1 flex h-6 items-center justify-between rounded px-2.5 font-mono text-[9px] text-on-surface ${index === 2 ? "bg-amber-100" : index === 3 ? "bg-emerald-100" : "bg-indigo-100"}`} style={{ left: initiative.start + 10 + child * 150, width: child === 0 ? 250 : 225 }}><span className="truncate">{item}</span><span className="ml-2 shrink-0 font-semibold">{[["Complete", "85%"], ["90%", "58%"], ["50%", "40%"], ["45%", "15%"], ["", ""]][index][child]}</span></div></div>)}</section>)}</div></div></div></div>
-    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-white px-4 py-3 text-xs sm:px-6"><div className="flex flex-wrap items-center gap-4"><span className="font-mono text-outline">Initiatives: <strong className="text-foreground">5 Active</strong></span><span className="text-green">● 3 On Track</span><span className="text-amber-700">● 1 At Risk</span><span className="text-outline">● 1 Planned</span><span className="hidden text-muted lg:inline">Next Major Delivery: <strong>Alpha Release Milestone (Oct 31, 2024)</strong></span></div><button className="flex items-center gap-1 rounded-lg bg-surface-low px-3 py-1.5 font-medium hover:bg-surface-high"><Icon name="sync" size={14}/>Sync Timeline</button></footer></div>;
+
+  function toggle(index: number) {
+    setCollapsed((current) =>
+      current.includes(index)
+        ? current.filter((entry) => entry !== index)
+        : [...current, index],
+    );
+  }
+
+  return (
+    <div className="flex min-h-[calc(100vh-56px)] flex-col">
+      <div className="border-b border-border/50 bg-white px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="mb-1 text-xs text-muted">
+              Northstar Studio / Projects / Website Redesign
+            </div>
+            <h1 className="text-xl font-semibold sm:text-2xl">
+              Website Redesign &amp; Multi-Project Roadmap
+            </h1>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="rounded bg-emerald-100 px-2 py-0.5 font-mono text-[10px] text-green">
+                Sprint 14 Active
+              </span>
+              <span className="grid size-6 place-items-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">
+                SC
+              </span>
+              <span className="grid size-6 place-items-center rounded-full bg-amber-100 text-[9px] font-bold text-amber-800">
+                DK
+              </span>
+              <span className="font-mono text-xs text-outline">+4</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm">
+              <Icon name="share" size={16} />
+              Share
+            </button>
+            <button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm">
+              <Icon name="file_download" size={16} />
+              Export Gantt
+            </button>
+            <button className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white">
+              <Icon name="add" size={16} />
+              New Initiative
+            </button>
+          </div>
+        </div>
+
+        <nav className="mt-3 flex gap-4 overflow-x-auto text-sm">
+          {[
+            ["Overview", "dashboard"],
+            ["Board", "view_kanban"],
+            ["Backlog", "inventory_2"],
+            ["Sprints", "cycle"],
+            ["List", "view_list"],
+            ["Calendar", "calendar_month"],
+            ["Roadmap", "timeline"],
+            ["Settings", "settings"],
+          ].map(([label, icon]) => (
+            <a
+              key={label}
+              href={
+                label === "Board"
+                  ? "/projects/website-redesign/board"
+                  : label === "Sprints"
+                    ? "/projects/website-redesign/sprints"
+                    : "#roadmap"
+              }
+              className={`flex shrink-0 items-center gap-1 border-b-2 py-2 ${label === "Roadmap" ? "border-accent font-semibold text-accent" : "border-transparent text-muted"}`}
+            >
+              <Icon name={icon} size={16} />
+              {label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 bg-white px-4 py-2 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg bg-surface-high p-0.5">
+            {["Month", "Quarter", "Year"].map((option) => (
+              <button
+                key={option}
+                onClick={() => setScale(option)}
+                className={`rounded-md px-3 py-1.5 text-xs ${scale === option ? "bg-white font-semibold shadow-sm" : "text-muted"}`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">
+            Q3 2024 – Q1 2025
+            <Icon name="expand_more" size={14} className="ml-1 align-[-3px]" />
+          </button>
+          <button
+            onClick={() => timeline.current?.scrollTo({ left: 540, behavior: "smooth" })}
+            className="h-8 rounded-lg border border-border px-2.5 text-xs font-medium text-accent"
+          >
+            Jump to Today
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">
+            Group: Initiatives
+            <Icon name="expand_more" size={14} />
+          </button>
+          <button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">
+            Lead: All Leads
+            <Icon name="expand_more" size={14} />
+          </button>
+          <button className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted">
+            Status: Active &amp; Planned
+            <Icon name="expand_more" size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 overflow-hidden" id="roadmap">
+        <aside className="hidden w-[340px] shrink-0 flex-col border-r border-border/50 bg-white md:flex">
+          <div className="grid h-[62px] grid-cols-[1fr_62px_72px] items-center border-b border-border/50 bg-surface-low px-4 text-[10px] font-semibold uppercase tracking-wider text-outline">
+            <span>Initiatives &amp; Workstreams</span>
+            <span>Progress</span>
+            <span>Health</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {initiatives.map((initiative, index) => (
+              <section key={initiative.name} className="border-b border-surface-low">
+                <div className="grid min-h-[76px] grid-cols-[1fr_62px_72px] items-center gap-1 px-3">
+                  <button
+                    onClick={() => toggle(index)}
+                    className="flex min-w-0 items-center gap-1.5 text-left"
+                  >
+                    <Icon
+                      name={collapsed.includes(index) ? "chevron_right" : "expand_more"}
+                      size={16}
+                      className="shrink-0 text-muted"
+                    />
+                    <span
+                      className={`material-symbols-outlined shrink-0 text-[17px] ${initiative.color.replace("bg-", "text-")}`}
+                    >
+                      {["palette", "campaign", "credit_card", "smartphone", "security"][index]}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-semibold">
+                        {index + 1}. {initiative.name}
+                      </span>
+                      <span className="block truncate font-mono text-[10px] text-outline">
+                        {initiative.initials} {initiative.owner}
+                      </span>
+                    </span>
+                  </button>
+                  <span className="font-mono text-[10px] font-semibold">
+                    {initiative.progress}%
+                  </span>
+                  <span
+                    className={`text-[10px] ${initiative.health === "At Risk" ? "text-amber-700" : initiative.health === "Planned" ? "text-outline" : "text-green"}`}
+                  >
+                    {initiative.health}
+                  </span>
+                </div>
+
+                {!collapsed.includes(index) &&
+                  subItems[index].map((item, child) => (
+                    <div
+                      key={item}
+                      className="flex h-8 items-center gap-2 border-t border-surface-low/70 pl-10 pr-2 text-[10px] text-muted"
+                    >
+                      <Icon
+                        name="subdirectory_arrow_right"
+                        size={13}
+                        className="shrink-0 text-outline"
+                      />
+                      <span className="min-w-0 flex-1 truncate">{item}</span>
+                      <span className="font-mono text-outline">
+                        {[
+                          ["100%", "85%"],
+                          ["90%", "58%"],
+                          ["50%", "40%"],
+                          ["45%", "15%"],
+                          ["", ""],
+                        ][index][child]}
+                      </span>
+                    </div>
+                  ))}
+              </section>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between bg-surface-low px-4 py-3 text-xs">
+            <span className="flex items-center gap-2 font-semibold">
+              <Icon name="analytics" size={17} className="text-accent" />
+              Initiatives Completion
+            </span>
+            <span className="font-mono font-bold text-accent">63.2% Total</span>
+          </div>
+        </aside>
+
+        <div ref={timeline} className="min-w-0 flex-1 overflow-auto bg-white">
+          <div className="relative min-h-full min-w-[1400px]">
+            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur">
+              <div className="grid h-8 grid-cols-7 divide-x divide-surface-container text-center font-mono text-[11px] font-semibold text-muted">
+                {months.map((month, index) => (
+                  <div
+                    className={`flex items-center justify-center ${index === 2 ? "bg-accent/5 text-accent" : ""}`}
+                    key={month}
+                  >
+                    {scale === "Year"
+                      ? index === 0
+                        ? "2024"
+                        : index === 5
+                          ? "2025"
+                          : ""
+                      : scale === "Quarter"
+                        ? ["Q3 2024", "", "Q4 2024", "", "", "Q1 2025", ""][index]
+                        : month}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid h-6 grid-cols-7 divide-x divide-surface-container bg-surface-low text-center font-mono text-[9px] text-outline">
+                {[
+                  "Sprint 12 (Closed)",
+                  "Sprint 13 (Closed)",
+                  "Sprint 14 (Active)",
+                  "Sprint 15 (Planned)",
+                  "Sprint 16 (Planned)",
+                  "Sprint 17 (Backlog)",
+                  "Sprint 18 (Backlog)",
+                ].map((sprint, index) => (
+                  <div
+                    key={sprint}
+                    className={`truncate px-1 pt-1 ${index === 2 ? "bg-accent/10 font-semibold text-accent" : ""}`}
+                  >
+                    {sprint}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid h-full grid-cols-7 divide-x divide-surface-container">
+              <i />
+              <i />
+              <i className="bg-accent/[0.025]" />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+
+            <div className="pointer-events-none absolute bottom-0 left-[540px] top-0 z-20 flex w-0.5 flex-col items-center bg-accent/80">
+              <span className="sticky top-[68px] mt-[68px] -ml-1 w-28 -translate-x-1/2 rounded-full bg-accent px-2 py-1 text-center font-mono text-[9px] font-bold text-white">
+                Today · Oct 24
+              </span>
+            </div>
+
+            <div className="relative z-10 pt-8">
+              {initiatives.map((initiative, index) => (
+                <section key={initiative.name} className="border-b border-surface-container">
+                  <div className="relative h-[76px]">
+                    {index === 0 && (
+                      <span className="absolute left-[580px] top-1 z-20 rounded bg-white px-2 py-1 font-mono text-[9px] shadow-sm">
+                        ◆ Oct 31: Alpha Release
+                      </span>
+                    )}
+                    {index === 1 && (
+                      <span className="absolute left-[700px] top-1 z-20 rounded bg-white px-2 py-1 font-mono text-[9px] text-indigo-600 shadow-sm">
+                        ◆ Nov 15: Public Rebrand
+                      </span>
+                    )}
+                    <div
+                      className={`absolute top-5 flex h-9 items-center justify-between overflow-hidden rounded-md px-3 text-white shadow-sm ${initiative.color}`}
+                      style={{ left: initiative.start, width: initiative.width }}
+                    >
+                      <span className="truncate text-xs font-semibold">{initiative.name}</span>
+                      <span className="ml-2 shrink-0 font-mono text-[10px] font-bold">
+                        {initiative.progress}% · {initiative.initials}
+                      </span>
+                      <span
+                        className="absolute inset-y-0 left-0 -z-0 bg-black/15"
+                        style={{ width: `${initiative.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {!collapsed.includes(index) &&
+                    subItems[index].map((item, child) => (
+                      <div key={item} className="relative h-8 bg-surface-low/30">
+                        <div
+                          className={`absolute top-1 flex h-6 items-center justify-between rounded px-2.5 font-mono text-[9px] text-on-surface ${index === 2 ? "bg-amber-100" : index === 3 ? "bg-emerald-100" : "bg-indigo-100"}`}
+                          style={{
+                            left: initiative.start + 10 + child * 150,
+                            width: child === 0 ? 250 : 225,
+                          }}
+                        >
+                          <span className="truncate">{item}</span>
+                          <span className="ml-2 shrink-0 font-semibold">
+                            {[
+                              ["Complete", "85%"],
+                              ["90%", "58%"],
+                              ["50%", "40%"],
+                              ["45%", "15%"],
+                              ["", ""],
+                            ][index][child]}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-white px-4 py-3 text-xs sm:px-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="font-mono text-outline">
+            Initiatives: <strong className="text-foreground">5 Active</strong>
+          </span>
+          <span className="text-green">● 3 On Track</span>
+          <span className="text-amber-700">● 1 At Risk</span>
+          <span className="text-outline">● 1 Planned</span>
+          <span className="hidden text-muted lg:inline">
+            Next Major Delivery: <strong>Alpha Release Milestone (Oct 31, 2024)</strong>
+          </span>
+        </div>
+        <button className="flex items-center gap-1 rounded-lg bg-surface-low px-3 py-1.5 font-medium hover:bg-surface-high">
+          <Icon name="sync" size={14} />
+          Sync Timeline
+        </button>
+      </footer>
+    </div>
+  );
 }

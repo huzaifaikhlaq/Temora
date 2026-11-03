@@ -6,7 +6,14 @@ import { Icon } from "@/components/shared/icon";
 import { PriorityPill, StatusPill } from "@/components/shared/dashboard-ui";
 import { boardColumns, type Task, type WorkStatus } from "@/features/workspace/data/fixtures";
 
-const columnDot: Record<WorkStatus, string> = { Backlog: "bg-slate-400", "To Do": "bg-blue-500", "In Progress": "bg-accent", "In Review": "bg-amber-500", Done: "bg-green", Planned: "bg-slate-400" };
+const columnDot: Record<WorkStatus, string> = {
+  Backlog: "bg-slate-400",
+  "To Do": "bg-blue-500",
+  "In Progress": "bg-accent",
+  "In Review": "bg-amber-500",
+  Done: "bg-green",
+  Planned: "bg-slate-400",
+};
 
 export function KanbanBoard() {
   const [columns, setColumns] = useState(boardColumns);
@@ -18,19 +25,269 @@ export function KanbanBoard() {
   function moveTask(destination: WorkStatus, event: DragEvent<HTMLElement>) {
     event.preventDefault();
     if (!dragKey) return;
+
     let moving: Task | undefined;
-    const updated = columns.map((column) => ({ ...column, cards: column.cards.filter((task) => { if (task.key === dragKey) { moving = { ...task, status: destination }; return false; } return true; }) }));
-    if (moving) setColumns(updated.map((column) => column.name === destination ? { ...column, cards: [moving!, ...column.cards] } : column));
+    const updated = columns.map((column) => ({
+      ...column,
+      cards: column.cards.filter((task) => {
+        if (task.key === dragKey) {
+          moving = { ...task, status: destination };
+          return false;
+        }
+        return true;
+      }),
+    }));
+
+    if (moving) {
+      setColumns(
+        updated.map((column) =>
+          column.name === destination
+            ? { ...column, cards: [moving!, ...column.cards] }
+            : column,
+        ),
+      );
+    }
     setDragKey(null);
   }
 
   function addTask(columnName: WorkStatus) {
     if (!title.trim()) return;
-    const newTask: Task = { key: `TEM-${140 + columns.reduce((sum, column) => sum + column.cards.length, 0)}`, title: title.trim(), project: "Website Redesign", status: columnName, priority: "Medium", due: "Nov 07", points: 2, assignee: "Alex Morgan" };
-    setColumns(columns.map((column) => column.name === columnName ? { ...column, cards: [newTask, ...column.cards] } : column));
-    setTitle(""); setComposer(null);
+
+    const newTask: Task = {
+      key: `TEM-${140 + columns.reduce((sum, column) => sum + column.cards.length, 0)}`,
+      title: title.trim(),
+      project: "Website Redesign",
+      status: columnName,
+      priority: "Medium",
+      due: "Nov 07",
+      points: 2,
+      assignee: "Alex Morgan",
+    };
+
+    setColumns(
+      columns.map((column) =>
+        column.name === columnName                                                                                  
+          ? { ...column, cards: [newTask, ...column.cards] }
+          : column,
+      ),
+    );
+    setTitle("");
+    setComposer(null);
   }
 
-  return <div className="flex min-h-[calc(100vh-56px)] flex-col"><div className="border-b border-border/50 bg-white px-4 py-4 sm:px-6"><div className="mx-auto max-w-[1600px]"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Website Redesign</span><span>/</span><span className="font-mono text-accent">TEM</span><span className="rounded bg-emerald-100 px-2 py-0.5 font-mono text-[10px] text-green">Sprint 14 Active</span></div><h1 className="text-2xl font-semibold tracking-tight">Website Redesign</h1><p className="mt-1 max-w-2xl text-sm text-muted">Flagship marketing rebrand, responsive grid overhaul, and design token migration across all web targets.</p><div className="mt-3 flex items-center gap-1">{["AM", "DK", "SC", "EC"].map((name, i) => <span key={name} className={`grid size-7 place-items-center rounded-full border-2 border-white text-[9px] font-bold text-white ${["bg-accent", "bg-amber-500", "bg-green", "bg-violet-500"][i]}`}>{name}</span>)}<span className="-ml-1 grid size-7 place-items-center rounded-full border-2 border-white bg-surface-high font-mono text-[9px]">+3</span></div></div><div className="flex gap-2"><button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm hover:bg-surface-low"><Icon name="tune" size={16}/>Sprint Settings</button><button onClick={() => setComposer("In Progress")} className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"><Icon name="add" size={17}/>Add Issue</button></div></div><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><nav className="flex gap-1 overflow-x-auto text-sm">{[["Overview", "dashboard"], ["Board", "view_kanban"], ["Backlog", "format_list_bulleted"], ["Sprints", "cycle"], ["List", "table_rows"], ["Calendar", "calendar_month"], ["Files", "folder_open"], ["Settings", "settings"]].map(([label, icon]) => <Link key={label} href={label === "Sprints" ? "/projects/website-redesign/sprints" : label === "Overview" || label === "Board" ? "/projects/website-redesign/board" : label === "Backlog" ? "/projects/website-redesign/sprints" : "/projects/website-redesign/board"} className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 ${label === "Board" ? "border-accent font-semibold text-accent" : "border-transparent text-muted hover:text-foreground"}`}><Icon name={icon} size={16}/>{label}</Link>)}</nav><div className="flex flex-wrap gap-2">{["Assignee: All", "Priority: All", "Sprint: Sprint 14", "Label: All"].map((label) => <button key={label} onClick={() => setFilter(filter === "All" ? "Urgent" : "All")} className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted hover:border-accent">{label} <Icon name="expand_more" size={14} className="ml-1 align-[-3px]"/></button>)}</div></div></div></div>
-    <div className="mx-auto w-full max-w-[1600px] flex-1 overflow-x-auto p-4 sm:p-6"><div className="flex min-h-[500px] min-w-[1500px] gap-3">{columns.map((column) => <section key={column.name} onDragOver={(event) => event.preventDefault()} onDrop={(event) => moveTask(column.name, event)} className={`flex w-[292px] shrink-0 flex-col rounded-xl ${column.name === "In Progress" ? "bg-accent/5 ring-1 ring-accent/20" : "bg-surface-container/70"}`}><header className="flex items-center justify-between px-3 py-3"><div className="flex items-center gap-2"><span className={`size-2 rounded-full ${columnDot[column.name]}`}/><h2 className="text-xs font-semibold uppercase tracking-wider">{column.name}</h2><span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted">{column.cards.length}</span></div><div className="flex gap-1"><button aria-label={`Add issue to ${column.name}`} onClick={() => setComposer(column.name)} className="rounded p-1 text-muted hover:bg-white"><Icon name="add" size={16}/></button><button aria-label="Column options" className="rounded p-1 text-muted hover:bg-white"><Icon name="more_horiz" size={16}/></button></div></header><div className="flex-1 space-y-2 px-2 pb-2">{composer === column.name && <div className="rounded-lg border border-accent/50 bg-white p-3 shadow-sm"><textarea autoFocus value={title} onChange={(event) => setTitle(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); addTask(column.name); } if (event.key === "Escape") setComposer(null); }} className="w-full resize-none text-sm outline-none" placeholder="What needs to be done?"/><div className="mt-2 flex justify-end gap-2"><button onClick={() => setComposer(null)} className="text-xs text-muted">Cancel</button><button onClick={() => addTask(column.name)} className="rounded bg-accent px-2 py-1 text-xs font-semibold text-white">Add issue</button></div></div>}{column.cards.filter((task) => filter === "All" || task.priority === "Urgent").map((task) => <article key={task.key} draggable onDragStart={() => setDragKey(task.key)} onDragEnd={() => setDragKey(null)} className={`cursor-grab rounded-lg border border-border/50 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing ${dragKey === task.key ? "opacity-40" : ""}`}><div className="mb-2 flex items-center justify-between"><span className="font-mono text-[10px] font-semibold text-accent">{task.key}</span><span className="rounded bg-surface-low px-1.5 py-0.5 text-[9px] text-muted">{task.project}</span></div><h3 className="text-sm font-medium leading-5">{task.title}</h3><div className="mt-3 flex items-center justify-between"><PriorityPill priority={task.priority}/><span className="flex items-center gap-1 font-mono text-[10px] text-outline"><Icon name="calendar_today" size={13}/>{task.due}</span></div><div className="mt-2 flex items-center justify-between border-t border-surface-low pt-2"><StatusPill status={task.status}/><span className="grid size-6 place-items-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">{task.assignee.split(" ").map((name) => name[0]).join("")}</span></div></article>)}</div>{column.name === "Done" && <footer className="border-t border-border/40 px-3 py-3 font-mono text-[10px] text-muted">Sprint 14: 17 of 24 points done (71%)</footer>}</section>)}</div></div></div>;
+  return (
+    <div className="flex min-h-[calc(100vh-56px)] flex-col">
+      <div className="border-b border-border/50 bg-white px-4 py-4 sm:px-6">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-xs text-muted">
+                <span>Website Redesign</span>
+                <span>/</span>
+                <span className="font-mono text-accent">TEM</span>
+                <span className="rounded bg-emerald-100 px-2 py-0.5 font-mono text-[10px] text-green">
+                  Sprint 14 Active
+                </span>
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight">Website Redesign</h1>
+              <p className="mt-1 max-w-2xl text-sm text-muted">
+                Flagship marketing rebrand, responsive grid overhaul, and design token migration
+                across all web targets.
+              </p>
+              <div className="mt-3 flex items-center gap-1">
+                {["AM", "DK", "SC", "EC"].map((name, i) => (
+                  <span
+                    key={name}
+                    className={`grid size-7 place-items-center rounded-full border-2 border-white text-[9px] font-bold text-white ${["bg-accent", "bg-amber-500", "bg-green", "bg-violet-500"][i]}`}
+                  >
+                    {name}
+                  </span>
+                ))}
+                <span className="-ml-1 grid size-7 place-items-center rounded-full border-2 border-white bg-surface-high font-mono text-[9px]">
+                  +3
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button className="flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm hover:bg-surface-low">
+                <Icon name="tune" size={16} />
+                Sprint Settings
+              </button>
+              <button
+                onClick={() => setComposer("In Progress")}
+                className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
+              >
+                <Icon name="add" size={17} />
+                Add Issue
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <nav className="flex gap-1 overflow-x-auto text-sm">
+              {[
+                ["Overview", "dashboard"],
+                ["Board", "view_kanban"],
+                ["Backlog", "format_list_bulleted"],
+                ["Sprints", "cycle"],
+                ["List", "table_rows"],
+                ["Calendar", "calendar_month"],
+                ["Files", "folder_open"],
+                ["Settings", "settings"],
+              ].map(([label, icon]) => (
+                <Link
+                  key={label}
+                  href={
+                    label === "Sprints"
+                      ? "/projects/website-redesign/sprints"
+                      : label === "Overview" || label === "Board"
+                        ? "/projects/website-redesign/board"
+                        : label === "Backlog"
+                          ? "/projects/website-redesign/sprints"
+                          : "/projects/website-redesign/board"
+                  }
+                  className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 ${label === "Board" ? "border-accent font-semibold text-accent" : "border-transparent text-muted hover:text-foreground"}`}
+                >
+                  <Icon name={icon} size={16} />
+                  {label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="flex flex-wrap gap-2">
+              {["Assignee: All", "Priority: All", "Sprint: Sprint 14", "Label: All"].map(
+                (label) => (
+                  <button
+                    key={label}
+                    onClick={() => setFilter(filter === "All" ? "Urgent" : "All")}
+                    className="h-8 rounded-lg border border-border px-2.5 text-xs text-muted hover:border-accent"
+                  >
+                    {label}
+                    <Icon name="expand_more" size={14} className="ml-1 align-[-3px]" />
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-[1600px] flex-1 overflow-x-auto p-4 sm:p-6">
+        <div className="flex min-h-[500px] min-w-[1500px] gap-3">
+          {columns.map((column) => (
+            <section
+              key={column.name}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => moveTask(column.name, event)}
+              className={`flex w-[292px] shrink-0 flex-col rounded-xl ${column.name === "In Progress" ? "bg-accent/5 ring-1 ring-accent/20" : "bg-surface-container/70"}`}
+            >
+              <header className="flex items-center justify-between px-3 py-3">
+                <div className="flex items-center gap-2">
+                  <span className={`size-2 rounded-full ${columnDot[column.name]}`} />
+                  <h2 className="text-xs font-semibold uppercase tracking-wider">
+                    {column.name}
+                  </h2>
+                  <span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted">
+                    {column.cards.length}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    aria-label={`Add issue to ${column.name}`}
+                    onClick={() => setComposer(column.name)}
+                    className="rounded p-1 text-muted hover:bg-white"
+                  >
+                    <Icon name="add" size={16} />
+                  </button>
+                  <button
+                    aria-label="Column options"
+                    className="rounded p-1 text-muted hover:bg-white"
+                  >
+                    <Icon name="more_horiz" size={16} />
+                  </button>
+                </div>
+              </header>
+
+              <div className="flex-1 space-y-2 px-2 pb-2">
+                {composer === column.name && (
+                  <div className="rounded-lg border border-accent/50 bg-white p-3 shadow-sm">
+                    <textarea
+                      autoFocus
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          addTask(column.name);
+                        }
+                        if (event.key === "Escape") setComposer(null);
+                      }}
+                      className="w-full resize-none text-sm outline-none"
+                      placeholder="What needs to be done?"
+                    />
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button onClick={() => setComposer(null)} className="text-xs text-muted">
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => addTask(column.name)}
+                        className="rounded bg-accent px-2 py-1 text-xs font-semibold text-white"
+                      >
+                        Add issue
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {column.cards
+                  .filter((task) => filter === "All" || task.priority === "Urgent")
+                  .map((task) => (
+                    <article
+                      key={task.key}
+                      draggable
+                      onDragStart={() => setDragKey(task.key)}
+                      onDragEnd={() => setDragKey(null)}
+                      className={`cursor-grab rounded-lg border border-border/50 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing ${dragKey === task.key ? "opacity-40" : ""}`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="font-mono text-[10px] font-semibold text-accent">
+                          {task.key}
+                        </span>
+                        <span className="rounded bg-surface-low px-1.5 py-0.5 text-[9px] text-muted">
+                          {task.project}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-medium leading-5">{task.title}</h3>
+                      <div className="mt-3 flex items-center justify-between">
+                        <PriorityPill priority={task.priority} />
+                        <span className="flex items-center gap-1 font-mono text-[10px] text-outline">
+                          <Icon name="calendar_today" size={13} />
+                          {task.due}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between border-t border-surface-low pt-2">
+                        <StatusPill status={task.status} />
+                        <span className="grid size-6 place-items-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">
+                          {task.assignee
+                            .split(" ")
+                            .map((name) => name[0])
+                            .join("")}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+
+              {column.name === "Done" && (
+                <footer className="border-t border-border/40 px-3 py-3 font-mono text-[10px] text-muted">
+                  Sprint 14: 17 of 24 points done (71%)
+                </footer>
+              )}
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

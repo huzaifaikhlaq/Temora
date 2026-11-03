@@ -20,13 +20,7 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: "h-11 px-5 text-sm",
 };
 
-export function Button({
-  className,
-  size = "md",
-  type = "button",
-  variant = "primary",
-  ...props
-}: ButtonProps) {
+export function Button({ className, size = "md", type = "button", variant = "primary", ...props }: ButtonProps) {
   return (
     <button
       className={[
