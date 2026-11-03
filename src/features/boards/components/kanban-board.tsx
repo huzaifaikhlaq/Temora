@@ -41,9 +41,7 @@ export function KanbanBoard() {
     if (moving) {
       setColumns(
         updated.map((column) =>
-          column.name === destination
-            ? { ...column, cards: [moving!, ...column.cards] }
-            : column,
+          column.name === destination ? { ...column, cards: [moving!, ...column.cards] } : column,
         ),
       );
     }
@@ -66,9 +64,7 @@ export function KanbanBoard() {
 
     setColumns(
       columns.map((column) =>
-        column.name === columnName                                                                                  
-          ? { ...column, cards: [newTask, ...column.cards] }
-          : column,
+        column.name === columnName ? { ...column, cards: [newTask, ...column.cards] } : column,
       ),
     );
     setTitle("");
@@ -185,9 +181,7 @@ export function KanbanBoard() {
               <header className="flex items-center justify-between px-3 py-3">
                 <div className="flex items-center gap-2">
                   <span className={`size-2 rounded-full ${columnDot[column.name]}`} />
-                  <h2 className="text-xs font-semibold uppercase tracking-wider">
-                    {column.name}
-                  </h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider">{column.name}</h2>
                   <span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted">
                     {column.cards.length}
                   </span>

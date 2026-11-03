@@ -1,10 +1,4 @@
-export type WorkStatus =
-  | "In Progress"
-  | "In Review"
-  | "To Do"
-  | "Backlog"
-  | "Done"
-  | "Planned";
+export type WorkStatus = "In Progress" | "In Review" | "To Do" | "Backlog" | "Done" | "Planned";
 export type Priority = "Urgent" | "High" | "Medium" | "Low";
 
 export interface Task {

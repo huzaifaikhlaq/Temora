@@ -76,15 +76,38 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-button, input, select, textarea { font: inherit; }
-button { cursor: pointer; }
-::placeholder { color: var(--outline); opacity: 1; }
-h1, h2, h3 { font-family: "Geist", var(--font-body); }
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+::placeholder {
+  color: var(--outline);
+  opacity: 1;
+}
+h1,
+h2,
+h3 {
+  font-family: "Geist", var(--font-body);
+}
 @media (max-width: 900px) {
-  .dashboard-sidebar { transform: translateX(-100%); transition: transform 180ms ease; }
-  .dashboard-sidebar[data-open="true"] { transform: translateX(0); }
-  .dashboard-main { margin-left: 0 !important; }
-  .dashboard-topbar { left: 0 !important; }
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+  .dashboard-sidebar[data-open="true"] {
+    transform: translateX(0);
+  }
+  .dashboard-main {
+    margin-left: 0 !important;
+  }
+  .dashboard-topbar {
+    left: 0 !important;
+  }
 }
 
 ::selection {

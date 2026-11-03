@@ -12,15 +12,7 @@ const subItems = [
   [],
 ];
 
-const months = [
-  "Aug 2024",
-  "Sep 2024",
-  "Oct 2024",
-  "Nov 2024",
-  "Dec 2024",
-  "Jan 2025",
-  "Feb 2025",
-];
+const months = ["Aug 2024", "Sep 2024", "Oct 2024", "Nov 2024", "Dec 2024", "Jan 2025", "Feb 2025"];
 
 export function RoadmapView() {
   const timeline = useRef<HTMLDivElement>(null);
@@ -29,9 +21,7 @@ export function RoadmapView() {
 
   function toggle(index: number) {
     setCollapsed((current) =>
-      current.includes(index)
-        ? current.filter((entry) => entry !== index)
-        : [...current, index],
+      current.includes(index) ? current.filter((entry) => entry !== index) : [...current, index],
     );
   }
 
@@ -204,13 +194,15 @@ export function RoadmapView() {
                       />
                       <span className="min-w-0 flex-1 truncate">{item}</span>
                       <span className="font-mono text-outline">
-                        {[
-                          ["100%", "85%"],
-                          ["90%", "58%"],
-                          ["50%", "40%"],
-                          ["45%", "15%"],
-                          ["", ""],
-                        ][index][child]}
+                        {
+                          [
+                            ["100%", "85%"],
+                            ["90%", "58%"],
+                            ["50%", "40%"],
+                            ["45%", "15%"],
+                            ["", ""],
+                          ][index][child]
+                        }
                       </span>
                     </div>
                   ))}
@@ -326,13 +318,15 @@ export function RoadmapView() {
                         >
                           <span className="truncate">{item}</span>
                           <span className="ml-2 shrink-0 font-semibold">
-                            {[
-                              ["Complete", "85%"],
-                              ["90%", "58%"],
-                              ["50%", "40%"],
-                              ["45%", "15%"],
-                              ["", ""],
-                            ][index][child]}
+                            {
+                              [
+                                ["Complete", "85%"],
+                                ["90%", "58%"],
+                                ["50%", "40%"],
+                                ["45%", "15%"],
+                                ["", ""],
+                              ][index][child]
+                            }
                           </span>
                         </div>
                       </div>

@@ -1,7 +1,21 @@
 import { notFound } from "next/navigation";
 import { AdditionalPage } from "@/features/workspace/components/additional-pages";
 
-const routes: Record<string, "projects" | "billing" | "issue" | "members" | "inbox" | "integrations" | "reports" | "calendar" | "settings" | "empty" | "not-found" | "forbidden"> = {
+const routes: Record<
+  string,
+  | "projects"
+  | "billing"
+  | "issue"
+  | "members"
+  | "inbox"
+  | "integrations"
+  | "reports"
+  | "calendar"
+  | "settings"
+  | "empty"
+  | "not-found"
+  | "forbidden"
+> = {
   projects: "projects",
   billing: "billing",
   "issues/TEM-101": "issue",

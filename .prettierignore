@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+next-env.d.ts
+tsconfig.tsbuildinfo
+src/app/favicon.ico
+.env.example
+**/.gitkeep
