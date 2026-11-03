@@ -47,11 +47,21 @@ export function WorkspaceSettingsPage() {
   function saveGeneral(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") ?? "").trim();
+    const sprintLengthDays = Number(data.get("sprintLengthDays"));
+    if (name.length < 2) {
+      setError("Workspace name must have at least two characters.");
+      return;
+    }
+    if (!Number.isInteger(sprintLengthDays) || sprintLengthDays < 1 || sprintLengthDays > 90) {
+      setError("Sprint length must be between 1 and 90 whole days.");
+      return;
+    }
     try {
-      demoRepository.updateWorkspace(activeWorkspace.id, { name: String(data.get("name") ?? "") });
+      demoRepository.updateWorkspace(activeWorkspace.id, { name });
       demoRepository.updateSettings({
         methodology: String(data.get("methodology")) as typeof settings.methodology,
-        sprintLengthDays: Number(data.get("sprintLengthDays")),
+        sprintLengthDays,
       });
       setNotice("Workspace settings saved to this browser.");
       setError("");
@@ -85,15 +95,29 @@ export function WorkspaceSettingsPage() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const regions = [...data.getAll("region")].map(String);
-    demoRepository.updateSettings({
-      security: {
-        ...settings.security,
-        mfaRequired: data.get("mfaRequired") === "on",
-        sessionTimeoutMinutes: Number(data.get("sessionTimeoutMinutes")),
-        allowedRegions: regions,
-      },
-    });
-    setNotice("Security preferences saved to this browser.");
+    const sessionTimeoutMinutes = Number(data.get("sessionTimeoutMinutes"));
+    if (
+      !Number.isInteger(sessionTimeoutMinutes) ||
+      sessionTimeoutMinutes < 5 ||
+      sessionTimeoutMinutes > 1440
+    ) {
+      setError("Session timeout must be between 5 and 1,440 whole minutes.");
+      return;
+    }
+    try {
+      demoRepository.updateSettings({
+        security: {
+          ...settings.security,
+          mfaRequired: data.get("mfaRequired") === "on",
+          sessionTimeoutMinutes,
+          allowedRegions: regions,
+        },
+      });
+      setNotice("Security preferences saved to this browser.");
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save security preferences.");
+    }
   }
 
   return (

@@ -18,7 +18,7 @@ const columnDot: Record<WorkStatus, string> = {
   Planned: "bg-slate-400",
 };
 
-export function KanbanBoard({ projectId = "website-redesign" }: { projectId?: string }) {
+export function KanbanBoard({ projectId }: { projectId: string }) {
   const state = useDemoState();
   const columns = (
     state.settingsByWorkspace[state.activeWorkspaceId]?.statuses ?? defaultColumns

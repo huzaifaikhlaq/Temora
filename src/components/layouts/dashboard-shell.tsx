@@ -30,19 +30,6 @@ const groups: {
     ],
   },
   {
-    label: "Planning",
-    links: [
-      { label: "Boards / Kanban", href: "/projects/website-redesign/board", icon: "view_kanban" },
-      { label: "Issue Dependencies", href: "/issues/TEM-101/dependencies", icon: "account_tree" },
-      { label: "Sprints & Backlog", href: "/projects/website-redesign/sprints", icon: "cycle" },
-      { label: "Complete Sprint", href: "/sprints/24/complete", icon: "task_alt" },
-      { label: "Sprint Retrospective", href: "/sprints/24/retrospective", icon: "replay" },
-      { label: "Roadmap & Timeline", href: "/projects/website-redesign/roadmap", icon: "timeline" },
-      { label: "Burndown Report", href: "/reports/sprints/24", icon: "bar_chart" },
-      { label: "Calendar", href: "/calendar", icon: "calendar_today" },
-    ],
-  },
-  {
     label: "Management",
     links: [
       { label: "Members & Roles", href: "/members", icon: "group" },
@@ -187,7 +174,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             ? "Create Issue"
             : pathname.endsWith("/dependencies")
               ? "Dependencies & Audit Trail"
-              : pathname === "/sprints/24/complete"
+              : pathname.startsWith("/sprints/") && pathname.endsWith("/complete")
                 ? "Complete Sprint"
                 : pathname.endsWith("/retrospective")
                   ? "Sprint Retrospective"

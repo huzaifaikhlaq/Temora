@@ -20,7 +20,7 @@ const statusColors: Record<string, string> = {
   Archived: "bg-slate-100 text-slate-700",
 };
 
-export function RoadmapView({ projectId = "website-redesign" }: { projectId?: string }) {
+export function RoadmapView({ projectId }: { projectId?: string }) {
   const state = useDemoState();
   const timeline = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState("Month");
@@ -36,7 +36,7 @@ export function RoadmapView({ projectId = "website-redesign" }: { projectId?: st
         (item) =>
           item.workspaceId === state.activeWorkspaceId &&
           !item.archivedAt &&
-          (projectId === "website-redesign" || item.id === projectId),
+          (projectId === undefined || item.id === projectId),
       ),
     [state.projects, state.activeWorkspaceId, projectId],
   );
@@ -116,7 +116,7 @@ export function RoadmapView({ projectId = "website-redesign" }: { projectId?: st
     );
   }
 
-  if (!activeProject && projectId !== "website-redesign") {
+  if (projectId && !activeProject) {
     return (
       <main className="p-8">
         <h1 className="text-xl font-semibold">Project not found</h1>
@@ -126,6 +126,8 @@ export function RoadmapView({ projectId = "website-redesign" }: { projectId?: st
       </main>
     );
   }
+
+  const navigationProject = activeProject ?? projects[0];
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] flex-col">
@@ -182,23 +184,17 @@ export function RoadmapView({ projectId = "website-redesign" }: { projectId?: st
             [
               "Board",
               "view_kanban",
-              activeProject
-                ? `/projects/${activeProject.id}/board`
-                : "/projects/website-redesign/board",
+              navigationProject ? `/projects/${navigationProject.id}/board` : "/projects",
             ],
             [
               "Sprints",
               "cycle",
-              activeProject
-                ? `/projects/${activeProject.id}/sprints`
-                : "/projects/website-redesign/sprints",
+              navigationProject ? `/projects/${navigationProject.id}/sprints` : "/projects",
             ],
             [
               "Roadmap",
               "timeline",
-              activeProject
-                ? `/projects/${activeProject.id}/roadmap`
-                : "/projects/website-redesign/roadmap",
+              navigationProject ? `/projects/${navigationProject.id}/roadmap` : "/projects",
             ],
           ].map(([label, icon, href]) => (
             <Link

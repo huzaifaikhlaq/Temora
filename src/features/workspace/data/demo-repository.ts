@@ -9,6 +9,7 @@ import type {
   ProjectStatus,
   RetrospectiveNote,
   Sprint,
+  WorkStatus,
   Workspace,
   WorkspaceIndustry,
   WorkspaceSettings,
@@ -54,6 +55,17 @@ export const demoRepository = {
   hydrate() {
     if (hydrated || typeof window === "undefined") return;
     hydrated = true;
+    window.addEventListener("storage", (event) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try {
+        const next: unknown = JSON.parse(event.newValue);
+        if (!isDemoState(next)) return;
+        state = next;
+        listeners.forEach((listener) => listener());
+      } catch {
+        // A malformed update in another tab does not replace the current state.
+      }
+    });
     try {
       const parsed: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
       if (isDemoState(parsed)) {
@@ -202,13 +214,27 @@ export const demoRepository = {
       throw new Error("Project name must have at least two characters.");
     if (patch.progress !== undefined && (patch.progress < 0 || patch.progress > 100))
       throw new Error("Project progress must be between 0 and 100.");
-    if (patch.leadId && !scopedWorkspace(project.workspaceId).memberIds.includes(patch.leadId))
+    const workspaceMemberIds = scopedWorkspace(project.workspaceId).memberIds;
+    const leadId = patch.leadId ?? project.leadId;
+    const memberIds =
+      patch.memberIds ??
+      (patch.leadId ? [...new Set([...project.memberIds, leadId])] : project.memberIds);
+    if (!workspaceMemberIds.includes(leadId))
       throw new Error("The project lead must belong to the project workspace.");
+    if (!memberIds.includes(leadId)) throw new Error("The project lead must be a project member.");
+    if (memberIds.some((memberId) => !workspaceMemberIds.includes(memberId)))
+      throw new Error("Project members must belong to the project workspace.");
     persist({
       ...state,
       projects: state.projects.map((item) =>
         item.id === projectId
-          ? { ...item, ...patch, ...(patch.name ? { name: patch.name.trim() } : {}) }
+          ? {
+              ...item,
+              ...patch,
+              ...(patch.name ? { name: patch.name.trim() } : {}),
+              leadId,
+              memberIds,
+            }
           : item,
       ),
     });
@@ -249,6 +275,22 @@ export const demoRepository = {
     if (!project) throw new Error("Choose an active project in this workspace.");
     const title = input.title.trim();
     if (title.length < 3) throw new Error("Issue summary must have at least three characters.");
+    const workspace = scopedWorkspace(workspaceId);
+    const reporterId = input.reporterId ?? state.activeMemberId;
+    if (!workspace.memberIds.includes(reporterId))
+      throw new Error("Reporter must belong to the selected workspace.");
+    if (input.assigneeId && !workspace.memberIds.includes(input.assigneeId))
+      throw new Error("Assignee must belong to the selected workspace.");
+    if (input.sprintId) {
+      const sprint = state.sprints.find(
+        (item) =>
+          item.id === input.sprintId &&
+          item.workspaceId === workspaceId &&
+          item.projectId === project.id &&
+          item.status !== "Closed",
+      );
+      if (!sprint) throw new Error("Choose an open sprint in the selected project.");
+    }
     const id = `TEM-${state.counters.issue + 1}`;
     const issue: Issue = {
       id,
@@ -260,7 +302,7 @@ export const demoRepository = {
       status: input.status ?? "Backlog",
       priority: input.priority ?? "Medium",
       assigneeId: input.assigneeId ?? null,
-      reporterId: input.reporterId ?? state.activeMemberId,
+      reporterId,
       dueDate: input.dueDate ?? null,
       storyPoints: input.storyPoints ?? 0,
       sprintId: input.sprintId ?? null,
@@ -309,6 +351,16 @@ export const demoRepository = {
       !scopedWorkspace(issue.workspaceId).memberIds.includes(patch.assigneeId)
     )
       throw new Error("Assignee must belong to this workspace.");
+    if (patch.sprintId) {
+      const sprint = state.sprints.find(
+        (item) =>
+          item.id === patch.sprintId &&
+          item.workspaceId === issue.workspaceId &&
+          item.projectId === issue.projectId &&
+          item.status !== "Closed",
+      );
+      if (!sprint) throw new Error("Choose an open sprint in this issue’s project.");
+    }
     persist({
       ...state,
       issues: state.issues.map((item) =>
@@ -460,6 +512,7 @@ export const demoRepository = {
   },
 
   addSubtask(issueId: EntityId, title: string) {
+    findIssue(issueId);
     const next = addSubtaskTo(state, issueId, title, state.activeMemberId);
     persist(next);
     return next.subtasks[next.subtasks.length - 1];
@@ -471,6 +524,7 @@ export const demoRepository = {
   ) {
     const subtask = state.subtasks.find((item) => item.id === subtaskId);
     if (!subtask) throw new Error("Subtask not found.");
+    findIssue(subtask.issueId);
     const title = patch.title?.trim();
     if (patch.title !== undefined && !title) throw new Error("Subtask title cannot be empty.");
     persist({
@@ -483,7 +537,8 @@ export const demoRepository = {
 
   deleteSubtask(subtaskId: EntityId) {
     const subtask = state.subtasks.find((item) => item.id === subtaskId);
-    if (!subtask) return;
+    if (!subtask) throw new Error("Subtask not found.");
+    findIssue(subtask.issueId);
     persist({
       ...state,
       subtasks: state.subtasks.filter((item) => item.id !== subtaskId),
@@ -530,8 +585,11 @@ export const demoRepository = {
   }) {
     const project = findProject(input.projectId);
     if (!input.name.trim()) throw new Error("Sprint name is required.");
+    if (!input.startDate || !input.endDate) throw new Error("Sprint dates are required.");
     if (input.endDate < input.startDate)
       throw new Error("Sprint end date must be after the start date.");
+    if (input.capacityPoints !== undefined && input.capacityPoints < 0)
+      throw new Error("Sprint capacity cannot be negative.");
     const id = nextId("sprint", state.counters.sprint);
     const sprint: Sprint = {
       id,
@@ -557,23 +615,33 @@ export const demoRepository = {
     sprintId: EntityId,
     patch: Partial<Pick<Sprint, "name" | "goal" | "startDate" | "endDate" | "capacityPoints">>,
   ) {
-    const sprint = state.sprints.find((item) => item.id === sprintId);
-    if (!sprint) throw new Error("Sprint not found.");
-    if (patch.startDate && patch.endDate && patch.endDate < patch.startDate)
-      throw new Error("Sprint end date must be after the start date.");
+    const sprint = findSprint(sprintId);
+    const startDate = patch.startDate ?? sprint.startDate;
+    const endDate = patch.endDate ?? sprint.endDate;
+    if (endDate < startDate) throw new Error("Sprint end date must be after the start date.");
+    if (patch.name !== undefined && !patch.name.trim()) throw new Error("Sprint name is required.");
+    if (patch.capacityPoints !== undefined && patch.capacityPoints < 0)
+      throw new Error("Sprint capacity cannot be negative.");
     persist({
       ...state,
-      sprints: state.sprints.map((item) => (item.id === sprintId ? { ...item, ...patch } : item)),
+      sprints: state.sprints.map((item) =>
+        item.id === sprintId
+          ? { ...item, ...patch, ...(patch.name ? { name: patch.name.trim() } : {}) }
+          : item,
+      ),
     });
   },
 
   startSprint(sprintId: EntityId) {
-    const sprint = state.sprints.find((item) => item.id === sprintId);
-    if (!sprint) throw new Error("Sprint not found.");
+    const sprint = findSprint(sprintId);
+    if (sprint.status !== "Planned") throw new Error("Only a planned sprint can be started.");
     if (
       state.sprints.some(
         (item) =>
-          item.projectId === sprint.projectId && item.status === "Active" && item.id !== sprintId,
+          item.workspaceId === sprint.workspaceId &&
+          item.projectId === sprint.projectId &&
+          item.status === "Active" &&
+          item.id !== sprintId,
       )
     )
       throw new Error("Complete the active sprint before starting another.");
@@ -586,13 +654,14 @@ export const demoRepository = {
   },
 
   completeSprint(sprintId: EntityId, destinationSprintId: EntityId | null) {
-    const sprint = state.sprints.find((item) => item.id === sprintId);
+    const sprint = findSprint(sprintId);
     if (!sprint || sprint.status !== "Active")
       throw new Error("Only an active sprint can be completed.");
     if (destinationSprintId) {
       const destination = state.sprints.find(
         (item) =>
           item.id === destinationSprintId &&
+          item.workspaceId === sprint.workspaceId &&
           item.projectId === sprint.projectId &&
           item.id !== sprintId,
       );
@@ -646,6 +715,32 @@ export const demoRepository = {
     return member;
   },
 
+  updateMemberProfile(memberId: EntityId, patch: Pick<Member, "name" | "email">) {
+    const member = state.members.find(
+      (item) => item.id === memberId && item.workspaceId === state.activeWorkspaceId,
+    );
+    if (!member) throw new Error("Member is not in the active workspace.");
+    const name = patch.name.trim();
+    const email = patch.email.trim().toLowerCase();
+    if (name.length < 2) throw new Error("Name must have at least two characters.");
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Enter a valid email address.");
+    if (
+      state.members.some(
+        (item) =>
+          item.workspaceId === member.workspaceId &&
+          item.id !== member.id &&
+          item.email.toLowerCase() === email,
+      )
+    )
+      throw new Error("This email already belongs to another workspace member.");
+    persist({
+      ...state,
+      members: state.members.map((item) =>
+        item.id === memberId ? { ...item, name, email } : item,
+      ),
+    });
+  },
+
   updateMemberRole(memberId: EntityId, role: Member["role"]) {
     const member = state.members.find(
       (item) => item.id === memberId && item.workspaceId === state.activeWorkspaceId,
@@ -684,11 +779,38 @@ export const demoRepository = {
   updateSettings(patch: Partial<WorkspaceSettings>) {
     const workspace = scopedWorkspace();
     const current = state.settingsByWorkspace[workspace.id] ?? defaultSettings();
+    const next = { ...current, ...patch };
+    const allowedStatuses: WorkStatus[] = ["Backlog", "To Do", "In Progress", "In Review", "Done"];
+    if (
+      !Number.isInteger(next.sprintLengthDays) ||
+      next.sprintLengthDays < 1 ||
+      next.sprintLengthDays > 90
+    )
+      throw new Error("Sprint length must be between 1 and 90 whole days.");
+    if (
+      !next.statuses.includes("Done") ||
+      next.statuses.some((status) => !allowedStatuses.includes(status))
+    )
+      throw new Error("Workflow statuses must be valid and include Done.");
+    if (new Set(next.statuses).size !== next.statuses.length)
+      throw new Error("Workflow statuses cannot be duplicated.");
+    if (
+      !Number.isInteger(next.security.sessionTimeoutMinutes) ||
+      next.security.sessionTimeoutMinutes < 5 ||
+      next.security.sessionTimeoutMinutes > 1440
+    )
+      throw new Error("Session timeout must be between 5 and 1,440 minutes.");
+    if (
+      next.security.allowedRegions.some(
+        (region) => !["US-West", "US-East", "EU-Central", "AP-South"].includes(region),
+      )
+    )
+      throw new Error("Choose an available security region.");
     persist({
       ...state,
       settingsByWorkspace: {
         ...state.settingsByWorkspace,
-        [workspace.id]: { ...current, ...patch },
+        [workspace.id]: next,
       },
     });
   },
@@ -821,6 +943,14 @@ function findIssue(issueId: EntityId) {
   );
   if (!issue) throw new Error("Issue not found in the active workspace.");
   return issue;
+}
+
+function findSprint(sprintId: EntityId) {
+  const sprint = state.sprints.find(
+    (item) => item.id === sprintId && item.workspaceId === state.activeWorkspaceId,
+  );
+  if (!sprint) throw new Error("Sprint not found in the active workspace.");
+  return sprint;
 }
 
 function slugify(value: string) {

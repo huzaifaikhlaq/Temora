@@ -12,7 +12,7 @@ const issueStatuses: WorkStatus[] = ["Backlog", "To Do", "In Progress", "In Revi
 const input =
   "h-9 rounded-lg border border-border bg-white px-2.5 text-sm outline-none focus:border-accent";
 
-export function SprintPlanning({ projectId = "website-redesign" }: { projectId?: string }) {
+export function SprintPlanning({ projectId }: { projectId: string }) {
   const state = useDemoState();
   const project = state.projects.find(
     (item) => item.id === projectId && item.workspaceId === state.activeWorkspaceId,
