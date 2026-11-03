@@ -687,6 +687,38 @@ export function createInitialDemoState(): DemoState {
             allowedRegions: ["US-West", "US-East"],
             sessionTimeoutMinutes: 30,
           },
+          ...(workspace.id === northstar
+            ? {
+                retrospectiveNotes: {
+                  "sprint-24": [
+                    {
+                      id: "retro-24-1",
+                      sprintId: "sprint-24",
+                      category: "Went well" as const,
+                      body: "Cross-team pairing helped unblock the mobile authentication work.",
+                      votes: ["sarah-chen", "jordan-lee"],
+                      createdAt: DEMO_TODAY,
+                    },
+                    {
+                      id: "retro-24-2",
+                      sprintId: "sprint-24",
+                      category: "To improve" as const,
+                      body: "Bring QA into acceptance criteria review earlier in the sprint.",
+                      votes: ["alex-morgan"],
+                      createdAt: DEMO_TODAY,
+                    },
+                    {
+                      id: "retro-24-3",
+                      sprintId: "sprint-24",
+                      category: "Action items" as const,
+                      body: "Add contract tests for the token refresh endpoint.",
+                      votes: [],
+                      createdAt: DEMO_TODAY,
+                    },
+                  ],
+                },
+              }
+            : {}),
         },
       ]),
     ),

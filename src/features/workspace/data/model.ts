@@ -68,6 +68,7 @@ export interface Issue {
   commentIds: EntityId[];
   blockedByIds: EntityId[];
   blocksIds: EntityId[];
+  relatedIds?: EntityId[];
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +102,15 @@ export interface Sprint {
   completedAt: string | null;
 }
 
+export interface RetrospectiveNote {
+  id: EntityId;
+  sprintId: EntityId;
+  category: "Went well" | "To improve" | "Action items";
+  body: string;
+  votes: EntityId[];
+  createdAt: string;
+}
+
 export type NotificationCategory = "Assigned to Me" | "Mentions" | "Comments" | "System & Sprints";
 export interface WorkspaceNotification {
   id: EntityId;
@@ -120,6 +130,8 @@ export interface WorkspaceSettings {
   statuses: WorkStatus[];
   issueFields: string[];
   automationRules: Array<{ id: string; name: string; enabled: boolean; successRate: number }>;
+  rolePermissions?: Record<string, Partial<Record<MemberRole, boolean>>>;
+  retrospectiveNotes?: Record<EntityId, RetrospectiveNote[]>;
   security: { mfaRequired: boolean; allowedRegions: string[]; sessionTimeoutMinutes: number };
 }
 

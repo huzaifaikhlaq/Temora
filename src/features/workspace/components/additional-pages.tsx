@@ -24,14 +24,8 @@ type PageKind =
   | "reports"
   | "calendar"
   | "settings"
-  | "empty"
   | "not-found"
   | "forbidden"
-  | "create-issue"
-  | "issues"
-  | "dependencies"
-  | "burndown"
-  | "complete-sprint"
   | "roles"
   | "retrospective"
   | "automation"
@@ -181,24 +175,22 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
   demoState.sprints
     .filter((sprint) => sprint.workspaceId === demoState.activeWorkspaceId)
     .forEach((sprint) => addCalendarEvent(sprint.startDate, `${sprint.name} starts`));
+  async function copyDiagnostics() {
+    try {
+      await navigator.clipboard.writeText(
+        `Temora frontend preview\nPath: ${window.location.pathname}\nWorkspace: ${demoState.activeWorkspaceId}\nIssue: ${window.location.pathname.includes("issues/") ? window.location.pathname.split("/").at(-1) : "n/a"}`,
+      );
+      setNotice("Page diagnostics copied to the clipboard.");
+    } catch {
+      setNotice("Clipboard access is unavailable. Copy the current page address manually.");
+    }
+  }
   if (kind === "projects") return <ProjectsDirectory />;
   if (kind === "inbox") return <InboxPage />;
   if (kind === "members") return <MembersDirectory />;
   if (kind === "billing") return <BillingPage />;
   if (kind === "settings") return <WorkspaceSettingsPage />;
-  if (
-    [
-      "create-issue",
-      "issues",
-      "dependencies",
-      "burndown",
-      "complete-sprint",
-      "roles",
-      "retrospective",
-      "automation",
-      "audit",
-    ].includes(kind)
-  ) {
+  if (["roles", "automation", "audit"].includes(kind)) {
     return <AdvancedPage kind={kind as AdvancedPageKind} />;
   }
 
@@ -612,63 +604,6 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
       </div>
     );
 
-  if (kind === "empty")
-    return (
-      <div className={shell}>
-        <div className="flex items-center gap-2 text-sm text-muted">
-          <Link href="/projects" className="hover:text-accent">
-            Projects
-          </Link>
-          <span>/</span>
-          <span>Customer Mobile App</span>
-        </div>
-        <Panel className="mx-auto max-w-3xl py-12 text-center sm:py-16">
-          <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-accent/10 text-accent">
-            <Icon name="view_kanban" size={32} />
-          </span>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[.16em] text-accent">
-            Customer Mobile App · CMA2
-          </p>
-          <h1 className="mt-2 text-2xl font-bold">Your project board is ready</h1>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">
-            Bring your team&apos;s work together. Import existing issues or create the first issue
-            to start planning your sprint.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <button className={button} onClick={() => setNotice("Issue composer opened.")}>
-              <Icon name="add" />
-              Create first issue
-            </button>
-            <button
-              className={softButton}
-              onClick={() => setNotice("Issue import is ready for a connected source.")}
-            >
-              <Icon name="cloud_download" />
-              Import issues
-            </button>
-          </div>
-          {notice && (
-            <p role="status" className="mt-4 text-sm text-accent">
-              {notice}
-            </p>
-          )}
-          <div className="mx-auto mt-9 grid max-w-xl gap-3 border-t border-border pt-6 text-left sm:grid-cols-3">
-            {[
-              ["01", "Add issues", "Capture work for your team"],
-              ["02", "Plan a sprint", "Set a shared goal"],
-              ["03", "Track progress", "Move work across your board"],
-            ].map(([n, t, d]) => (
-              <div key={n}>
-                <span className="font-mono text-xs text-accent">{n}</span>
-                <strong className="mt-2 block text-sm">{t}</strong>
-                <p className="mt-1 text-xs text-muted">{d}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-    );
-
   const notFound = kind === "not-found";
   return (
     <div className={shell}>
@@ -687,7 +622,7 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
         <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">
           {notFound
             ? "The requested issue or resource may have moved, been archived, or no longer exists."
-            : "Your current workspace role does not include permission to view this resource. Request access from a workspace administrator."}
+            : "This is a permission-state preview. No authorization service enforces roles or receives access requests."}
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <Link className={button} href="/">
@@ -695,13 +630,15 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
           </Link>
           <button
             className={softButton}
-            onClick={() =>
-              setNotice(
-                notFound ? "Support details copied." : "Access request sent to workspace admins.",
-              )
+            disabled={!notFound}
+            title={
+              notFound
+                ? "Copy diagnostic context"
+                : "Access requests are not connected in this preview"
             }
+            onClick={copyDiagnostics}
           >
-            {notFound ? "Copy diagnostics" : "Request access"}
+            {notFound ? "Copy diagnostics" : "Access request unavailable"}
           </button>
         </div>
         {notice && (
@@ -711,8 +648,8 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
         )}
         <p className="mt-8 font-mono text-[11px] text-outline">
           {notFound
-            ? "TENANT: NORTHSTAR_PROD · TRACE: TEM-999"
-            : "TICKET #SEC-8921 · ENFORCEMENT: STRICT RBAC"}
+            ? "TENANT: LOCAL DEMO · TRACE: UNAVAILABLE"
+            : "AUTHORIZATION SERVICE: NOT CONNECTED · PREVIEW ONLY"}
         </p>
       </Panel>
     </div>

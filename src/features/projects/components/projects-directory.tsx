@@ -10,12 +10,12 @@ import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 const control =
   "h-9 rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 
-export function ProjectsDirectory() {
+export function ProjectsDirectory({ startCreating = false }: { startCreating?: boolean }) {
   const state = useDemoState();
   const workspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId)!;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(startCreating);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Product & Engineering");
   const [error, setError] = useState("");

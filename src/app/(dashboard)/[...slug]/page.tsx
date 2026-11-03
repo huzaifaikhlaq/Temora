@@ -11,21 +11,14 @@ const routes: Record<
   | "reports"
   | "calendar"
   | "settings"
-  | "empty"
   | "not-found"
   | "forbidden"
-  | "burndown"
-  | "complete-sprint"
   | "roles"
-  | "retrospective"
   | "automation"
   | "audit"
 > = {
   projects: "projects",
   billing: "billing",
-  "reports/sprints/24": "burndown",
-  "sprints/24/complete": "complete-sprint",
-  "sprints/24/retrospective": "retrospective",
   roles: "roles",
   "settings/automation": "automation",
   "security/audit-logs": "audit",
@@ -35,7 +28,6 @@ const routes: Record<
   reports: "reports",
   calendar: "calendar",
   settings: "settings",
-  "projects/new": "empty",
   "not-found": "not-found",
   forbidden: "forbidden",
 };

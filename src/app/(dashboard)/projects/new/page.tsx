@@ -1,5 +1,5 @@
-import { AdditionalPage } from "@/features/workspace/components/additional-pages";
+import { ProjectsDirectory } from "@/features/projects/components/projects-directory";
 
 export default function NewProjectRoute() {
-  return <AdditionalPage kind="empty" />;
+  return <ProjectsDirectory startCreating />;
 }

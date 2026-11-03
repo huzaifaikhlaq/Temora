@@ -7,6 +7,7 @@ import type {
   Member,
   Project,
   ProjectStatus,
+  RetrospectiveNote,
   Sprint,
   Workspace,
   WorkspaceIndustry,
@@ -76,6 +77,7 @@ export const demoRepository = {
 
   createWorkspace(input: {
     name: string;
+    slug?: string;
     plan?: Workspace["plan"];
     teamSize?: WorkspaceTeamSize;
     industry?: WorkspaceIndustry;
@@ -83,6 +85,10 @@ export const demoRepository = {
   }) {
     const name = input.name.trim();
     if (name.length < 2) throw new Error("Enter a workspace name with at least two characters.");
+    const slug = slugify(input.slug ?? name);
+    if (!slug) throw new Error("Enter a workspace URL using letters, numbers, and hyphens.");
+    if (state.workspaces.some((workspace) => workspace.slug === slug))
+      throw new Error("That workspace URL is already in use in this demo.");
     const id = nextId("workspace", state.counters.workspace);
     const owner = state.members.find((member) => member.id === state.activeMemberId);
     if (!owner) throw new Error("Choose a workspace owner before creating a workspace.");
@@ -91,7 +97,7 @@ export const demoRepository = {
     const workspace: Workspace = {
       id,
       name,
-      slug: slugify(name),
+      slug,
       plan: input.plan ?? "Free",
       ...(input.teamSize ? { teamSize: input.teamSize } : {}),
       ...(input.industry ? { industry: input.industry } : {}),
@@ -314,11 +320,135 @@ export const demoRepository = {
     });
   },
 
+  addIssueDependency(
+    issueId: EntityId,
+    relatedIssueId: EntityId,
+    relation: "blocks" | "blocked-by" | "relates-to",
+  ) {
+    const issue = findIssue(issueId);
+    const related = findIssue(relatedIssueId);
+    if (issue.id === related.id) throw new Error("An issue cannot depend on itself.");
+    if (issue.workspaceId !== related.workspaceId)
+      throw new Error("Dependencies must stay within the active workspace.");
+    if (relation === "relates-to") {
+      if (issue.relatedIds?.includes(related.id) || related.relatedIds?.includes(issue.id))
+        throw new Error("These issues are already related.");
+      persist({
+        ...state,
+        issues: state.issues.map((item) =>
+          item.id === issue.id
+            ? {
+                ...item,
+                relatedIds: [...(item.relatedIds ?? []), related.id],
+                updatedAt: DEMO_TODAY,
+              }
+            : item.id === related.id
+              ? {
+                  ...item,
+                  relatedIds: [...(item.relatedIds ?? []), issue.id],
+                  updatedAt: DEMO_TODAY,
+                }
+              : item,
+        ),
+      });
+      return;
+    }
+    const blocker = relation === "blocks" ? issue : related;
+    const blocked = relation === "blocks" ? related : issue;
+    if (blocker.blocksIds.includes(blocked.id)) throw new Error("This dependency already exists.");
+
+    const reachesBlocker = (startId: EntityId, visited = new Set<EntityId>()): boolean => {
+      if (startId === blocker.id) return true;
+      if (visited.has(startId)) return false;
+      visited.add(startId);
+      const current = state.issues.find((item) => item.id === startId);
+      return current?.blocksIds.some((nextId) => reachesBlocker(nextId, visited)) ?? false;
+    };
+    if (reachesBlocker(blocked.id)) throw new Error("This dependency would create a cycle.");
+
+    persist({
+      ...state,
+      issues: state.issues.map((item) => {
+        if (item.id === blocker.id)
+          return { ...item, blocksIds: [...item.blocksIds, blocked.id], updatedAt: DEMO_TODAY };
+        if (item.id === blocked.id)
+          return {
+            ...item,
+            blockedByIds: [...item.blockedByIds, blocker.id],
+            updatedAt: DEMO_TODAY,
+          };
+        return item;
+      }),
+    });
+  },
+
+  removeIssueDependency(
+    issueId: EntityId,
+    relatedIssueId: EntityId,
+    relation: "blocks" | "blocked-by" | "relates-to",
+  ) {
+    const issue = findIssue(issueId);
+    const related = findIssue(relatedIssueId);
+    if (issue.workspaceId !== related.workspaceId)
+      throw new Error("Dependencies must stay within the active workspace.");
+    if (relation === "relates-to") {
+      if (!issue.relatedIds?.includes(related.id) || !related.relatedIds?.includes(issue.id))
+        throw new Error("These issues are not related.");
+      persist({
+        ...state,
+        issues: state.issues.map((item) =>
+          item.id === issue.id
+            ? {
+                ...item,
+                relatedIds: item.relatedIds?.filter((id) => id !== related.id),
+                updatedAt: DEMO_TODAY,
+              }
+            : item.id === related.id
+              ? {
+                  ...item,
+                  relatedIds: item.relatedIds?.filter((id) => id !== issue.id),
+                  updatedAt: DEMO_TODAY,
+                }
+              : item,
+        ),
+      });
+      return;
+    }
+    const blocker = relation === "blocks" ? issue : related;
+    const blocked = relation === "blocks" ? related : issue;
+    if (!blocker.blocksIds.includes(blocked.id)) throw new Error("This dependency does not exist.");
+    persist({
+      ...state,
+      issues: state.issues.map((item) => {
+        if (item.id === blocker.id)
+          return {
+            ...item,
+            blocksIds: item.blocksIds.filter((id) => id !== blocked.id),
+            updatedAt: DEMO_TODAY,
+          };
+        if (item.id === blocked.id)
+          return {
+            ...item,
+            blockedByIds: item.blockedByIds.filter((id) => id !== blocker.id),
+            updatedAt: DEMO_TODAY,
+          };
+        return item;
+      }),
+    });
+  },
+
   deleteIssue(issueId: EntityId) {
     findIssue(issueId);
     persist({
       ...state,
-      issues: state.issues.filter((item) => item.id !== issueId),
+      issues: state.issues
+        .filter((item) => item.id !== issueId)
+        .map((item) => ({
+          ...item,
+          blockedByIds: item.blockedByIds.filter((id) => id !== issueId),
+          blocksIds: item.blocksIds.filter((id) => id !== issueId),
+          relatedIds: item.relatedIds?.filter((id) => id !== issueId),
+        })),
       subtasks: state.subtasks.filter((item) => item.issueId !== issueId),
       comments: state.comments.filter((item) => item.issueId !== issueId),
       notifications: state.notifications.filter((item) => item.issueId !== issueId),
@@ -555,6 +685,97 @@ export const demoRepository = {
       settingsByWorkspace: {
         ...state.settingsByWorkspace,
         [workspace.id]: { ...current, ...patch },
+      },
+    });
+  },
+
+  addRetrospectiveNote(sprintId: EntityId, category: RetrospectiveNote["category"], body: string) {
+    const workspace = scopedWorkspace();
+    const sprint = state.sprints.find(
+      (item) => item.id === sprintId && item.workspaceId === workspace.id,
+    );
+    if (!sprint) throw new Error("Sprint is not available in the active workspace.");
+    const text = body.trim();
+    if (text.length < 3 || text.length > 500)
+      throw new Error("Retrospective notes must be between 3 and 500 characters.");
+    const current = state.settingsByWorkspace[workspace.id] ?? defaultSettings();
+    const notes = current.retrospectiveNotes?.[sprintId] ?? [];
+    const totalNotes = Object.values(state.settingsByWorkspace).reduce(
+      (total, item) => total + Object.values(item.retrospectiveNotes ?? {}).flat().length,
+      0,
+    );
+    const note: RetrospectiveNote = {
+      id: nextId("retro-note", totalNotes),
+      sprintId,
+      category,
+      body: text,
+      votes: [],
+      createdAt: DEMO_TODAY,
+    };
+    persist({
+      ...state,
+      settingsByWorkspace: {
+        ...state.settingsByWorkspace,
+        [workspace.id]: {
+          ...current,
+          retrospectiveNotes: {
+            ...current.retrospectiveNotes,
+            [sprintId]: [...notes, note],
+          },
+        },
+      },
+    });
+    return note;
+  },
+
+  toggleRetrospectiveVote(noteId: EntityId) {
+    const workspace = scopedWorkspace();
+    const current = state.settingsByWorkspace[workspace.id] ?? defaultSettings();
+    let changed = false;
+    const retrospectiveNotes = Object.fromEntries(
+      Object.entries(current.retrospectiveNotes ?? {}).map(([sprintId, notes]) => [
+        sprintId,
+        notes.map((note) => {
+          if (note.id !== noteId) return note;
+          changed = true;
+          const hasVoted = note.votes.includes(state.activeMemberId);
+          return {
+            ...note,
+            votes: hasVoted
+              ? note.votes.filter((memberId) => memberId !== state.activeMemberId)
+              : [...note.votes, state.activeMemberId],
+          };
+        }),
+      ]),
+    );
+    if (!changed) throw new Error("Retrospective note not found in the active workspace.");
+    persist({
+      ...state,
+      settingsByWorkspace: {
+        ...state.settingsByWorkspace,
+        [workspace.id]: { ...current, retrospectiveNotes },
+      },
+    });
+  },
+
+  deleteRetrospectiveNote(noteId: EntityId) {
+    const workspace = scopedWorkspace();
+    const current = state.settingsByWorkspace[workspace.id] ?? defaultSettings();
+    const found = Object.values(current.retrospectiveNotes ?? {})
+      .flat()
+      .some((note) => note.id === noteId);
+    if (!found) throw new Error("Retrospective note not found in the active workspace.");
+    const retrospectiveNotes = Object.fromEntries(
+      Object.entries(current.retrospectiveNotes ?? {}).map(([sprintId, notes]) => [
+        sprintId,
+        notes.filter((note) => note.id !== noteId),
+      ]),
+    );
+    persist({
+      ...state,
+      settingsByWorkspace: {
+        ...state.settingsByWorkspace,
+        [workspace.id]: { ...current, retrospectiveNotes },
       },
     });
   },

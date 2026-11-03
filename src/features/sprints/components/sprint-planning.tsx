@@ -114,6 +114,12 @@ export function SprintPlanning({ projectId = "website-redesign" }: { projectId?:
         </div>
         <div className="flex gap-2">
           <Link
+            href={`/sprints/${activeSprint?.id ?? sprints.at(-1)?.id ?? "sprint-24"}/retrospective`}
+            className="h-9 rounded-lg border border-border px-3 py-2 text-sm"
+          >
+            Retrospective
+          </Link>
+          <Link
             href={`/projects/${project.id}/settings`}
             className="h-9 rounded-lg border border-border px-3 py-2 text-sm"
           >
@@ -458,6 +464,18 @@ function SprintSection({
               Complete
             </Link>
           )}
+          <Link
+            href={`/reports/sprints/${sprint.id}`}
+            className="rounded-lg border border-border px-3 py-2 text-xs"
+          >
+            Burndown
+          </Link>
+          <Link
+            href={`/sprints/${sprint.id}/retrospective`}
+            className="rounded-lg border border-border px-3 py-2 text-xs"
+          >
+            Retrospective
+          </Link>
           <button
             onClick={() => setEditing((value) => !value)}
             className="rounded-lg border border-border px-3 py-2 text-xs"

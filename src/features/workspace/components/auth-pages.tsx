@@ -25,6 +25,7 @@ export function AuthPage({
   const [message, setMessage] = useState("");
   const [method, setMethod] = useState("Email & 2FA");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceSlugOverride, setWorkspaceSlugOverride] = useState("");
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [error, setError] = useState("");
   const [teamSize, setTeamSize] = useState<WorkspaceTeamSize | "">("");
@@ -41,6 +42,7 @@ export function AuthPage({
       ) as {
         step?: number;
         workspaceName?: string;
+        workspaceSlugOverride?: string;
         teamSize?: string;
         methodology?: string;
         industry?: string;
@@ -48,6 +50,7 @@ export function AuthPage({
       if (!draft) return;
       if (draft.step && draft.step >= 1 && draft.step <= 4) setStep(draft.step);
       setWorkspaceName(draft.workspaceName ?? "");
+      setWorkspaceSlugOverride(draft.workspaceSlugOverride ?? "");
       if (["1–10", "11–50", "51–200", "200+"].includes(draft.teamSize ?? ""))
         setTeamSize(draft.teamSize as WorkspaceTeamSize);
       if (
@@ -74,7 +77,14 @@ export function AuthPage({
     try {
       window.localStorage.setItem(
         "temora-workspace-setup-draft-v1",
-        JSON.stringify({ step, workspaceName, teamSize, methodology, industry }),
+        JSON.stringify({
+          step,
+          workspaceName,
+          workspaceSlugOverride,
+          teamSize,
+          methodology,
+          industry,
+        }),
       );
       setError("");
       setMessage("Setup draft saved in this browser.");
@@ -87,6 +97,7 @@ export function AuthPage({
     try {
       const workspace = demoRepository.createWorkspace({
         name: workspaceName,
+        slug: workspaceSlugOverride || workspaceName,
         ...(mode === "onboarding"
           ? {
               ...(teamSize ? { teamSize } : {}),
@@ -122,7 +133,9 @@ export function AuthPage({
         <header className="flex items-center justify-between px-6 py-5 lg:px-12">
           {logo}
           <div className="flex items-center gap-4 text-xs text-slate-500">
-            <span className="hidden sm:inline">Frontend preview · identity provider not connected</span>
+            <span className="hidden sm:inline">
+              Frontend preview · identity provider not connected
+            </span>
             <span className="flex items-center gap-1">
               <Icon name="verified_user" size={16} />
               Demo mode
@@ -262,7 +275,9 @@ export function AuthPage({
       <main className="min-h-screen bg-[#f7f8fc] px-5 py-8 text-slate-900">
         <header className="mx-auto flex max-w-6xl items-center justify-between">
           {logo}
-          <span className="text-xs text-slate-500">Frontend preview · no identity provider connected</span>
+          <span className="text-xs text-slate-500">
+            Frontend preview · no identity provider connected
+          </span>
         </header>
         <div className="mx-auto mt-8 grid max-w-6xl gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
           <section className="rounded-2xl bg-[#17152c] p-7 text-white sm:p-9">
@@ -387,7 +402,7 @@ export function AuthPage({
         <header className="mx-auto flex max-w-6xl items-center justify-between">
           {logo}
           <span className="text-xs text-slate-500">
-            Enterprise Security Protocol 2.4 · AUTH GATEWAY ACTIVE
+            Frontend preview · password recovery unavailable
           </span>
         </header>
         <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
@@ -410,16 +425,16 @@ export function AuthPage({
             <>
               <h1 className="mt-7 text-2xl font-bold">Reset your credentials</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Enter your verified work email address or enterprise SSO handle. If your
-                organization enforces Okta or SAML, you’ll be redirected to your identity provider.
+                This screen previews the recovery flow. No email validation, SSO redirect, or
+                recovery service is connected.
               </p>
               <label className="mt-6 block text-sm font-medium">
                 Work email address
-                <input className={input} type="email" defaultValue="alex@northstar.studio" />
+                <input className={input} type="email" placeholder="you@company.com" />
               </label>
-              <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">
+              <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
                 <Icon name="verified_user" size={16} className="mr-1 inline" />
-                Verified tenant · NorthStar Engineering (US-East-1)
+                Demo preview · no tenant or email is verified
               </div>
               <button
                 className={`${primary} mt-5 w-full`}
@@ -462,15 +477,17 @@ export function AuthPage({
                 <input className={input} type="password" placeholder="Repeat your password" />
               </label>
               <div className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
-                Password strength: Strong{" "}
+                Password validation is unavailable in this frontend preview.{" "}
                 <span className="block text-xs">
-                  ✓ 12+ characters · ✓ number · ✓ special symbol · ✓ mixed casing
+                  No password is stored or changed by these controls.
                 </span>
               </div>
               <button
                 className={`${primary} mt-5 w-full`}
                 onClick={() =>
-                  setMessage("Preview only: no password service is connected, so no password was changed.")
+                  setMessage(
+                    "Preview only: no password service is connected, so no password was changed.",
+                  )
                 }
               >
                 Update password & authenticate <Icon name="arrow_forward" />
@@ -493,7 +510,7 @@ export function AuthPage({
               ← Back to sign in
             </Link>
             <p className="mt-4 text-xs text-slate-400">
-              TLS 1.3 Strict · SOC-2 Type II Certified · Zero-Knowledge Salts
+              Frontend preview · password recovery service not connected
             </p>
           </div>
         </div>
@@ -505,7 +522,10 @@ export function AuthPage({
       <main className="min-h-screen bg-[#f7f8fc] px-5 py-8 text-slate-900">
         <header className="mx-auto flex max-w-6xl items-center justify-between">
           {logo}
-          <span className="text-xs text-slate-500">Northstar Studio · Sprint 44</span>
+          <span className="text-xs text-slate-500">
+            {demoState.workspaces.find((item) => item.id === demoState.activeWorkspaceId)?.name} ·
+            Demo preview
+          </span>
         </header>
         <div className="mx-auto mt-8 grid max-w-5xl gap-5 lg:grid-cols-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -515,8 +535,8 @@ export function AuthPage({
             <p className="mt-5 font-mono text-xs font-semibold text-violet-700">AUTH-PIN-256</p>
             <h1 className="mt-2 text-2xl font-bold">Confirm your email address</h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              We sent a six-digit confirmation passcode to alex@northstar.studio. Enter the code to
-              finish setting up your workspace.
+              Entering a code here will not verify your email. The frontend preview does not send
+              confirmation messages.
             </p>
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
               One-time passcode
@@ -527,11 +547,15 @@ export function AuthPage({
                 placeholder="000000"
               />
             </label>
-            <p className="mt-2 text-right text-xs text-slate-500">Resend available in 42s</p>
+            <p className="mt-2 text-right text-xs text-slate-500">
+              Resend is unavailable in preview mode
+            </p>
             <button
               className={`${primary} mt-4 w-full`}
               onClick={() =>
-                setMessage("Preview only: email verification is not connected, so this address was not verified.")
+                setMessage(
+                  "Preview only: email verification is not connected, so this address was not verified.",
+                )
               }
             >
               Verify & access workspace <Icon name="arrow_forward" />
@@ -551,17 +575,17 @@ export function AuthPage({
               <Icon name="lock_clock" size={25} />
             </div>
             <p className="mt-5 font-mono text-xs font-semibold text-amber-700">
-              IDLE TIMEOUT // SECURITY BOUNDARY · 401
+              DEMO ERROR STATE // SESSION EXPIRED SCREEN PREVIEW
             </p>
             <h2 className="mt-2 text-2xl font-bold">Session expired</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Your Northstar Studio session expired after 30 minutes. Re-authenticate to restore
-              your unsaved board state.
+              Session re-authentication is a visual preview. This application does not create server
+              sessions or keep a pending unsaved buffer.
             </p>
             <div className="mt-5 rounded-lg bg-slate-50 p-3">
-              <strong className="text-sm">Alex Morgan</strong>
+              <strong className="text-sm">Demo user</strong>
               <span className="block text-xs text-slate-500">
-                alex@northstar.studio · Lead Architect · Owner
+                Local frontend preview · session service unavailable
               </span>
             </div>
             <label className="mt-4 block text-sm font-medium">
@@ -594,7 +618,7 @@ export function AuthPage({
           </section>
         </div>
         <p className="mx-auto mt-6 max-w-5xl text-center font-mono text-[10px] text-slate-400">
-          2FA Enforced · TLS 1.3 Strict · HSTS Valid Session Nonce · Zero-Knowledge Rehydration
+          Preview only · no session, 2FA, or transport security is implemented here
         </p>
       </main>
     );
@@ -687,9 +711,11 @@ export function AuthPage({
                   const projects = demoState.projects.filter(
                     (project) => project.workspaceId === workspace.id && !project.archivedAt,
                   );
+                  const activeEmail = demoState.members.find(
+                    (member) => member.id === demoState.activeMemberId,
+                  )?.email;
                   const role =
-                    members.find((member) => member.id === demoState.activeMemberId)?.role ??
-                    "Member";
+                    members.find((member) => member.email === activeEmail)?.role ?? "Member";
                   const isActive = workspace.id === demoState.activeWorkspaceId;
                   return (
                     <div
@@ -787,7 +813,10 @@ export function AuthPage({
                 required
                 minLength={2}
                 value={workspaceName}
-                onChange={(event) => setWorkspaceName(event.target.value)}
+                onChange={(event) => {
+                  setWorkspaceName(event.target.value);
+                  setWorkspaceSlugOverride("");
+                }}
                 placeholder="e.g. Northstar Studio"
               />
             </label>
@@ -797,7 +826,19 @@ export function AuthPage({
                 <span className="mt-1 h-11 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-500">
                   temora.app/
                 </span>
-                <input className={`${input} rounded-l-none`} placeholder="your-team" />
+                <input
+                  className={`${input} rounded-l-none`}
+                  value={
+                    workspaceSlugOverride ||
+                    workspaceName
+                      .trim()
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-|-$/g, "")
+                  }
+                  onChange={(event) => setWorkspaceSlugOverride(event.target.value)}
+                  placeholder="your-team"
+                />
               </div>
             </label>
             <fieldset className="sm:col-span-2">
@@ -832,7 +873,7 @@ export function AuthPage({
             <fieldset className="sm:col-span-2">
               <legend className="text-sm font-medium">Default project methodology</legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {["Agile Scrum", "Kanban", "Custom"].map((v) => (
+                {(["Agile Scrum", "Kanban", "Custom"] as const).map((v) => (
                   <button
                     key={v}
                     type="button"
