@@ -18,6 +18,7 @@ const groups: { label: string; links: { label: string; href: string; icon: strin
   {
     label: "Projects",
     links: [
+      { label: "All Projects", href: "/projects", icon: "folder_open" },
       { label: "Website Redesign", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-accent" },
       { label: "Mobile Application", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-green", disabled: true },
       { label: "Customer Portal", href: "/projects/website-redesign/board", icon: "circle", dot: "bg-outline", disabled: true },
@@ -48,6 +49,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pageTitle = pathname === "/" ? "Overview" : pathname.startsWith("/my-tasks") ? "My Tasks" : pathname.includes("/roadmap") ? "Roadmap & Timeline" : pathname.includes("/sprints") ? "Sprint Planning" : pathname.includes("/board") ? "Website Redesign" : pathname.startsWith("/issues/") ? pathname.split("/").at(-1) : pathname === "/projects" ? "Projects Directory" : pathname === "/projects/new" ? "New Project" : pathname === "/inbox" ? "Inbox" : pathname === "/calendar" ? "Planning Calendar" : pathname === "/members" ? "Members & Permissions" : pathname === "/reports" ? "Reports & Analytics" : pathname === "/integrations" ? "Integrations" : pathname === "/billing" ? "Billing & Subscription" : pathname === "/settings" ? "Workspace Settings" : "Temora";
 
   return (
     <div className="min-h-screen bg-surface-low text-foreground">
@@ -92,7 +94,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
       <div className="dashboard-main ml-[250px] min-h-screen">
         <header className="dashboard-topbar fixed left-[250px] right-0 top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border/40 bg-white/90 px-4 backdrop-blur-xl lg:px-6">
-          <div className="flex min-w-0 items-center gap-2 text-sm text-muted"><button className="lg:hidden" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Icon name="menu"/></button><span className="hidden sm:inline">Northstar Studio</span><span className="text-outline">/</span><span className="truncate font-semibold text-foreground">{pathname === "/" ? "Overview" : pathname.includes("my-tasks") ? "My Tasks" : pathname.includes("roadmap") ? "Roadmap & Timeline" : pathname.includes("sprints") ? "Sprint Planning" : "Website Redesign"}</span></div>
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted"><button className="lg:hidden" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Icon name="menu"/></button><span className="hidden sm:inline">Northstar Studio</span><span className="text-outline">/</span><span className="truncate font-semibold text-foreground">{pageTitle}</span></div>
           <label className="relative mx-auto hidden w-full max-w-md items-center md:flex"><Icon name="search" size={18} className="absolute left-2.5 text-outline"/><input className="h-9 w-full rounded-lg border border-border/50 bg-surface-low pl-9 pr-12 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" placeholder="Search or type Cmd+K..."/><kbd className="absolute right-2 rounded border border-border/60 bg-white px-1 font-mono text-[11px] text-outline">⌘K</kbd></label>
           <div className="flex shrink-0 items-center gap-2"><button onClick={() => setCreateOpen(true)} className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong"><Icon name="add" size={18}/><span className="hidden sm:inline">Create Issue</span></button><button aria-label="Notifications" className="relative rounded p-1 text-muted hover:bg-surface-low"><Icon name="notifications"/><i className="absolute right-1 top-1 size-2 rounded-full bg-red"/></button><button aria-label="Help" className="hidden rounded p-1 text-muted hover:bg-surface-low sm:block"><Icon name="help"/></button><span className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">AM</span></div>
         </header>
