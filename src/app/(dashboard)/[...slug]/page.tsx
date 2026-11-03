@@ -5,7 +5,6 @@ const routes: Record<
   string,
   | "projects"
   | "billing"
-  | "issue"
   | "members"
   | "inbox"
   | "integrations"
@@ -15,9 +14,6 @@ const routes: Record<
   | "empty"
   | "not-found"
   | "forbidden"
-  | "create-issue"
-  | "issues"
-  | "dependencies"
   | "burndown"
   | "complete-sprint"
   | "roles"
@@ -27,10 +23,6 @@ const routes: Record<
 > = {
   projects: "projects",
   billing: "billing",
-  "issues/TEM-101": "issue",
-  "issues/new": "create-issue",
-  issues: "issues",
-  "issues/TEM-101/dependencies": "dependencies",
   "reports/sprints/24": "burndown",
   "sprints/24/complete": "complete-sprint",
   "sprints/24/retrospective": "retrospective",

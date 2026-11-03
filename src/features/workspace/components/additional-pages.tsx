@@ -1,16 +1,23 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { MetricCard, Panel, PanelTitle } from "@/components/shared/dashboard-ui";
-import { AdvancedPage, type AdvancedPageKind } from "@/features/workspace/components/advanced-pages";
+import {
+  AdvancedPage,
+  type AdvancedPageKind,
+} from "@/features/workspace/components/advanced-pages";
 import { ProjectsDirectory } from "@/features/projects/components/projects-directory";
+import { BillingPage } from "@/features/billing/components/billing-page";
+import { MembersDirectory } from "@/features/members/components/members-directory";
+import { InboxPage } from "@/features/notifications/components/inbox-page";
+import { WorkspaceSettingsPage } from "@/features/settings/components/workspace-settings-page";
+import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 type PageKind =
   | "projects"
   | "billing"
-  | "issue"
   | "members"
   | "inbox"
   | "integrations"
@@ -36,27 +43,6 @@ const softButton =
   "inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-foreground hover:bg-surface-low";
 const field =
   "h-9 rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent";
-
-const members = [
-  ["SC", "Sarah Chen", "sarah@northstar.studio", "Product Design", "Admin", "Online"],
-  ["JL", "Jordan Lee", "jordan@northstar.studio", "Engineering", "Member", "Online"],
-  ["MP", "Maya Patel", "maya@northstar.studio", "Product Design", "Member", "Away"],
-  ["AM", "Alex Morgan", "alex@northstar.studio", "Leadership", "Owner", "Online"],
-  ["TK", "Theo Kim", "theo@northstar.studio", "Engineering", "Member", "Offline"],
-];
-const projects = [
-  ["Website Redesign", "WR", "Product Design", "In Progress", "72%", "bg-violet-500"],
-  ["Mobile Application", "MA", "Mobile Engineering", "In Progress", "48%", "bg-emerald-500"],
-  ["Customer Portal", "CP", "Platform", "Planning", "24%", "bg-sky-500"],
-  ["Design System", "DS", "Product Design", "In Review", "86%", "bg-amber-500"],
-];
-const activities = [
-  ["Sarah Chen", "mentioned you in", "Homepage hero exploration", "12m ago", "@"],
-  ["Jordan Lee", "completed", "API contract for user profile", "48m ago", "✓"],
-  ["Maya Patel", "commented on", "Mobile navigation prototype", "2h ago", "“"],
-  ["Sprint 14", "started today", "Website Redesign", "4h ago", "↗"],
-  ["Theo Kim", "assigned you", "Review responsive breakpoints", "Yesterday", "＋"],
-];
 
 function PageHeader({
   title,
@@ -111,23 +97,96 @@ function Table({ headings, rows }: { headings: string[]; rows: React.ReactNode[]
 }
 
 export function AdditionalPage({ kind }: { kind: PageKind }) {
+  const demoState = useDemoState();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [read, setRead] = useState<number[]>([]);
   const [tab, setTab] = useState("General");
   const [period, setPeriod] = useState("Month");
+  const [reportRange, setReportRange] = useState("30");
   const [notice, setNotice] = useState("");
-  const shownMembers = useMemo(
-    () =>
-      members.filter(
-        (row) =>
-          row.join(" ").toLowerCase().includes(query.toLowerCase()) &&
-          (filter === "All" || row[4] === filter),
-      ),
-    [query, filter],
+  const [simulatedConnections, setSimulatedConnections] = useState<string[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
-
+  const calendarFirstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+  const calendarGridStart = new Date(
+    calendarMonth.getFullYear(),
+    calendarMonth.getMonth(),
+    1 - calendarFirstDay.getDay(),
+  );
+  const calendarEvents = new Map<string, string[]>();
+  const workspaceIssues = demoState.issues.filter(
+    (issue) => issue.workspaceId === demoState.activeWorkspaceId,
+  );
+  const workspaceProjects = demoState.projects.filter(
+    (project) => project.workspaceId === demoState.activeWorkspaceId && !project.archivedAt,
+  );
+  const rangeStart = new Date();
+  rangeStart.setDate(rangeStart.getDate() - Number(reportRange));
+  const reportIssues = workspaceIssues.filter((issue) => new Date(issue.updatedAt) >= rangeStart);
+  const closedSprints = demoState.sprints
+    .filter(
+      (sprint) => sprint.workspaceId === demoState.activeWorkspaceId && sprint.status === "Closed",
+    )
+    .sort((a, b) => a.endDate.localeCompare(b.endDate))
+    .slice(-8);
+  const sprintVelocity = closedSprints.map((sprint) => ({
+    sprint,
+    points: workspaceIssues
+      .filter((issue) => issue.sprintId === sprint.id && issue.status === "Done")
+      .reduce((sum, issue) => sum + issue.storyPoints, 0),
+  }));
+  const averageVelocity = sprintVelocity.length
+    ? Math.round(sprintVelocity.reduce((sum, item) => sum + item.points, 0) / sprintVelocity.length)
+    : 0;
+  const statusRows: Array<[string, number, string]> = [
+    ["Done", "bg-emerald-500"],
+    ["In Progress", "bg-violet-500"],
+    ["In Review", "bg-amber-400"],
+    ["To Do", "bg-slate-300"],
+  ].map(([status, color]) => [
+    status,
+    reportIssues.filter((issue) => issue.status === status).length,
+    color,
+  ]);
+  function exportIssuesCsv() {
+    const rows = [
+      ["Key", "Summary", "Project", "Status", "Priority", "Assignee", "Due date"],
+      ...reportIssues.map((issue) => [
+        issue.key,
+        issue.title,
+        workspaceProjects.find((project) => project.id === issue.projectId)?.name ?? "",
+        issue.status,
+        issue.priority,
+        demoState.members.find((member) => member.id === issue.assigneeId)?.name ?? "",
+        issue.dueDate ?? "",
+      ]),
+    ];
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","))
+      .join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "temora-workspace-issues.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    setNotice(`Exported ${reportIssues.length} workspace issues as CSV.`);
+  }
+  const addCalendarEvent = (date: string | null, title: string) => {
+    if (!date) return;
+    calendarEvents.set(date, [...(calendarEvents.get(date) ?? []), title]);
+  };
+  demoState.issues
+    .filter((issue) => issue.workspaceId === demoState.activeWorkspaceId)
+    .forEach((issue) => addCalendarEvent(issue.dueDate, `${issue.key} · ${issue.title}`));
+  demoState.sprints
+    .filter((sprint) => sprint.workspaceId === demoState.activeWorkspaceId)
+    .forEach((sprint) => addCalendarEvent(sprint.startDate, `${sprint.name} starts`));
   if (kind === "projects") return <ProjectsDirectory />;
+  if (kind === "inbox") return <InboxPage />;
+  if (kind === "members") return <MembersDirectory />;
+  if (kind === "billing") return <BillingPage />;
+  if (kind === "settings") return <WorkspaceSettingsPage />;
   if (
     [
       "create-issue",
@@ -144,130 +203,6 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
     return <AdvancedPage kind={kind as AdvancedPageKind} />;
   }
 
-  if (kind === "issue")
-    return (
-      <div className={shell}>
-        <div className="flex items-center gap-2 text-sm text-muted">
-          <Link href="/projects/website-redesign/board" className="hover:text-accent">
-            ← Website Redesign
-          </Link>
-          <span>/</span>
-          <span>TEM-101</span>
-        </div>
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-5">
-            <Panel>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded bg-accent/10 px-2 py-1 font-mono font-semibold text-accent">
-                  STORY · TEM-101
-                </span>
-                <span className="rounded bg-emerald-100 px-2 py-1 font-semibold text-emerald-800">
-                  In Progress
-                </span>
-                <span className="rounded bg-red-100 px-2 py-1 font-semibold text-red-700">
-                  Urgent
-                </span>
-                <button className="ml-auto text-muted" aria-label="More issue actions">
-                  <Icon name="more_horiz" />
-                </button>
-              </div>
-              <h1 className="mt-4 text-2xl font-bold tracking-tight">
-                Design the homepage responsive grid & hero layout
-              </h1>
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted">
-                <span>Updated 22m ago</span>
-                <span>·</span>
-                <span>Sprint 14</span>
-                <button className="text-accent" onClick={() => setNotice("Issue link copied.")}>
-                  Share link
-                </button>
-                <Link className="text-accent" href="/issues/TEM-101/dependencies">
-                  Dependencies & history
-                </Link>
-              </div>
-              <p className="mt-6 leading-7 text-muted">
-                Create a flexible homepage layout that adapts across desktop, tablet, and mobile
-                breakpoints. The hero section should keep the primary call to action visible and
-                preserve the visual hierarchy.
-              </p>
-              <h2 className="mt-6 font-semibold">Acceptance criteria</h2>
-              <div className="mt-3 space-y-2">
-                {[
-                  "Responsive grid supports desktop, tablet, and mobile widths",
-                  "Hero content and primary action remain clear at every breakpoint",
-                  "Design reviewed against the component library",
-                ].map((x) => (
-                  <label key={x} className="flex gap-3 rounded-lg bg-surface-low p-3 text-sm">
-                    <input type="checkbox" className="accent-violet-600" />
-                    {x}
-                  </label>
-                ))}
-              </div>
-            </Panel>
-            <Panel>
-              <PanelTitle title="Activity" />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-border p-3 text-sm outline-none focus:border-accent"
-                placeholder="Write a comment…"
-              />
-              <div className="mt-2 flex justify-end">
-                <button
-                  className={button}
-                  onClick={() => setNotice("Comment added to this local preview.")}
-                >
-                  Comment
-                </button>
-              </div>
-              {notice && <p className="mt-2 text-sm text-accent">{notice}</p>}
-              <div className="mt-5 space-y-4 border-t border-border pt-4">
-                <p className="text-sm">
-                  <strong>Sarah Chen</strong> <span className="text-xs text-muted">· 12m ago</span>
-                  <span className="mt-1 block text-muted">
-                    I’ve updated the hero exploration. Can you check the tablet breakpoint?
-                  </span>
-                </p>
-                <p className="text-sm">
-                  <strong>Alex Morgan</strong>{" "}
-                  <span className="text-xs text-muted">· Yesterday</span>
-                  <span className="mt-1 block text-muted">
-                    Added initial responsive layout notes.
-                  </span>
-                </p>
-              </div>
-            </Panel>
-          </div>
-          <Panel className="h-fit">
-            <PanelTitle title="Details" />
-            <div className="space-y-4 text-sm">
-              {[
-                ["Assignee", "Sarah Chen"],
-                ["Reporter", "Alex Morgan"],
-                ["Priority", "Urgent"],
-                ["Status", "In Progress"],
-                ["Sprint", "Sprint 14"],
-                ["Estimate", "5 points"],
-                ["Due date", "Oct 28, 2024"],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-3">
-                  <span className="text-muted">{k}</span>
-                  <strong>{v}</strong>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 border-t border-border pt-4">
-              <h3 className="mb-3 text-sm font-semibold">Labels</h3>
-              <span className="rounded bg-violet-100 px-2 py-1 text-xs text-violet-800">
-                Design System
-              </span>
-              <span className="ml-2 rounded bg-sky-100 px-2 py-1 text-xs text-sky-800">
-                Frontend
-              </span>
-            </div>
-          </Panel>
-        </div>
-      </div>
-    );
-
   if (kind === "reports")
     return (
       <div className={shell}>
@@ -276,12 +211,17 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
           subtitle="Understand team delivery, sprint velocity, and project health."
           action={
             <div className="flex gap-2">
-              <select className={field}>
-                <option>Last 30 Days: Oct 1 – Oct 31, 2024</option>
-                <option>Last 90 Days</option>
-                <option>This year</option>
+              <select
+                className={field}
+                value={reportRange}
+                onChange={(event) => setReportRange(event.target.value)}
+                aria-label="Report date range"
+              >
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
               </select>
-              <button className={softButton} onClick={() => setNotice("Report export prepared.")}>
+              <button className={softButton} onClick={exportIssuesCsv}>
                 <Icon name="file_download" />
                 Export
               </button>
@@ -291,21 +231,32 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
         {notice && <p className="text-sm text-accent">{notice}</p>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            label="Issues completed"
-            value="128"
-            note="↑ 12.8%"
+            label="Issues updated in range"
+            value={String(reportIssues.length)}
+            note={`Last ${reportRange} days`}
             icon="task_alt"
             tone="green"
           />
           <MetricCard
-            label="Cycle time"
-            value="3.4 days"
-            note="↓ 8.2%"
+            label="Completed issues"
+            value={String(reportIssues.filter((issue) => issue.status === "Done").length)}
+            note="Current workspace"
             icon="avg_time"
             tone="green"
           />
-          <MetricCard label="Sprint velocity" value="42 pts" note="↑ 5.1%" icon="speed" />
-          <MetricCard label="On-time delivery" value="91%" note="↑ 3.4%" icon="flag" tone="green" />
+          <MetricCard
+            label="Sprint velocity"
+            value={`${averageVelocity} pts`}
+            note={`${sprintVelocity.length} closed sprints`}
+            icon="speed"
+          />
+          <MetricCard
+            label="Open issues"
+            value={String(reportIssues.filter((issue) => issue.status !== "Done").length)}
+            note="In selected range"
+            icon="flag"
+            tone="green"
+          />
         </div>
         <div className="grid gap-5 xl:grid-cols-2">
           <Panel>
@@ -323,34 +274,50 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
               }
             />
             <div className="flex h-64 items-end gap-3 border-b border-l border-border px-4 pb-1 pt-6">
-              {[52, 68, 61, 78, 72, 91, 82, 96].map((h, i) => (
-                <div key={i} className="flex h-full flex-1 flex-col justify-end">
-                  <div className="rounded-t-md bg-accent/80" style={{ height: `${h}%` }} />
-                  <span className="mt-2 text-center text-[10px] text-muted">S{i + 7}</span>
-                </div>
-              ))}
+              {sprintVelocity.length ? (
+                sprintVelocity.map(({ sprint, points }) => (
+                  <div key={sprint.id} className="flex h-full flex-1 flex-col justify-end">
+                    <div
+                      className="rounded-t-md bg-accent/80"
+                      style={{
+                        height: `${Math.max(3, Math.round((points / Math.max(averageVelocity, 1)) * 70))}%`,
+                      }}
+                    />
+                    <span className="mt-2 truncate text-center text-[10px] text-muted">
+                      {sprint.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="m-auto text-sm text-muted">
+                  Complete a sprint to see velocity history.
+                </p>
+              )}
             </div>
             <div className="mt-3 flex justify-center gap-5 text-xs text-muted">
               <span>■ Completed</span>
-              <span>— Average 38 pts</span>
+              <span>— Average {averageVelocity} pts</span>
             </div>
           </Panel>
           <Panel>
             <PanelTitle title="Issues by status" />
             <div className="space-y-5 py-3">
-              {[
-                ["Done", 78, "bg-emerald-500"],
-                ["In Progress", 54, "bg-violet-500"],
-                ["In Review", 34, "bg-amber-400"],
-                ["To Do", 24, "bg-slate-300"],
-              ].map(([name, val, color]) => (
-                <div key={name as string}>
+              {statusRows.map(([name, val, color]) => (
+                <div key={name}>
                   <div className="mb-1 flex justify-between text-sm">
                     <span>{name}</span>
-                    <strong>{val}</strong>
+                    <strong>
+                      {val} ·{" "}
+                      {reportIssues.length ? Math.round((val / reportIssues.length) * 100) : 0}%
+                    </strong>
                   </div>
                   <div className="h-2 rounded-full bg-surface-high">
-                    <div className={`h-full rounded-full ${color}`} style={{ width: `${val}%` }} />
+                    <div
+                      className={`h-full rounded-full ${color}`}
+                      style={{
+                        width: `${reportIssues.length ? Math.round((val / reportIssues.length) * 100) : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
               ))}
@@ -360,20 +327,27 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
             <PanelTitle title="Project health" />
             <Table
               headings={["Project", "Completion", "Open issues", "Health", "Lead"]}
-              rows={projects.map((p, i) => [
-                p[0],
-                <span className="font-mono" key="c">
-                  {p[4]}
-                </span>,
-                [18, 24, 11, 6][i],
-                <span
-                  className="rounded bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800"
-                  key="health"
-                >
-                  On track
-                </span>,
-                members[i][1],
-              ])}
+              rows={workspaceProjects.map((project) => {
+                const projectIssues = workspaceIssues.filter(
+                  (issue) => issue.projectId === project.id,
+                );
+                const openCount = projectIssues.filter((issue) => issue.status !== "Done").length;
+                return [
+                  project.name,
+                  <span className="font-mono" key="c">
+                    {project.progress}%
+                  </span>,
+                  openCount,
+                  <span
+                    className={`rounded px-2 py-1 text-xs font-semibold ${project.status === "In Progress" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
+                    key="health"
+                  >
+                    {project.status}
+                  </span>,
+                  demoState.members.find((member) => member.id === project.leadId)?.name ??
+                    "Unassigned",
+                ];
+              })}
             />
           </Panel>
         </div>
@@ -389,10 +363,11 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
           action={
             <button
               className={button}
-              onClick={() => setNotice("API key created in this local preview.")}
+              disabled
+              title="API key generation is not connected in this frontend demo."
             >
               <Icon name="key" />
-              Generate API Key
+              API keys unavailable
             </button>
           }
         />
@@ -401,22 +376,26 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
             {notice}
           </p>
         )}
+        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          Integration buttons below only change a local preview state. No external accounts, API
+          keys, or webhooks are created.
+        </p>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             label="Connected integrations"
-            value="24"
-            note="Across 5 categories"
+            value={String(simulatedConnections.length)}
+            note="Local preview only"
             icon="extension"
           />
           <MetricCard
             label="Webhooks"
-            value="5"
-            note="All operational"
+            value="0"
+            note="No webhooks configured"
             icon="webhook"
             tone="green"
           />
-          <MetricCard label="API requests (24h)" value="142.8k" note="↑ 12.4%" icon="sync_alt" />
-          <MetricCard label="API keys" value="3" note="1 expires soon" icon="vpn_key" tone="red" />
+          <MetricCard label="API requests" value="0" note="No service connected" icon="sync_alt" />
+          <MetricCard label="API keys" value="0" note="Key generation disabled" icon="vpn_key" />
         </div>
         <Panel>
           <PanelTitle
@@ -456,9 +435,17 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                   </span>
                   <button
                     className={softButton}
-                    onClick={() => setNotice(`${x[0]} connection settings opened.`)}
+                    onClick={() => {
+                      const connected = simulatedConnections.includes(x[0]);
+                      setSimulatedConnections((current) =>
+                        connected ? current.filter((name) => name !== x[0]) : [...current, x[0]],
+                      );
+                      setNotice(
+                        `${x[0]} is ${connected ? "disconnected" : "marked connected"} in this local preview only.`,
+                      );
+                    }}
                   >
-                    Manage
+                    {simulatedConnections.includes(x[0]) ? "Disconnect demo" : "Simulate connect"}
                   </button>
                 </div>
               ))}
@@ -474,8 +461,13 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                 "Sep 12, 2024",
                 "2 minutes ago",
                 "Active",
-                <button key="r1" className="text-red-600">
-                  Revoke
+                <button
+                  key="r1"
+                  disabled
+                  title="No real API credentials are present in this demo."
+                  className="text-muted"
+                >
+                  Unavailable
                 </button>,
               ],
               [
@@ -483,8 +475,13 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                 "Aug 04, 2024",
                 "1 hour ago",
                 "Active",
-                <button key="r2" className="text-red-600">
-                  Revoke
+                <button
+                  key="r2"
+                  disabled
+                  title="No real API credentials are present in this demo."
+                  className="text-muted"
+                >
+                  Unavailable
                 </button>,
               ],
               [
@@ -492,8 +489,13 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                 "Jun 18, 2024",
                 "Oct 20, 2024",
                 "Expiring",
-                <button key="r3" className="text-red-600">
-                  Revoke
+                <button
+                  key="r3"
+                  disabled
+                  title="No real API credentials are present in this demo."
+                  className="text-muted"
+                >
+                  Unavailable
                 </button>,
               ],
             ]}
@@ -509,24 +511,49 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
           title="Planning Calendar"
           subtitle="See sprint cycles, project milestones, and task due dates across your workspace."
           action={
-            <button className={button} onClick={() => setNotice("New event form opened.")}>
+            <Link className={button} href="/issues/new">
               <Icon name="add" />
-              New Event / Deadline
-            </button>
+              New Issue / Deadline
+            </Link>
           }
         />
         {notice && <p className="text-sm text-accent">{notice}</p>}
         <Panel>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <button className={softButton} aria-label="Previous month">
+              <button
+                className={softButton}
+                aria-label="Previous month"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1),
+                  )
+                }
+              >
                 ‹
               </button>
-              <h2 className="min-w-36 text-center text-lg font-semibold">October 2024</h2>
-              <button className={softButton} aria-label="Next month">
+              <h2 className="min-w-36 text-center text-lg font-semibold">
+                {calendarMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+              </h2>
+              <button
+                className={softButton}
+                aria-label="Next month"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1),
+                  )
+                }
+              >
                 ›
               </button>
-              <button className={softButton}>Today</button>
+              <button
+                className={softButton}
+                onClick={() =>
+                  setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+                }
+              >
+                Today
+              </button>
             </div>
             <div className="flex gap-1 rounded-lg bg-surface-low p-1">
               {["Month", "Week", "Day"].map((v) => (
@@ -546,153 +573,43 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
                 {d}
               </div>
             ))}
-            {Array.from({ length: 35 }, (_, i) => {
-              const day = i - 1;
-              const inMonth = day > 0 && day <= 31;
+            {Array.from({ length: 42 }, (_, i) => {
+              const date = new Date(
+                calendarGridStart.getFullYear(),
+                calendarGridStart.getMonth(),
+                calendarGridStart.getDate() + i,
+              );
+              const inMonth = date.getMonth() === calendarMonth.getMonth();
+              const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+              const events = calendarEvents.get(dateKey) ?? [];
               return (
                 <div
-                  key={i}
+                  key={dateKey}
                   className={`min-h-24 border-b border-r border-border p-2 text-left ${inMonth ? "bg-white" : "bg-surface-low/60 text-outline"}`}
                 >
                   <span
-                    className={`text-xs ${day === 17 ? "grid size-6 place-items-center rounded-full bg-accent text-white" : ""}`}
+                    className={`text-xs ${date.toDateString() === new Date().toDateString() ? "grid size-6 place-items-center rounded-full bg-accent text-white" : ""}`}
                   >
-                    {day <= 0 ? 30 + day : day > 31 ? day - 31 : day}
+                    {date.getDate()}
                   </span>
-                  {inMonth && [4, 8, 14, 17, 22, 28].includes(day) && (
-                    <div
-                      className={`mt-2 truncate rounded px-1.5 py-1 text-[10px] font-medium ${day === 17 ? "bg-accent/10 text-accent" : "bg-emerald-50 text-emerald-800"}`}
+                  {events.slice(0, 2).map((event, index) => (
+                    <Link
+                      key={`${event}-${index}`}
+                      href={
+                        event.split(" · ")[0].startsWith("TEM-")
+                          ? `/issues/${event.split(" · ")[0]}`
+                          : "/projects"
+                      }
+                      className={`mt-2 block truncate rounded px-1.5 py-1 text-[10px] font-medium ${index === 0 ? "bg-accent/10 text-accent" : "bg-emerald-50 text-emerald-800"}`}
                     >
-                      {day === 17
-                        ? "Sprint 14 review"
-                        : day === 22
-                          ? "Mobile app milestone"
-                          : day === 28
-                            ? "TEM-101 due"
-                            : "Team planning"}
-                    </div>
-                  )}
+                      {event}
+                    </Link>
+                  ))}
                 </div>
               );
             })}
           </div>
         </Panel>
-      </div>
-    );
-
-  if (kind === "settings")
-    return (
-      <div className={shell}>
-        <PageHeader
-          title="Workspace Settings"
-          subtitle="Configure workspace details, workflows, fields, and automation rules."
-        />
-        <div className="grid gap-5 lg:grid-cols-[230px_1fr]">
-          <Panel className="h-fit">
-            <nav className="space-y-1">
-              {[
-                "General",
-                "Workflows & Statuses",
-                "Custom Fields",
-                "Automation Rules",
-                "Audit Logs",
-                "Billing",
-              ].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${tab === t ? "bg-accent/10 font-semibold text-accent" : "text-muted hover:bg-surface-low"}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </nav>
-          </Panel>
-          <div className="space-y-5">
-            <Panel>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {tab === "General" ? "General settings" : tab}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    Manage your workspace {tab.toLowerCase()} and default behavior.
-                  </p>
-                </div>
-                <button className={button} onClick={() => setNotice("Workflow settings saved.")}>
-                  <Icon name="save" />
-                  Save changes
-                </button>
-              </div>
-              {tab === "Workflows & Statuses" ? (
-                <div className="mt-5 space-y-3">
-                  {[
-                    ["Backlog", "Issues waiting to be planned", "bg-slate-100 text-slate-700"],
-                    ["To Do", "Ready for work", "bg-blue-100 text-blue-800"],
-                    ["In Progress", "Work currently underway", "bg-violet-100 text-violet-800"],
-                    ["In Review", "Awaiting review", "bg-amber-100 text-amber-800"],
-                    ["Done", "Completed work", "bg-emerald-100 text-emerald-800"],
-                  ].map((s, i) => (
-                    <div
-                      key={s[0]}
-                      className="flex items-center gap-3 rounded-lg border border-border p-3"
-                    >
-                      <Icon name="drag_indicator" className="text-outline" />
-                      <span className={`rounded px-2 py-1 text-xs font-semibold ${s[2]}`}>
-                        {s[0]}
-                      </span>
-                      <span className="flex-1 text-sm text-muted">{s[1]}</span>
-                      <button className="text-muted" aria-label={`Edit ${s[0]}`}>
-                        <Icon name="edit" />
-                      </button>
-                      {i > 1 && (
-                        <button className="text-muted" aria-label={`Remove ${s[0]}`}>
-                          <Icon name="close" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    className={softButton}
-                    onClick={() => setNotice("Custom status editor opened.")}
-                  >
-                    <Icon name="add" />
-                    Create custom status
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {[
-                    ["Workspace name", "Northstar Studio"],
-                    ["Workspace URL", "northstar.temora.app"],
-                    ["Default project methodology", "Agile Scrum"],
-                    ["Default sprint length", "2 weeks"],
-                  ].map(([label, value]) => (
-                    <label key={label} className="text-sm font-medium">
-                      {label}
-                      <input className={`${field} mt-1 w-full`} defaultValue={value} />
-                    </label>
-                  ))}
-                </div>
-              )}
-              {notice && (
-                <p role="status" className="mt-4 text-sm text-emerald-700">
-                  {notice}
-                </p>
-              )}
-            </Panel>
-            <Panel>
-              <PanelTitle title="Danger zone" />
-              <p className="text-sm text-muted">Transfer ownership or archive this workspace.</p>
-              <button
-                className="mt-3 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700"
-                onClick={() => setNotice("Workspace archive requires an owner confirmation.")}
-              >
-                Archive workspace
-              </button>
-            </Panel>
-          </div>
-        </div>
       </div>
     );
 
@@ -715,8 +632,8 @@ export function AdditionalPage({ kind }: { kind: PageKind }) {
           </p>
           <h1 className="mt-2 text-2xl font-bold">Your project board is ready</h1>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">
-            Bring your team&apos;s work together. Import existing issues or create the first issue to
-            start planning your sprint.
+            Bring your team&apos;s work together. Import existing issues or create the first issue
+            to start planning your sprint.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button className={button} onClick={() => setNotice("Issue composer opened.")}>

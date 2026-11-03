@@ -5,6 +5,6 @@ export default async function ProjectSprintsRoute({
 }: {
   params: Promise<{ projectId: string }>;
 }) {
-  await params;
-  return <SprintPlanning />;
+  const { projectId } = await params;
+  return <SprintPlanning projectId={projectId} />;
 }

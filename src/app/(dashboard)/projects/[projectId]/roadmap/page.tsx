@@ -5,6 +5,6 @@ export default async function ProjectRoadmapRoute({
 }: {
   params: Promise<{ projectId: string }>;
 }) {
-  await params;
-  return <RoadmapView />;
+  const { projectId } = await params;
+  return <RoadmapView projectId={projectId} />;
 }

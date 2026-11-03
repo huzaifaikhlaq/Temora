@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
@@ -9,12 +10,14 @@ const field = "rounded-lg border border-border bg-white px-3 py-2 text-sm";
 
 export function IssueDetailPage({ issueId }: { issueId: string }) {
   const state = useDemoState();
+  const router = useRouter();
   const issue = state.issues.find(
     (item) =>
       (item.id === issueId || item.key === issueId) && item.workspaceId === state.activeWorkspaceId,
   );
   const [title, setTitle] = useState(issue?.title ?? "");
   const [comment, setComment] = useState("");
+  const [labels, setLabels] = useState(issue?.labels.join(", ") ?? "");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   if (!issue)
@@ -69,6 +72,22 @@ export function IssueDetailPage({ issueId }: { issueId: string }) {
               >
                 Dependencies &amp; activity →
               </Link>
+              <button
+                type="button"
+                className="text-xs text-red-700"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Delete ${issue.key}? This only removes it from this browser’s demo data.`,
+                    )
+                  ) {
+                    demoRepository.deleteIssue(issue.id);
+                    router.replace("/issues");
+                  }
+                }}
+              >
+                Delete issue
+              </button>
             </div>
             <input
               aria-label="Issue title"
@@ -162,6 +181,23 @@ export function IssueDetailPage({ issueId }: { issueId: string }) {
                 <option key={value}>{value}</option>
               ))}
             </select>
+          </label>
+          <label className="block text-xs font-medium text-muted">
+            Labels
+            <input
+              className={`${field} mt-1 w-full`}
+              value={labels}
+              onChange={(event) => {
+                setLabels(event.target.value);
+                demoRepository.updateIssue(issue.id, {
+                  labels: event.target.value
+                    .split(",")
+                    .map((label) => label.trim())
+                    .filter(Boolean),
+                });
+              }}
+              placeholder="design, mobile"
+            />
           </label>
           <label className="block text-xs font-medium text-muted">
             Priority

@@ -1,5 +1,5 @@
 import { RoadmapView } from "@/features/projects/components/roadmap-view";
 
 export default function RoadmapPage() {
-  return <RoadmapView />;
+  return <RoadmapView projectId="website-redesign" />;
 }
