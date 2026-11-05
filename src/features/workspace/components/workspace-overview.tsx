@@ -26,9 +26,7 @@ export function WorkspaceOverview() {
   const activeSprint = state.sprints.find(
     (sprint) => sprint.workspaceId === state.activeWorkspaceId && sprint.status === "Active",
   );
-  const sprintTasks = activeSprint
-    ? tasks.filter((task) => task.sprintId === activeSprint.id)
-    : [];
+  const sprintTasks = activeSprint ? tasks.filter((task) => task.sprintId === activeSprint.id) : [];
   const sprintPoints = sprintTasks.reduce((sum, task) => sum + task.storyPoints, 0);
   const completedPoints = sprintTasks
     .filter((task) => task.status === "Done")
@@ -139,6 +137,7 @@ export function WorkspaceOverview() {
                         {task.key}
                       </Link>
                       <p className="truncate text-sm font-medium">{task.title}</p>
+                      {task.parentTaskId && <p className="text-[10px] text-muted">Subtask</p>}
                     </div>
                     <div className="hidden items-center gap-2 sm:flex">
                       <PriorityPill priority={task.priority} />
@@ -258,9 +257,7 @@ export function WorkspaceOverview() {
           <Panel>
             <PanelTitle
               title="Team Workload"
-              trailing={
-                <span className="font-mono text-xs text-outline">Open assigned tasks</span>
-              }
+              trailing={<span className="font-mono text-xs text-outline">Open assigned tasks</span>}
             />
             <div className="space-y-3">
               {state.members
@@ -304,10 +301,7 @@ export function WorkspaceOverview() {
                   return (
                     <li className="relative text-sm leading-5" key={comment.id}>
                       <span className="absolute -left-[22px] top-1 size-3 rounded-full bg-accent ring-4 ring-white" />
-                      <Link
-                        href={`/tasks/${task?.key}`}
-                        className="font-medium hover:text-accent"
-                      >
+                      <Link href={`/tasks/${task?.key}`} className="font-medium hover:text-accent">
                         {state.members.find((item) => item.id === comment.authorId)?.name ??
                           "Member"}
                       </Link>{" "}
@@ -324,9 +318,7 @@ export function WorkspaceOverview() {
                 })}
               </ol>
             ) : (
-              <p className="py-3 text-sm text-muted">
-                Task comments and updates will appear here.
-              </p>
+              <p className="py-3 text-sm text-muted">Task comments and updates will appear here.</p>
             )}
           </Panel>
         </div>

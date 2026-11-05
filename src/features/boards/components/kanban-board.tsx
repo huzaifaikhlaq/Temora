@@ -278,6 +278,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                     <TaskCard
                       key={task.id}
                       task={task}
+                      parentTask={tasks.find((candidate) => candidate.id === task.parentTaskId)}
                       members={members}
                       columns={columns}
                       onDragStart={() => setDragId(task.id)}
@@ -311,6 +312,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
 
 function TaskCard({
   task,
+  parentTask,
   members,
   columns,
   onDragStart,
@@ -319,6 +321,7 @@ function TaskCard({
   dragging,
 }: {
   task: Task;
+  parentTask?: Task;
   members: ReturnType<typeof useDemoState>["members"];
   columns: WorkStatus[];
   onDragStart: () => void;
@@ -372,6 +375,14 @@ function TaskCard({
       >
         {task.title}
       </Link>
+      {parentTask && (
+        <p className="mt-1 text-[10px] text-muted">
+          Subtask of{" "}
+          <Link href={`/tasks/${parentTask.key}`} className="text-accent hover:underline">
+            {parentTask.key}
+          </Link>
+        </p>
+      )}
       <div className="mt-3 flex items-center justify-between">
         <PriorityPill priority={task.priority} />
         <span className="flex items-center gap-1 font-mono text-[10px] text-outline">

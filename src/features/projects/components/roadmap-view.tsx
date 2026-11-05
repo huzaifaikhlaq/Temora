@@ -48,13 +48,21 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
   );
   const monthWidth = scale === "Year" ? 110 : scale === "Quarter" ? 180 : 210;
   const totalWidth = monthWidth * months.length;
-  const rows = projects.map((project, index) => ({
-    project,
-    index,
-    tasks: state.tasks.filter(
+  const rows = projects.map((project, index) => {
+    const projectTasks = state.tasks.filter(
       (task) => task.projectId === project.id && task.workspaceId === state.activeWorkspaceId,
-    ),
-  }));
+    );
+    const topLevelTasks = projectTasks.filter((task) => !task.parentTaskId);
+    const orderedTasks = topLevelTasks.flatMap((task) => [
+      task,
+      ...projectTasks.filter((child) => child.parentTaskId === task.id),
+    ]);
+    const orphanedSubtasks = projectTasks.filter(
+      (task) =>
+        task.parentTaskId && !projectTasks.some((parent) => parent.id === task.parentTaskId),
+    );
+    return { project, index, tasks: [...orderedTasks, ...orphanedSubtasks] };
+  });
   const dueTasks = rows.flatMap((row) => row.tasks.filter((task) => task.dueDate));
 
   function positionFor(dateValue: string | null) {
@@ -306,10 +314,15 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
                     <Link
                       key={task.id}
                       href={`/tasks/${task.key}`}
-                      className="flex items-center gap-2 border-t border-surface-low bg-surface-low/30 px-7 py-2 text-[10px] text-muted hover:text-accent"
+                      className={`flex items-center gap-2 border-t border-surface-low bg-surface-low/30 py-2 text-[10px] text-muted hover:text-accent ${task.parentTaskId ? "pl-11 pr-7" : "px-7"}`}
                     >
                       <Icon name="subdirectory_arrow_right" size={13} />
                       <span className="font-mono text-accent">{task.key}</span>
+                      {task.parentTaskId && (
+                        <span className="rounded bg-accent/10 px-1.5 py-0.5 text-accent">
+                          Subtask
+                        </span>
+                      )}
                       <span className="min-w-0 flex-1 truncate">{task.title}</span>
                       <span className="font-mono">{task.dueDate ?? "No due date"}</span>
                     </Link>

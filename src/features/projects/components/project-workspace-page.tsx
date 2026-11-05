@@ -223,6 +223,11 @@ export function ProjectWorkspacePage({
                   className="flex flex-wrap items-center gap-3 border-b border-border py-3 text-sm last:border-0"
                 >
                   <span className="font-mono text-xs text-accent">{task.key}</span>
+                  {task.parentTaskId && (
+                    <span className="rounded bg-accent/10 px-2 py-1 text-[10px] text-accent">
+                      Subtask
+                    </span>
+                  )}
                   <span className="min-w-40 flex-1 font-medium">{task.title}</span>
                   <span className="rounded bg-surface-low px-2 py-1 text-xs text-muted">
                     {task.status}

@@ -74,10 +74,12 @@ export const demoRepository = {
     try {
       const current: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
       const legacy: unknown = JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) ?? "null");
-      const restored = migrateDemoState(current) ?? migrateDemoState(legacy);
+      const currentState = migrateDemoState(current);
+      const legacyState = currentState ? null : migrateDemoState(legacy);
+      const restored = currentState ?? legacyState;
       if (restored) {
         state = restored;
-        if (current === null && legacy !== null) persist(restored);
+        if (legacyState) persist(restored);
         listeners.forEach((listener) => listener());
       }
     } catch {
@@ -354,10 +356,7 @@ export const demoRepository = {
       throw new Error("Task summary must have at least three characters.");
     if (patch.storyPoints !== undefined && patch.storyPoints < 0)
       throw new Error("Story points cannot be negative.");
-    if (
-      patch.assigneeId &&
-      !scopedWorkspace(task.workspaceId).memberIds.includes(patch.assigneeId)
-    )
+    if (patch.assigneeId && !scopedWorkspace(task.workspaceId).memberIds.includes(patch.assigneeId))
       throw new Error("Assignee must belong to this workspace.");
     if (patch.sprintId) {
       const sprint = state.sprints.find(
@@ -508,7 +507,11 @@ export const demoRepository = {
     while (foundChild) {
       foundChild = false;
       for (const task of state.tasks) {
-        if (task.parentTaskId && deletedTaskIds.has(task.parentTaskId) && !deletedTaskIds.has(task.id)) {
+        if (
+          task.parentTaskId &&
+          deletedTaskIds.has(task.parentTaskId) &&
+          !deletedTaskIds.has(task.id)
+        ) {
           deletedTaskIds.add(task.id);
           foundChild = true;
         }
@@ -911,7 +914,7 @@ function addSubtaskTo(
   const text = title.trim();
   if (!text) throw new Error("Subtask title cannot be empty.");
   if (text.length < 3) throw new Error("Subtask title must have at least three characters.");
-  const id = nextId("TEM-", current.counters.task);
+  const id = `TEM-${current.counters.task + 1}`;
   const subtask: Task = {
     id,
     key: id,
@@ -1058,10 +1061,11 @@ function migrateDemoState(value: unknown): DemoState | null {
 
   const oldTasks = legacy.issues as Array<Omit<Task, "parentTaskId"> & { subtaskIds?: EntityId[] }>;
   const oldSubtasks = legacy.subtasks as LegacySubtask[];
-  const parentTasks = oldTasks.map(({ subtaskIds: _subtaskIds, ...task }) => ({
-    ...task,
-    parentTaskId: null,
-  }));
+  const parentTasks = oldTasks.map((task) => {
+    const parent = { ...task, parentTaskId: null };
+    delete parent.subtaskIds;
+    return parent;
+  });
   const childIndexes = new Map<EntityId, number>();
   const childTasks = oldSubtasks.flatMap((subtask) => {
     const parent = parentTasks.find((item) => item.id === subtask.issueId);
@@ -1110,9 +1114,9 @@ function migrateDemoState(value: unknown): DemoState | null {
     issue?: number;
     subtask?: number;
   };
-  const comments = (legacy.comments as Array<Omit<DemoState["comments"][number], "taskId"> & { issueId: EntityId }>).map(
-    ({ issueId, ...comment }) => ({ ...comment, taskId: issueId }),
-  );
+  const comments = (
+    legacy.comments as Array<Omit<DemoState["comments"][number], "taskId"> & { issueId: EntityId }>
+  ).map(({ issueId, ...comment }) => ({ ...comment, taskId: issueId }));
   const notifications = (
     legacy.notifications as Array<
       Omit<DemoState["notifications"][number], "taskId"> & { issueId: EntityId | null }

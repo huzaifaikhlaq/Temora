@@ -76,11 +76,13 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
               <span className="rounded bg-accent/10 px-2 py-1 font-mono text-xs font-semibold text-accent">
                 {task.key}
               </span>
+              {parentTask && (
+                <span className="rounded bg-surface-low px-2 py-1 text-[10px] font-medium text-muted">
+                  Subtask
+                </span>
+              )}
               <span className="text-xs text-muted">{project?.name}</span>
-              <Link
-                className="ml-auto text-sm text-accent"
-                href={`/tasks/${task.id}/dependencies`}
-              >
+              <Link className="ml-auto text-sm text-accent" href={`/tasks/${task.id}/dependencies`}>
                 Dependencies &amp; activity →
               </Link>
               <button
@@ -274,6 +276,8 @@ function AddSubtask({ taskId }: { taskId: string }) {
     >
       <input
         className={`${field} min-w-0 flex-1`}
+        aria-label="Subtask title"
+        minLength={3}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         placeholder="Add a subtask"
