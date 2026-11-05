@@ -1,4 +1,4 @@
-# Temora
+﻿# Temora
 
 Temora is a Next.js frontend foundation for a project management platform. It
 uses the App Router, React Server Components by default, strict TypeScript, and
@@ -18,29 +18,34 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Project structure
 
-- `src/app/` — App Router routes, route groups, root layout, and global styles.
-- `src/components/ui/` — reusable, presentation-focused UI primitives.
-- `src/components/shared/` — shared application components.
-- `src/components/layouts/` — reusable page and section layouts.
-- `src/features/` — feature-owned UI and logic, kept separate by domain.
-- `src/hooks/` — shared React hooks.
-- `src/lib/` — framework-independent utilities.
-- `src/services/` — API clients and backend service communication.
-- `src/types/` — shared TypeScript types.
-- `src/constants/` — shared constants.
-- `src/config/` — application configuration.
+```text
+src/                         Next.js frontend
+services/
+  identity-service/           Authentication and identity
+  workspace-service/          Workspaces and membership
+  project-service/             Projects and planning
+  issue-service/               Issues and tasks
+  notification-service/        Notifications and inbox
+  billing-service/             Plans, subscriptions, and billing
+gateway/                      API routing to backend services
+infra/                        Docker, PostgreSQL, Redis, and message broker
+```
+
+The frontend source is organized under `src/app/` (App Router routes),
+`src/components/` (shared UI), and `src/features/` (domain-specific UI and
+logic). The top-level service, gateway, and infrastructure directories are
+reserved for the backend and deployment setup.
 
 The `(auth)`, `(dashboard)`, and `(marketing)` directories are App Router route
-groups. Add routes inside them as product areas are implemented; route groups
-do not affect URL paths.
+groups. Route groups do not affect URL paths.
 
 ## Commands
 
-- `pnpm dev` — start the development server.
-- `pnpm lint` — run ESLint.
-- `pnpm typecheck` — verify TypeScript types.
-- `pnpm build` — create a production build.
-- `pnpm start` — serve the production build.
+- `pnpm dev` - start the development server.
+- `pnpm lint` - run ESLint.
+- `pnpm typecheck` - verify TypeScript types.
+- `pnpm build` - create a production build.
+- `pnpm start` - serve the production build.
 
 ## Configuration
 
