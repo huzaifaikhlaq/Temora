@@ -1,29 +1,32 @@
 services:
   postgres:
-    image: postgres:16-alpine
-
+    image: postgres:17
     environment:
-      POSTGRES_DB: identity
-      POSTGRES_USER: temora
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
-
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -U temora -d identity
-      interval: 5s
-      retries: 15
+  volumes:
+    postgres_data:
+      healthcheck:
+        test:
+          - CMD-SHELL
+          - pg_isready -U temora -d identity
+        interval: 5s
+        retries: 15
 
   redis:
     image: redis:7-alpine
 
-    command: redis-server --appendonly yes
-
+    ports:
+      - "127.0.0.1:6379:6379"
+      
     volumes:
-      - redisdata:/data
+      - redis_data:/data
 
   identity:
     build: ./services/identity-service
