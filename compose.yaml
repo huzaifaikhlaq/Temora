@@ -1,35 +1,48 @@
 services:
   postgres:
     image: postgres:17
+    restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     ports:
       - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
-  volumes:
-    postgres_data:
-      healthcheck:
-        test:
-          - CMD-SHELL
-          - pg_isready -U temora -d identity
-        interval: 5s
-        retries: 15
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U temora -d identity
+      interval: 5s
+      timeout: 5s
+      retries: 15
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
 
     ports:
       - "127.0.0.1:6379:6379"
-      
+
     volumes:
-      - redis_data:/data
+      - redisdata:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   identity:
-    build: ./services/identity-service
+    build:
+      context: ./services/identity-service
+
+    restart: unless-stopped
 
     env_file:
       - ./services/identity-service/.env
@@ -41,10 +54,13 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   worker:
-    build: ./services/identity-service
+    build:
+      context: ./services/identity-service
+
+    restart: unless-stopped
 
     command: >
       celery -A config worker
@@ -58,7 +74,7 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   pgdata:
