@@ -37,6 +37,48 @@ const primary =
   "bg-violet-600 px-4 text-sm font-semibold text-white " +
   "hover:bg-violet-700 disabled:opacity-50";
 
+function PasswordVisibilityToggle({
+  visible,
+  onToggle,
+}: {
+  visible: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={visible ? "Hide password" : "Show password"}
+      aria-pressed={visible}
+      onClick={onToggle}
+      className="absolute right-0 top-1 flex h-11 w-11 items-center justify-center text-slate-500 hover:text-slate-700"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5"
+      >
+        {visible ? (
+          <>
+            <path d="M2.25 12s3.5-6.75 9.75-6.75S21.75 12 21.75 12s-3.5 6.75-9.75 6.75S2.25 12 2.25 12Z" />
+            <circle cx="12" cy="12" r="3" />
+          </>
+        ) : (
+          <>
+            <path d="M3 3l18 18" />
+            <path d="M10.6 5.35A10.8 10.8 0 0 1 12 5.25c6.25 0 9.75 6.75 9.75 6.75a16.8 16.8 0 0 1-3.1 3.9M6.2 6.2C3.6 7.9 2.25 12 2.25 12s3.5 6.75 9.75 6.75c1.3 0 2.45-.35 3.45-.9" />
+            <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}
+
 function getError(error: unknown): string {
   return error instanceof Error
     ? error.message
@@ -61,6 +103,10 @@ function AuthForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
     useState("");
+  const [passwordVisible, setPasswordVisible] =
+    useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] =
+    useState(false);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -261,40 +307,62 @@ function AuthForm({
               mode === "reset-password") && (
                 <label className="block text-sm font-medium">
                   Password
-                  <input
-                    className={input}
-                    type="password"
-                    value={password}
-                    onChange={(event) =>
-                      setPassword(event.target.value)
-                    }
-                    autoComplete={
-                      isLogin
-                        ? "current-password"
-                        : "new-password"
-                    }
-                    minLength={
-                      isLogin ? undefined : 12
-                    }
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      className={`${input} pr-11`}
+                      type={passwordVisible ? "text" : "password"}
+                      value={password}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
+                      autoComplete={
+                        isLogin
+                          ? "current-password"
+                          : "new-password"
+                      }
+                      minLength={
+                        isLogin ? undefined : 12
+                      }
+                      required
+                    />
+                    <PasswordVisibilityToggle
+                      visible={passwordVisible}
+                      onToggle={() =>
+                        setPasswordVisible(!passwordVisible)
+                      }
+                    />
+                  </div>
                 </label>
               )}
 
             {mode === "reset-password" && (
               <label className="block text-sm font-medium">
                 Confirm password
-                <input
-                  className={input}
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) =>
-                    setConfirmPassword(event.target.value)
-                  }
-                  autoComplete="new-password"
-                  minLength={12}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    className={`${input} pr-11`}
+                    type={
+                      confirmPasswordVisible
+                        ? "text"
+                        : "password"
+                    }
+                    value={confirmPassword}
+                    onChange={(event) =>
+                      setConfirmPassword(event.target.value)
+                    }
+                    autoComplete="new-password"
+                    minLength={12}
+                    required
+                  />
+                  <PasswordVisibilityToggle
+                    visible={confirmPasswordVisible}
+                    onToggle={() =>
+                      setConfirmPasswordVisible(
+                        !confirmPasswordVisible
+                      )
+                    }
+                  />
+                </div>
               </label>
             )}
 

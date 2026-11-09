@@ -101,19 +101,19 @@ class AtomicAuthThrottle(BaseThrottle):
 
 class RegisterThrottle(AtomicAuthThrottle):
     scope = "register"
-    limit = 5
+    limit = 50
     seconds = 3600
 
 
 class LoginThrottle(AtomicAuthThrottle):
     scope = "login"
-    limit = 10
+    limit = 100
     seconds = 60
 
 
 class RecoverThrottle(AtomicAuthThrottle):
     scope = "recover"
-    limit = 5
+    limit = 50
     seconds = 3600
 
 

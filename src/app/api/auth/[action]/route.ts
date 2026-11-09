@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { identityFetch, sameOrigin, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-type RouteContext = {
-  params: Promise<{
-    action: string;
-  }>;
-};
+type RouteContext = { params: Promise<{ action: string }> };
 
 const POST_ACTIONS = new Set([
   "register",
