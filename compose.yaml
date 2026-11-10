@@ -56,6 +56,10 @@ services:
       redis:
         condition: service_healthy
 
+  
+ 
+      
+
   worker:
     build:
       context: ./services/identity-service
@@ -75,6 +79,24 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+   
+  workspace:
+    build:
+      context: ./services/workspace-service
+
+    restart: unless-stopped
+
+    env_file:
+      - ./services/workspace-service/.env
+
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started 
 
 volumes:
   pgdata:
