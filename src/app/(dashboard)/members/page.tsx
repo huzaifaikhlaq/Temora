@@ -1,5 +1,6 @@
-import { AdditionalPage } from "@/features/workspace/components/additional-pages";
 
-export default function MembersRoute() {
-  return <AdditionalPage kind="members" />;
+import { WorkspaceManager } from "@/features/workspace/components/workspace-manager";
+
+export default function MembersPage() {
+  return <WorkspaceManager />;
 }
