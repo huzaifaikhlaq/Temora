@@ -156,13 +156,17 @@ class WorkspaceAPITests(TestCase):
         self.assertIn(str(self.workspace.id), ids)
         self.assertNotIn(str(other.id), ids)
 
-    @patch("workspaces.services.send_invitation")
-    def test_invitation_email_cannot_be_changed(
-        self,
-        mocked_send,
-    ):
-        self.login(self.owner)
+  
+@patch("workspaces.services.send_invitation")
+def test_invitation_email_cannot_be_changed(
+    self,
+    mocked_send,
+):
+    self.login(self.owner)
 
+    # Execute transaction.on_commit callbacks
+    # when the test transaction is completed.
+    with self.captureOnCommitCallbacks(execute=True):
         invite_response = self.client.post(
             f"/api/workspaces/{self.workspace.id}/invitations/",
             {
@@ -172,22 +176,26 @@ class WorkspaceAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(invite_response.status_code, 201)
+    self.assertEqual(invite_response.status_code, 201)
 
-        # Capture the original token from the mocked email.
-        self.assertEqual(mocked_send.call_count, 1)
+    # Verify the email callback was executed.
+    self.assertEqual(mocked_send.call_count, 1)
 
-        raw_token = mocked_send.call_args.args[1]
+    # Extract the invitation token from the mock.
+    raw_token = mocked_send.call_args.args[1]
 
-        self.login(self.stranger)
+    # A different user tries to accept the invitation.
+    self.login(self.stranger)
 
-        response = self.client.post(
-            "/api/invitations/accept/",
-            {"token": raw_token},
-            format="json",
-        )
+    response = self.client.post(
+        "/api/invitations/accept/",
+        {"token": raw_token},
+        format="json",
+    )
 
-        self.assertEqual(response.status_code, 403)
+    # Only the invited email address can accept.
+    self.assertEqual(response.status_code, 403)
+
 
     def test_duplicate_membership_is_rejected(self):
         with self.assertRaises(IntegrityError):

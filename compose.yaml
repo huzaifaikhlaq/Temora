@@ -55,9 +55,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-
-  
- 
       
 
   worker:

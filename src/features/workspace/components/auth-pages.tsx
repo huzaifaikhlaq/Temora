@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -83,6 +83,20 @@ function getError(error: unknown): string {
   return error instanceof Error
     ? error.message
     : "Something went wrong.";
+}
+
+function AuthFormFallback() {
+  return (
+    <main className="min-h-screen bg-[#f7f8fc] text-slate-900">
+      <header className="px-6 py-5 lg:px-12">
+        <AuthLogo />
+      </header>
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 pb-14 pt-6 lg:grid-cols-2 lg:items-start lg:pt-12">
+        <div className="min-h-64 animate-pulse rounded-2xl bg-[#17152c]" />
+        <div className="min-h-80 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+      </div>
+    </main>
+  );
 }
 
 function AuthForm({
@@ -468,5 +482,9 @@ export function AuthPage({
     return <WorkspaceOnboardingPage />;
   }
 
-  return <AuthForm mode={mode} />;
+  return (
+    <Suspense fallback={<AuthFormFallback />}>
+      <AuthForm mode={mode} />
+    </Suspense>
+  );
 }
