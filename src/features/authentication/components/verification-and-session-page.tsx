@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import {
   AuthLogo,
   authInputClass,
   authPrimaryClass,
 } from "@/features/authentication/components/auth-ui";
-import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
 
 export function VerificationAndSessionPage() {
-  const router = useRouter();
-  const state = useDemoState();
-  const [message, setMessage] = useState("");
-  const activeWorkspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId);
 
   return (
     <main className="min-h-screen bg-[#f7f8fc] px-5 py-8 text-slate-900">
       <header className="mx-auto flex max-w-6xl items-center justify-between">
         <AuthLogo />
         <span className="text-xs text-slate-500">
-          {activeWorkspace?.name ?? "Workspace"} · Demo preview
+          Session security
         </span>
       </header>
       <div className="mx-auto mt-8 grid max-w-5xl gap-5 lg:grid-cols-2">
@@ -50,19 +43,10 @@ export function VerificationAndSessionPage() {
           <button
             type="button"
             className={`${authPrimaryClass} mt-4 w-full`}
-            onClick={() =>
-              setMessage(
-                "Preview only: email verification is not connected, so this address was not verified.",
-              )
-            }
+            disabled
           >
-            Verify & access workspace <Icon name="arrow_forward" />
+            Verification is available from the email link <Icon name="arrow_forward" />
           </button>
-          {message && (
-            <p role="status" className="mt-3 text-sm text-emerald-700">
-              {message}
-            </p>
-          )}
           <p className="mt-5 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-500">
             Check your spam and quarantine folders if you expected a confirmation email.
           </p>
@@ -80,7 +64,7 @@ export function VerificationAndSessionPage() {
             sessions or keep a pending unsaved buffer.
           </p>
           <div className="mt-5 rounded-lg bg-slate-50 p-3">
-            <strong className="text-sm">Demo user</strong>
+            <strong className="text-sm">Session reauthentication unavailable</strong>
             <span className="block text-xs text-slate-500">
               Local frontend preview · session service unavailable
             </span>
@@ -96,22 +80,17 @@ export function VerificationAndSessionPage() {
           <button
             type="button"
             className={`${authPrimaryClass} mt-4 w-full`}
-            onClick={() => setMessage("Preview only: session re-authentication is not connected.")}
+            disabled
           >
             Re-authenticate session <Icon name="arrow_forward" />
           </button>
           <button
             type="button"
             className="mt-3 w-full text-sm text-slate-500"
-            onClick={() => router.push("/workspace/select")}
+            disabled
           >
-            Switch demo workspace
+            Workspace switching requires sign-in
           </button>
-          {message && (
-            <p role="status" className="mt-3 text-sm text-emerald-700">
-              {message}
-            </p>
-          )}
         </section>
       </div>
       <p className="mx-auto mt-6 max-w-5xl text-center font-mono text-[10px] text-slate-400">

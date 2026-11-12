@@ -50,10 +50,21 @@ async function forward(
   // Workspace selection is BFF-only.
   if (path.join("/") === "selection") {
     if (method === "GET") {
-      return NextResponse.json({
-        workspace_id:
-          request.cookies.get(ACTIVE_COOKIE)?.value ?? null,
-      });
+      const workspaceId = request.cookies.get(ACTIVE_COOKIE)?.value ?? null;
+      if (!workspaceId) return NextResponse.json({ workspace_id: null });
+      let membershipCheck: Response;
+      try {
+        membershipCheck = await workspaceFetch(`workspaces/${workspaceId}`, { method: "GET" });
+      } catch {
+        return json("Workspace service unavailable", 503);
+      }
+      if (membershipCheck.status === 401 || membershipCheck.status === 403 || membershipCheck.status === 404) {
+        const response = NextResponse.json({ workspace_id: null });
+        response.cookies.delete(ACTIVE_COOKIE);
+        return response;
+      }
+      if (!membershipCheck.ok) return json("Unable to validate workspace selection", membershipCheck.status);
+      return NextResponse.json({ workspace_id: workspaceId }, { headers: { "Cache-Control": "no-store" } });
     }
 
     if (method === "DELETE") {
@@ -83,10 +94,15 @@ async function forward(
     }
 
     // Never trust the workspace ID supplied by the browser.
-    const membershipCheck = await workspaceFetch(
-      `workspaces/${payload.workspace_id}`,
-      { method: "GET" },
-    );
+    let membershipCheck: Response;
+    try {
+      membershipCheck = await workspaceFetch(
+        `workspaces/${payload.workspace_id}`,
+        { method: "GET" },
+      );
+    } catch {
+      return json("Workspace service unavailable", 503);
+    }
 
     if (!membershipCheck.ok) {
       return json(
@@ -167,13 +183,18 @@ async function forward(
       return json("Invalid workspace response", 502);
     }
 
-    return new NextResponse(await upstream.text(), {
+    const response = new NextResponse(await upstream.text(), {
       status: upstream.status,
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
       },
     });
+    if (upstream.status === 401) {
+      response.cookies.delete("temora_session");
+      response.cookies.delete(ACTIVE_COOKIE);
+    }
+    return response;
   } catch {
     return json("Workspace service unavailable", 503);
   }

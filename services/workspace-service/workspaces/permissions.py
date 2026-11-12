@@ -42,7 +42,12 @@ MANAGERS = (
 )
 
 
+
 def can_manage_member(actor, target):
+    # Protect workspace ownership.
+    if target.role == Membership.Role.OWNER:
+        return False
+
     if actor.role == Membership.Role.OWNER:
         return True
 

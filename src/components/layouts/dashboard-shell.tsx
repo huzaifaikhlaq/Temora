@@ -6,7 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
-import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import { DemoDataScopeProvider, useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import type { AuthUser } from "@/features/authentication/lib/auth-client";
+import type { Workspace } from "@/features/workspace/types";
 
 const groups: {
   label: string;
@@ -43,7 +45,13 @@ const groups: {
   },
 ];
 
-export function DashboardShell({ children }: { children: ReactNode }) {
+type DashboardShellProps = { children: ReactNode; user: AuthUser; workspaces: Workspace[]; activeWorkspace: Workspace };
+
+export function DashboardShell(props: DashboardShellProps) {
+  return <DemoDataScopeProvider workspaceId={props.activeWorkspace.id} userId={props.user.id}><DashboardShellContent {...props} /></DemoDataScopeProvider>;
+}
+
+function DashboardShellContent({ children, user, workspaces, activeWorkspace }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const state = useDemoState();
@@ -52,18 +60,18 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const [quickError, setQuickError] = useState("");
-  const activeWorkspace = state.workspaces.find((item) => item.id === state.activeWorkspaceId);
-  const activeMember = state.members.find((item) => item.id === state.activeMemberId);
+  const activeWorkspaceId = activeWorkspace.id;
+  const activeMemberId = user.id;
   const workspaceProjects = state.projects.filter(
-    (item) => item.workspaceId === state.activeWorkspaceId && !item.archivedAt,
+    (item) => item.workspaceId === activeWorkspaceId && !item.archivedAt,
   );
   const workspaceTasks = state.tasks.filter(
-    (item) => item.workspaceId === state.activeWorkspaceId,
+    (item) => item.workspaceId === activeWorkspaceId,
   );
   const workspaceProjectIds = new Set(workspaceProjects.map((item) => item.id));
   const workspaceSprints = state.sprints.filter(
     (item) =>
-      item.workspaceId === state.activeWorkspaceId && workspaceProjectIds.has(item.projectId),
+      item.workspaceId === activeWorkspaceId && workspaceProjectIds.has(item.projectId),
   );
   const planningProject =
     workspaceProjects.find((project) =>
@@ -76,12 +84,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     activeSprint ??
     [...workspaceSprints].sort((first, second) => second.endDate.localeCompare(first.endDate))[0];
   const unreadCount = state.notifications.filter(
-    (item) => item.workspaceId === state.activeWorkspaceId && !item.readAt,
+    (item) => item.workspaceId === activeWorkspaceId && !item.readAt,
   ).length;
   const taskCount = state.tasks.filter(
     (item) =>
-      item.workspaceId === state.activeWorkspaceId &&
-      item.assigneeId === state.activeMemberId &&
+      item.workspaceId === activeWorkspaceId &&
+      item.assigneeId === activeMemberId &&
       item.status !== "Done",
   ).length;
   const navGroups: typeof groups = [
@@ -160,7 +168,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   ];
   const currentProject = state.projects.find(
     (project) =>
-      project.workspaceId === state.activeWorkspaceId &&
+      project.workspaceId === activeWorkspaceId &&
       (pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`)),
   );
   const pageTitle =
@@ -249,14 +257,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <span className="flex min-w-0 items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded bg-accent px-1 font-mono text-xs font-bold text-white">
-                  NS
+                  {activeWorkspace.name.slice(0, 2).toUpperCase()}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">
-                    {activeWorkspace?.name ?? "Workspace"}
+                    {activeWorkspace.name}
                   </span>
                   <span className="block font-mono text-[11px] text-muted">
-                    {activeWorkspace?.plan ?? "Free"} Plan
+                    {activeWorkspace.role}
                   </span>
                 </span>
               </span>
@@ -265,18 +273,21 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {menuOpen && (
               <div className="mt-2 rounded-lg border border-border bg-white p-2 text-xs shadow-lg">
                 <p className="px-2 py-1 font-semibold">Switch workspace</p>
-                {state.workspaces.map((workspace) => (
+                {workspaces.map((workspace) => (
                   <button
                     key={workspace.id}
                     className="w-full rounded px-2 py-1.5 text-left hover:bg-surface-low"
                     onClick={() => {
-                      demoRepository.switchWorkspace(workspace.id);
-                      setMenuOpen(false);
-                      router.replace("/");
+                      void fetch("/api/workspace/selection", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: workspace.id }) }).then(async (response) => {
+                        if (!response.ok) throw new Error("Workspace could not be selected.");
+                        setMenuOpen(false);
+                        router.replace("/");
+                        router.refresh();
+                      }).catch((error: unknown) => setQuickError(error instanceof Error ? error.message : "Workspace could not be selected."));
                     }}
                   >
                     {workspace.name}
-                    {workspace.id === state.activeWorkspaceId && (
+                    {workspace.id === activeWorkspaceId && (
                       <span className="float-right text-accent">✓</span>
                     )}
                   </button>
@@ -368,18 +379,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <kbd className="rounded bg-surface-high px-1 font-mono">⌘K</kbd>
           </div>
           <button className="flex w-full items-center gap-2 rounded-lg p-2 text-left hover:bg-surface-container">
-            <Image
-              alt="Alex Morgan"
-              className="size-8 rounded-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVZACH3vwz0-mdnc1S4x26hEgaF7B6-HBfXQx35wBw2p2c3jXqFrb5ReoWtd0BLwOIgYz_eLqgCytWO_BTNAsM12_bytb1dYnnTLM1GeMnJgyn_4_l2Sc9WhTzNlnrioScJh23EKxK8a0cDKQoHVmsfx9bR6Qz24D8R_adqM-bTehZrm-hvS0eG8wILYr0wZ4tLcO0NyhL2JIuIoYwXnEQq8YfIlr24Tj-GZQy_ica"
-              width={32}
-              height={32}
-              unoptimized
-            />
+            <span className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent" aria-hidden="true">{user.full_name.split(" ").map((part) => part[0]).join("")}</span>
             <span>
-              <span className="block text-sm font-semibold">{activeMember?.name ?? "Member"}</span>
+                <span className="block text-sm font-semibold">{user.full_name}</span>
               <span className="block font-mono text-[11px] text-outline">
-                {activeMember?.role ?? "Member"}
+                {activeWorkspace.role}
               </span>
             </span>
             <Icon name="more_vert" size={18} className="ml-auto text-muted" />
@@ -397,7 +401,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <Icon name="menu" />
             </button>
-            <span className="hidden sm:inline">{activeWorkspace?.name ?? "Workspace"}</span>
+            <span className="hidden sm:inline">{activeWorkspace.name}</span>
             <span className="text-outline">/</span>
             <span className="truncate font-semibold text-foreground">{pageTitle}</span>
           </div>
@@ -437,12 +441,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </button>
             <span
               className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent"
-              aria-label={activeMember?.name ?? "Member"}
+              aria-label={user.full_name}
             >
-              {activeMember?.name
+              {user.full_name
                 .split(" ")
                 .map((part) => part[0])
-                .join("") ?? "M"}
+                .join("")}
             </span>
           </div>
         </header>

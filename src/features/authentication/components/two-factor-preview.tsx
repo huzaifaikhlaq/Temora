@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 
 export function TwoFactorPreview() {
-  const router = useRouter();
-
   return (
     <main className="min-h-screen bg-[#f7f8fc] px-5 py-8 text-slate-900">
       <header className="mx-auto flex max-w-6xl items-center justify-between">
@@ -43,13 +40,13 @@ export function TwoFactorPreview() {
         </label>
         <button
           type="button"
-          onClick={() => router.push("/workspace/select")}
-          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
+          disabled
+          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white opacity-50"
         >
-          Continue to demo workspaces <Icon name="arrow_forward" />
+          Two-factor sign-in is unavailable <Icon name="arrow_forward" />
         </button>
         <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-          Demo mode bypasses verification. No security check has succeeded.
+          The Identity service does not currently support two-factor verification.
         </p>
         <Link href="/sign-in" className="mt-5 inline-block text-sm font-medium text-violet-700">
           ← Back to sign in

@@ -12,6 +12,7 @@ const POST_ACTIONS = new Set([
   "verify-email",
   "reset-password",
 ]);
+const ACTIVE_WORKSPACE_COOKIE = "temora_active_workspace";
 
 function jsonResponse(data: unknown, status = 200): NextResponse {
   return NextResponse.json(data, {
@@ -88,6 +89,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     if (upstream.status === 401 || upstream.status === 403) {
       response.cookies.delete(SESSION_COOKIE);
+      response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
     }
 
     return response;
@@ -156,6 +158,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         : errorResponse("Unable to revoke remote session", 502);
 
       response.cookies.delete(SESSION_COOKIE);
+      response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
 
       return response;
     } catch {
@@ -238,6 +241,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (action === "reset-password" && upstream.ok) {
       response.cookies.delete(SESSION_COOKIE);
+      response.cookies.delete(ACTIVE_WORKSPACE_COOKIE);
     }
 
     return response;
