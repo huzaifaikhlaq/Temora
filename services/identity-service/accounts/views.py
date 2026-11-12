@@ -236,61 +236,52 @@ class ForgotPassword(PublicEndpoint):
 # Email verification
 
 class VerifyEmail(PublicEndpoint):
-
     throttle_classes = [VerifyThrottle]
 
     def post(self, request):
+        serializer = TokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        serializer = TokenSerializer(
-            data=request.data
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        token = serializer.validated_data["token"]
+        raw_token = serializer.validated_data["token"]
 
         with transaction.atomic():
-
-            record = consume_token(
-                token,
-                "verify"
-            )
+            record = consume_token(raw_token, "verify")
 
             if not record:
                 return Response(
-                    {
-                        "detail": (
-                            "Invalid or expired link."
-                        )
-                    },
-                    status=400
+                    {"detail": "Invalid or expired link."},
+                    status=400,
                 )
 
-            record.user.email_verified = True
+            user = record.user
 
-            record.user.save(
-                update_fields=[
-                    "email_verified"
-                ]
-            )
+            if user.email_verified:
+                return Response(
+                    {"detail": "Email already verified."},
+                    status=400,
+                )
 
-            record.used_at = timezone.now()
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
 
-            record.save(
-                update_fields=[
-                    "used_at"
-                ]
-            )
+            now = timezone.now()
+
+            # Invalidate every verification token
+            # for this user, including the current one.
+            OneTimeToken.objects.filter(
+                user=user,
+                purpose="verify",
+                used_at__isnull=True,
+            ).update(used_at=now)
+
+            # Automatically sign in the verified user.
+            session_token = issue_session(user)
 
         return Response({
-            "message": (
-                "Email verified. "
-                "You can now sign in."
-            )
+            "token": session_token,
+            "user": UserSerializer(user).data,
+            "expires_in": SESSION_SECONDS,
         })
-
 
 # Reset password
 

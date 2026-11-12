@@ -180,7 +180,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Handle successful login.
 
-    if (action === "login" && upstream.ok) {
+    if ((action === "login" || action === "verify-email") && upstream.ok) {
       if (body === null || typeof body !== "object" || Array.isArray(body)) {
         return errorResponse("Invalid identity response", 502);
       }

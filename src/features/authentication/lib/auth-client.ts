@@ -126,8 +126,8 @@ export const authClient = {
   },
 
   verifyEmail(token: string) {
-    return post<MessageResponse>("verify-email", { token });
-  },
+  return post<AuthResponse>("verify-email", { token });
+},
 
   resetPassword(token: string, password: string) {
     return post<MessageResponse>("reset-password", { token, password });

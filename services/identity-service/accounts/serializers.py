@@ -69,7 +69,6 @@ class ResetSerializer(TokenSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
 
@@ -78,6 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "full_name",
             "email_verified",
+            "is_active",
         )
 
         read_only_fields = fields

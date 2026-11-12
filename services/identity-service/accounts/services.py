@@ -1,5 +1,4 @@
 import secrets
-
 from datetime import timedelta
 from urllib.parse import urlencode
 
@@ -11,11 +10,11 @@ from .models import Session, OneTimeToken
 from .tasks import send_token_email
 
 
-SESSION_SECONDS = 7 * 24 * 60 * 60
+# Sessions last for 60 days.
+SESSION_SECONDS = 60 * 24 * 60 * 60
 
 
 def issue_session(user):
-
     raw_token = secrets.token_urlsafe(48)
 
     Session.objects.create(
@@ -31,22 +30,13 @@ def issue_session(user):
 
 
 def queue_link(user, purpose):
-
     if purpose not in ("verify", "reset"):
-        raise ValueError(
-            "Unsupported token purpose"
-        )
+        raise ValueError("Unsupported token purpose")
 
     ttl = (
         timedelta(hours=24)
         if purpose == "verify"
         else timedelta(minutes=30)
-    )
-
-    route = (
-        "/verify-email"
-        if purpose == "verify"
-        else "/reset-password"
     )
 
     raw_token = secrets.token_urlsafe(40)
@@ -58,24 +48,28 @@ def queue_link(user, purpose):
         expires_at=timezone.now() + ttl,
     )
 
-    query = urlencode({
-        "token": raw_token
-    })
+    query = urlencode({"token": raw_token})
 
-    url = (
-        f"{settings.FRONTEND_URL}"
-        f"{route}?{query}"
-    )
+    if purpose == "verify":
+        # The fragment is not sent in the HTTP GET.
+        url = (
+            f"{settings.FRONTEND_URL}"
+            f"/auth/confirm#{query}"
+        )
+    else:
+        url = (
+            f"{settings.FRONTEND_URL}"
+            f"/reset-password?{query}"
+        )
 
     send_token_email.delay_on_commit(
         user.email,
         purpose,
-        url
+        url,
     )
 
 
 def consume_token(raw, purpose):
-
     return (
         OneTimeToken.objects
         .select_for_update()
