@@ -90,8 +90,8 @@ class Register(PublicEndpoint):
             email=data["email"]
         ).exists():
             return Response(
-                message,
-                status=202
+                {"detail": "A user with this email address already exists."},
+                status=409
             )
 
         try:
@@ -108,8 +108,8 @@ class Register(PublicEndpoint):
 
         except IntegrityError:
             return Response(
-                message,
-                status=202
+                {"detail": "A user with this email address already exists."},
+                status=409
             )
 
         return Response(
