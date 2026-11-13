@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import { DemoDataScopeProvider, useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import { LogoutButton } from "@/features/authentication/components/logout-button";
 import type { AuthUser } from "@/features/authentication/lib/auth-client";
 import type { Workspace } from "@/features/workspace/types";
 
@@ -56,6 +57,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
   const router = useRouter();
   const state = useDemoState();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
@@ -378,16 +380,29 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
             </span>
             <kbd className="rounded bg-surface-high px-1 font-mono">⌘K</kbd>
           </div>
-          <button className="flex w-full items-center gap-2 rounded-lg p-2 text-left hover:bg-surface-container">
-            <span className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent" aria-hidden="true">{user.full_name.split(" ").map((part) => part[0]).join("")}</span>
-            <span>
+          <div className="relative">
+            <button
+              type="button"
+              aria-expanded={profileMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              className="flex w-full items-center gap-2 rounded-lg p-2 text-left hover:bg-surface-container"
+            >
+              <span className="grid size-8 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent" aria-hidden="true">{user.full_name.split(" ").map((part) => part[0]).join("")}</span>
+              <span>
                 <span className="block text-sm font-semibold">{user.full_name}</span>
-              <span className="block font-mono text-[11px] text-outline">
-                {activeWorkspace.role}
+                <span className="block font-mono text-[11px] text-outline">
+                  {activeWorkspace.role}
+                </span>
               </span>
-            </span>
-            <Icon name="more_vert" size={18} className="ml-auto text-muted" />
-          </button>
+              <Icon name="more_vert" size={18} className="ml-auto text-muted" />
+            </button>
+            {profileMenuOpen && (
+              <div role="menu" className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-border bg-white p-1.5 shadow-lg">
+                <LogoutButton />
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 

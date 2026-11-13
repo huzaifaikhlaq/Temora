@@ -38,9 +38,10 @@ export function LogoutButton() {
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={handleLogout}
       disabled={loading}
-      className="rounded-lg px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
     >
       {loading ? "Signing out..." : "Sign out"}
     </button>
