@@ -21,10 +21,33 @@ class IdentityUnavailable(APIException):
 
 class IdentityUser:
     def __init__(self, data):
+        if not isinstance(data, dict):
+            raise ValueError("Identity user must be an object.")
+
+        required_fields = {
+            "id",
+            "email",
+            "full_name",
+            "email_verified",
+            "is_active",
+        }
+        if not required_fields.issubset(data):
+            raise ValueError("Identity user response is incomplete.")
+
+        if not isinstance(data["email"], str):
+            raise ValueError("Identity user email must be a string.")
+        if not isinstance(data["full_name"], str):
+            raise ValueError("Identity user full_name must be a string.")
+        if type(data["email_verified"]) is not bool:
+            raise ValueError("Identity user email_verified must be a boolean.")
+        if type(data["is_active"]) is not bool:
+            raise ValueError("Identity user is_active must be a boolean.")
+
         self.id = uuid.UUID(str(data["id"]))
-        self.email = str(data["email"]).strip().lower()
-        self.full_name = data.get("full_name", "")
-        self.is_active = data.get("is_active", False)
+        self.email = data["email"].strip().lower()
+        self.full_name = data["full_name"]
+        self.email_verified = data["email_verified"]
+        self.is_active = data["is_active"]
         self.is_authenticated = True
 
 

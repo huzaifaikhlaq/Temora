@@ -69,6 +69,9 @@ class ResetSerializer(TokenSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # Part of the token introspection contract consumed by Workspace.
+    is_active = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = User
 

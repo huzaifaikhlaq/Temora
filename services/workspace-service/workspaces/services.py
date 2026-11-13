@@ -5,7 +5,6 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -48,24 +47,9 @@ def create_workspace(user, name):
 
 
 def send_invitation(invitation, raw_token):
-    url = (
-        f"{settings.FRONTEND_URL}/invitations/accept"
-        f"?token={raw_token}"
-    )
+    from .tasks import deliver_invitation_email
 
-    send_mail(
-        subject=f"Join {invitation.workspace.name} on Temora",
-        message=(
-            f"You have been invited to join "
-            f"{invitation.workspace.name}.\n\n"
-            f"Accept your invitation:\n{url}\n\n"
-            "If you did not expect this invitation, "
-            "you can ignore this email."
-        ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[invitation.email],
-        fail_silently=False,
-    )
+    deliver_invitation_email.delay(str(invitation.pk), raw_token)
 
 
 def create_invitation(workspace, actor, email, role):

@@ -140,6 +140,22 @@ class Invitation(models.Model):
         blank=True,
     )
 
+    email_status = models.CharField(
+        max_length=10,
+        choices=[
+            ("queued", "Queued"),
+            ("sent", "Sent"),
+            ("failed", "Failed"),
+        ],
+        default="queued",
+    )
+
+    email_attempts = models.PositiveSmallIntegerField(default=0)
+
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+
+    email_last_error = models.TextField(blank=True, default="")
+
     class Meta:
         constraints = [
             models.UniqueConstraint(

@@ -95,6 +95,26 @@ services:
       identity:
         condition: service_started 
 
+  workspace-worker:
+    build:
+      context: ./services/workspace-service
+
+    restart: unless-stopped
+
+    command: >
+      celery -A config worker
+      --loglevel=info
+      --concurrency=2
+
+    env_file:
+      - ./services/workspace-service/.env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:
