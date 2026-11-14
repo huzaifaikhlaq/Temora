@@ -79,9 +79,7 @@ export function ProjectsDirectory({
 
   const [creating, setCreating] = useState(startCreating);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState(
-    "Product & Engineering",
-  );
+  const [category, setCategory] = useState("");
 
   const [editingId, setEditingId] =
     useState<string | null>(null);
@@ -190,14 +188,14 @@ export function ProjectsDirectory({
         workspace.id,
         {
           name,
-          category,
+          category: category.trim() || undefined,
         },
       );
 
       await refreshProjects(workspace.id);
 
       setName("");
-      setCategory("Product & Engineering");
+      setCategory("");
       setCreating(false);
       setEditingId(project.id);
     } catch (cause) {
@@ -631,19 +629,15 @@ export function ProjectsDirectory({
               <label className="block text-sm font-medium">
                 Team / category
 
-                <select
+                <input
+                  type="text"
                   className={`${control} mt-1 w-full`}
                   value={category}
                   onChange={(event) =>
                     setCategory(event.target.value)
                   }
-                >
-                  <option>Product &amp; Engineering</option>
-                  <option>Product Design</option>
-                  <option>Mobile Engineering</option>
-                  <option>Platform</option>
-                  <option>Marketing</option>
-                </select>
+                  placeholder="e.g. Product & Engineering"
+                />
               </label>
 
               {error && (

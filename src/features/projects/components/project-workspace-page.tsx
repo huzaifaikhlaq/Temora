@@ -291,25 +291,13 @@ export function ProjectWorkspacePage({
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-medium">
                   Team / category
-                  <select
+                  <input
+                    type="text"
                     className={`${field} mt-1 w-full`}
                     value={category}
                     onChange={(event) => setCategory(event.target.value)}
-                  >
-                    {[
-                      "Web / Marketing",
-                      "iOS / Android",
-                      "B2B SaaS",
-                      "Product Design",
-                      "Product & Engineering",
-                      "Mobile Engineering",
-                      "Platform",
-                      "Marketing",
-                      "General",
-                    ].map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
+                    placeholder="e.g. Product & Engineering"
+                  />
                 </label>
                 <label className="block text-sm font-medium">
                   Project status
