@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import { DemoDataScopeProvider, useDemoState } from "@/features/workspace/hooks/use-demo-state";
 import { LogoutButton } from "@/features/authentication/components/logout-button";
 import type { AuthUser } from "@/features/authentication/lib/auth-client";
 import type { Workspace } from "@/features/workspace/types";
+import { projectApi, type Project as ApiProject } from "@/features/projects/api/client";
 
 const groups: {
   label: string;
@@ -56,6 +57,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
   const pathname = usePathname();
   const router = useRouter();
   const state = useDemoState();
+  const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -64,9 +66,38 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
   const [quickError, setQuickError] = useState("");
   const activeWorkspaceId = activeWorkspace.id;
   const activeMemberId = user.id;
+  useEffect(() => {
+    let active = true;
+    projectApi
+      .list(activeWorkspaceId)
+      .then((projects) => {
+        if (active) setApiProjects(projects);
+      })
+      .catch(() => {
+        if (active) setApiProjects([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeWorkspaceId]);
+
   const workspaceProjects = state.projects.filter(
     (item) => item.workspaceId === activeWorkspaceId && !item.archivedAt,
   );
+  const listedProjects = workspaceProjects.length
+    ? workspaceProjects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        dot: project.color,
+      }))
+    : apiProjects
+        .filter((project) => project.workspace_id === activeWorkspaceId && !project.archived_at)
+        .map((project, index) => ({
+          id: project.id,
+          name: project.name,
+          dot: ["bg-violet-500", "bg-sky-500", "bg-emerald-500", "bg-amber-500"][index % 4],
+        }));
   const workspaceTasks = state.tasks.filter(
     (item) => item.workspaceId === activeWorkspaceId,
   );
@@ -80,7 +111,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
       workspaceSprints.some(
         (sprint) => sprint.projectId === project.id && sprint.status === "Active",
       ),
-    ) ?? workspaceProjects[0];
+    )?.id ?? workspaceProjects[0]?.id ?? listedProjects[0]?.id;
   const activeSprint = workspaceSprints.find((sprint) => sprint.status === "Active");
   const referenceSprint =
     activeSprint ??
@@ -109,11 +140,11 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
       label: "Projects",
       links: [
         { label: "All Projects", href: "/projects", icon: "folder_open" },
-        ...workspaceProjects.map((project) => ({
+        ...listedProjects.map((project) => ({
           label: project.name,
-          href: `/projects/${project.id}/board`,
+          href: `/projects/${project.id}`,
           icon: "circle",
-          dot: project.color,
+          dot: project.dot,
         })),
       ],
     },
@@ -122,7 +153,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
       links: [
         {
           label: "Boards / Kanban",
-          href: planningProject ? `/projects/${planningProject.id}/board` : "/projects",
+          href: planningProject ? `/projects/${planningProject}/board` : "/projects",
           icon: "view_kanban",
         },
         {
@@ -137,7 +168,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
         },
         {
           label: "Sprints & Backlog",
-          href: planningProject ? `/projects/${planningProject.id}/sprints` : "/projects",
+          href: planningProject ? `/projects/${planningProject}/sprints` : "/projects",
           icon: "cycle",
         },
         {
@@ -154,7 +185,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
         },
         {
           label: "Roadmap & Timeline",
-          href: planningProject ? `/projects/${planningProject.id}/roadmap` : "/projects",
+          href: planningProject ? `/projects/${planningProject}/roadmap` : "/projects",
           icon: "timeline",
         },
         {
@@ -168,11 +199,15 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
     },
     ...groups.filter((group) => group.label === "Management"),
   ];
-  const currentProject = state.projects.find(
-    (project) =>
-      project.workspaceId === activeWorkspaceId &&
-      (pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`)),
-  );
+  const currentProjectName =
+    workspaceProjects.find(
+      (project) =>
+        pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`),
+    )?.name ??
+    apiProjects.find(
+      (project) =>
+        pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`),
+    )?.name;
   const pageTitle =
     pathname === "/"
       ? "Overview"
@@ -201,7 +236,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                             : pathname.includes("/sprints")
                               ? "Sprint Planning"
                               : pathname.includes("/board")
-                                ? (currentProject?.name ?? "Project Board")
+                                ? (currentProjectName ?? "Project Board")
                                 : pathname.startsWith("/tasks/")
                                   ? pathname.split("/").at(-1)
                                   : pathname === "/projects"
@@ -340,7 +375,9 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                       (link.href === "/my-tasks"
                         ? pathname.startsWith("/my-tasks")
                         : pathname === link.href ||
-                          (!!projectId && pathname.startsWith(`/projects/${projectId}/`)));
+                          (!!projectId &&
+                            (pathname === `/projects/${projectId}` ||
+                              pathname.startsWith(`/projects/${projectId}/`))));
                     const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
                     const contents = (
                       <>
