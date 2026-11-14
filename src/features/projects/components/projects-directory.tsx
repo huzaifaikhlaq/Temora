@@ -61,6 +61,16 @@ function formatDueDate(date: string | null) {
   );
 }
 
+function projectKeyPreview(name: string) {
+  const tokens = name.match(/[a-z]+|\d+(?:\.\d+)?/gi) ?? [];
+  const letters = tokens
+    .filter((token) => !/^\d/.test(token))
+    .map((token) => token[0])
+    .join("");
+  const number = tokens.find((token) => /^\d/.test(token))?.replace(/\.0+$/, "") ?? "";
+  return `${letters}${number}`.slice(0, 6).toUpperCase() || "AUTO";
+}
+
 export function ProjectsDirectory({
   startCreating = false,
 }: {
@@ -76,10 +86,14 @@ export function ProjectsDirectory({
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("Recent");
+  const [view, setView] = useState<"grid" | "list">("grid");
 
   const [creating, setCreating] = useState(startCreating);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
 
   const [editingId, setEditingId] =
     useState<string | null>(null);
@@ -137,10 +151,10 @@ export function ProjectsDirectory({
   };
 
   const filtered = useMemo(() => {
-    return projects.filter((project) => {
-      const matchesName = project.name
-        .toLowerCase()
-        .includes(query.toLowerCase());
+    const search = query.trim().toLowerCase();
+    const result = projects.filter((project) => {
+      const matchesSearch = [project.name, project.key, project.category]
+        .some((value) => value.toLowerCase().includes(search));
 
       const matchesFilter =
         filter === "All"
@@ -149,10 +163,18 @@ export function ProjectsDirectory({
             ? !!project.archived_at
             : !project.archived_at &&
             STATUS_LABELS[project.status] === filter;
+      const matchesCategory =
+        categoryFilter === "All" || project.category === categoryFilter;
 
-      return matchesName && matchesFilter;
+      return matchesSearch && matchesFilter && matchesCategory;
     });
-  }, [projects, query, filter]);
+
+    return result.sort((first, second) => {
+      if (sortBy === "Name") return first.name.localeCompare(second.name);
+      if (sortBy === "Progress") return second.progress - first.progress;
+      return second.created_at.localeCompare(first.created_at);
+    });
+  }, [projects, query, filter, categoryFilter, sortBy]);
 
   const activeProjects = projects.filter(
     (project) => !project.archived_at,
@@ -163,8 +185,9 @@ export function ProjectsDirectory({
   ).length;
 
   const categories = new Set(
-    activeProjects.map((project) => project.category),
+    activeProjects.map((project) => project.category).filter(Boolean),
   );
+  const archivedCount = projects.filter((project) => !!project.archived_at).length;
 
   const overallProgress = Math.round(
     activeProjects.reduce(
@@ -189,6 +212,7 @@ export function ProjectsDirectory({
         {
           name,
           category: category.trim() || undefined,
+          description: description.trim() || undefined,
         },
       );
 
@@ -196,6 +220,7 @@ export function ProjectsDirectory({
 
       setName("");
       setCategory("");
+      setDescription("");
       setCreating(false);
       setEditingId(project.id);
     } catch (cause) {
@@ -285,19 +310,23 @@ export function ProjectsDirectory({
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-semibold uppercase tracking-[.16em] text-outline">
-            {workspace.name} / Workspace
+            {workspace.name} / Projects
           </p>
 
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Projects Directory
-          </h1>
-
-          <p className="mt-1 text-sm text-muted">
-            Browse projects in this workspace and keep each team&apos;s work on track.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Projects Directory
+            </h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-high px-2.5 py-1 text-xs text-muted">
+              <span className="size-2 rounded-full bg-green" />
+              <strong className="text-foreground">{activeProjects.length}</strong> Active
+              <span className="text-outline">·</span>
+              <strong className="text-foreground">{archivedCount}</strong> Archived
+            </span>
+          </div>
         </div>
 
         {canManage && (
@@ -308,7 +337,7 @@ export function ProjectsDirectory({
               setError("");
             }}
           >
-            <Icon name="add" />
+            <Icon name="create_new_folder" />
             New Project
           </button>
         )}
@@ -349,57 +378,65 @@ export function ProjectsDirectory({
       )}
 
       <Panel>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div
-            className="flex flex-wrap gap-2"
-            aria-label="Project filters"
+        <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl bg-surface-low p-2">
+          <label className="relative min-w-[240px] flex-1">
+            <span className="sr-only">Search projects</span>
+            <Icon name="search" size={17} className="absolute left-2.5 top-2.5 text-outline" />
+            <input
+              className={`${control} w-full bg-white pl-8`}
+              placeholder="Filter projects by name, key, or category..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <label className="sr-only" htmlFor="project-status-filter">Filter by status</label>
+          <select
+            id="project-status-filter"
+            className={`${control} bg-white`}
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
           >
-            {[
-              "All",
-              "In Progress",
-              "Planning",
-              "In Review",
-              "Completed",
-              "Archived",
-            ].map((status) => (
+            {["All", "In Progress", "Planning", "In Review", "Completed", "Archived"].map((status) => (
+              <option key={status} value={status}>{status === "All" ? "All statuses" : status}</option>
+            ))}
+          </select>
+          <label className="sr-only" htmlFor="project-category-filter">Filter by category</label>
+          <select
+            id="project-category-filter"
+            className={`${control} bg-white`}
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value)}
+          >
+            <option value="All">All categories</option>
+            {[...categories].sort().map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+          <label className="sr-only" htmlFor="project-sort">Sort projects</label>
+          <select
+            id="project-sort"
+            className={`${control} bg-white`}
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+          >
+            {["Recent", "Name", "Progress"].map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <div role="group" aria-label="Project view" className="flex rounded-lg border border-border/50 bg-white p-0.5">
+            {(["grid", "list"] as const).map((mode) => (
               <button
-                key={status}
-                aria-pressed={filter === status}
-                className={`rounded-lg border px-3 py-2 text-sm ${filter === status
-                    ? "border-accent bg-accent/5 font-semibold text-accent"
-                    : "border-border text-muted hover:bg-surface-low"
-                  }`}
-                onClick={() => setFilter(status)}
+                key={mode}
+                type="button"
+                aria-label={`${mode} view`}
+                aria-pressed={view === mode}
+                className={`grid size-8 place-items-center rounded-md ${view === mode ? "bg-accent text-white" : "text-muted hover:bg-surface-low"}`}
+                onClick={() => setView(mode)}
               >
-                {status === "All"
-                  ? "All Projects"
-                  : status}
+                <Icon name={mode === "grid" ? "grid_view" : "format_list_bulleted"} size={17} />
               </button>
             ))}
           </div>
-
-          <label className="relative">
-            <span className="sr-only">Search projects</span>
-
-            <Icon
-              name="search"
-              size={17}
-              className="absolute left-2.5 top-2.5 text-outline"
-            />
-
-            <input
-              className={`${control} pl-8`}
-              placeholder="Search projects"
-              value={query}
-              onChange={(event) =>
-                setQuery(event.target.value)
-              }
-            />
-          </label>
         </div>
 
         {filtered.length ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={view === "grid" ? "grid gap-4 md:grid-cols-2 xl:grid-cols-4" : "flex flex-col gap-3"}>
             {filtered.map((project) => {
               const editing = editingId === project.id;
               const color = projectColor(project.id);
@@ -481,6 +518,12 @@ export function ProjectsDirectory({
                     )}
                   </div>
 
+                  {project.description && (
+                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted">
+                      {project.description}
+                    </p>
+                  )}
+
                   <div className="mt-5 flex items-center justify-between gap-3 text-xs">
                     <span className="rounded-md bg-surface-high px-2 py-1 text-muted">
                       {project.archived_at
@@ -556,6 +599,7 @@ export function ProjectsDirectory({
               onClick={() => {
                 setQuery("");
                 setFilter("All");
+                setCategoryFilter("All");
               }}
             >
               Clear filters
@@ -566,7 +610,7 @@ export function ProjectsDirectory({
 
       {creating && canManage && (
         <div
-          className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/40 p-4"
+          className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (
@@ -581,75 +625,100 @@ export function ProjectsDirectory({
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-project-title"
-            className="w-full max-w-lg rounded-xl border border-border bg-white p-5 shadow-2xl"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !busy) setCreating(false);
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.querySelector("form")?.requestSubmit();
+              }
+            }}
+            className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between">
-              <h2
-                id="new-project-title"
-                className="text-lg font-semibold"
-              >
-                Create project
-              </h2>
-
+            <div className="flex items-start justify-between border-b border-border/40 bg-white p-5 sm:p-6">
+              <div>
+                <h2 id="new-project-title" className="flex items-center gap-2 text-xl font-bold sm:text-2xl">
+                  <Icon name="create_new_folder" className="text-accent" />
+                  Create New Project
+                </h2>
+                <p className="mt-1 text-sm text-muted">Set up a new project space for your team and workflows.</p>
+              </div>
               <button
+                type="button"
                 aria-label="Close"
                 disabled={busy}
                 onClick={() => setCreating(false)}
+                className="rounded-lg p-1 text-muted hover:bg-surface-low hover:text-foreground"
               >
                 <Icon name="close" />
               </button>
             </div>
 
-            <p className="mt-1 text-sm text-muted">
-              Create a project in {workspace.name}.
-            </p>
-
             <form
-              className="mt-5 space-y-4"
+              id="create-project-form"
+              className="flex min-h-0 flex-1 flex-col"
               onSubmit={(event) =>
                 void createProject(event)
               }
             >
-              <label className="block text-sm font-medium">
-                Project name
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-bright p-5 sm:p-6">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_170px]">
+                  <label className="block text-sm font-medium">
+                    Project name <span className="text-red">*</span>
+                    <input
+                      autoFocus
+                      required
+                      minLength={2}
+                      className={`${control} mt-1.5 w-full bg-white`}
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="e.g. Design System v2.0"
+                    />
+                  </label>
+                  <div className="block text-sm font-medium">
+                    Project key
+                    <div className="relative mt-1.5">
+                      <input
+                        readOnly
+                        aria-label="Generated project key preview"
+                        className={`${control} w-full bg-accent/10 pr-9 font-mono font-bold uppercase tracking-wider text-accent`}
+                        value={projectKeyPreview(name)}
+                      />
+                      <Icon name="lock" size={16} className="absolute right-3 top-2.5 text-outline" />
+                    </div>
+                  </div>
+                </div>
 
-                <input
-                  autoFocus
-                  required
-                  minLength={2}
-                  className={`${control} mt-1 w-full`}
-                  value={name}
-                  onChange={(event) =>
-                    setName(event.target.value)
-                  }
-                  placeholder="e.g. Customer Mobile App"
-                />
-              </label>
+                <label className="block text-sm font-medium">
+                  Description
+                  <textarea
+                    className="mt-1.5 min-h-24 w-full resize-y rounded-lg border border-border bg-white p-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                    rows={3}
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="What is this project working toward?"
+                  />
+                </label>
 
-              <label className="block text-sm font-medium">
-                Team / category
+                <label className="block text-sm font-medium">
+                  Team / category
+                  <input
+                    type="text"
+                    className={`${control} mt-1.5 w-full bg-white`}
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value)}
+                    placeholder="e.g. Product & Engineering"
+                  />
+                </label>
 
-                <input
-                  type="text"
-                  className={`${control} mt-1 w-full`}
-                  value={category}
-                  onChange={(event) =>
-                    setCategory(event.target.value)
-                  }
-                  placeholder="e.g. Product & Engineering"
-                />
-              </label>
+                {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+              </div>
 
-              {error && (
-                <p
-                  role="alert"
-                  className="text-sm text-red-700"
-                >
-                  {error}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-2">
+              <div className="flex items-center justify-between gap-3 border-t border-border/40 bg-white p-4 sm:px-6">
+                <span className="hidden items-center gap-1.5 font-mono text-[10px] text-muted sm:flex">
+                  <Icon name="keyboard" size={14} /> Press Ctrl/⌘ + Enter to confirm
+                </span>
+                <span className="flex-1 sm:hidden" />
+                <div className="flex gap-2">
                 <button
                   type="button"
                   disabled={busy}
@@ -664,12 +733,14 @@ export function ProjectsDirectory({
                 <button
                   type="submit"
                   disabled={busy}
-                  className="h-9 rounded-lg bg-accent px-3 text-sm font-semibold text-white disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong disabled:opacity-50"
                 >
+                  <Icon name="check" size={16} />
                   {busy
                     ? "Creating..."
-                    : "Create project"}
+                    : "Create Project"}
                 </button>
+                </div>
               </div>
             </form>
           </section>
