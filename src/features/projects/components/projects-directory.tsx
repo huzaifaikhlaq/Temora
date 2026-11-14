@@ -316,7 +316,7 @@ export function ProjectsDirectory({
         )}
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
         <MetricCard
           label="Total Projects"
           value={String(activeProjects.length)}

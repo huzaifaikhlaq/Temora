@@ -7,6 +7,7 @@ import { MetricCard, Panel, PanelTitle } from "@/components/shared/dashboard-ui"
 import { demoRepository } from "@/features/workspace/data/demo-repository";
 import type { ProjectStatus } from "@/features/workspace/data/model";
 import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import { ApiProjectWorkspacePage } from "@/features/projects/components/api-project-workspace-page";
 
 type ProjectPageMode = "overview" | "settings" | "members";
 const field =
@@ -40,18 +41,10 @@ export function ProjectWorkspacePage({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  if (!project)
-    return (
-      <div className="mx-auto max-w-3xl p-8">
-        <h1 className="text-xl font-semibold">Project not found</h1>
-        <p className="mt-2 text-sm text-muted">
-          The project may belong to another workspace or may have been archived.
-        </p>
-        <Link href="/projects" className="mt-4 inline-block text-sm text-accent">
-          Back to projects →
-        </Link>
-      </div>
-    );
+  if (!project) {
+    return <ApiProjectWorkspacePage workspaceId={state.activeWorkspaceId} projectId={projectId} />;
+  }
+
   const activeProject = project;
 
   const workspace = state.workspaces.find((item) => item.id === project.workspaceId)!;

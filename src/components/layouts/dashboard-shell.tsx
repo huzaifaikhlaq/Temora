@@ -235,28 +235,27 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
       )}
       <aside
         data-open={mobileOpen}
-        className="dashboard-sidebar fixed inset-y-0 left-0 z-50 flex w-[250px] flex-col justify-between border-r border-border/40 bg-surface-bright"
+        className="dashboard-sidebar fixed inset-y-0 left-0 z-50 flex w-[250px] flex-col border-r border-border/40 bg-surface-bright"
       >
-        <div className="overflow-y-auto">
-          <div className="border-b border-border/30 p-4">
-            <Link
-              href="/"
-              className="mb-4 flex items-center gap-2.5 text-2xl font-bold tracking-tight"
-            >
-              <Image
-                alt="Temora logo"
-                className="h-7 w-7 object-contain"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw43DVqQmcq9E_M0x8ZHdAPHFuDaDW1tD6MFPK9O_GUjoyske-fSL4Mj65aL_YaODNAjvK0rrj5RNFosAywcTh3YwpX6dpX-zIfGD6D4d6RyWRlYzSaKSeajA5p9EM17M6gurLuIwDODQRLkq0utfRD3DlJsaHJ5ien6CRzwbcGWV9PmThlUY5MbBMblGLmdT9e1IET6PeoaPLKB74xtghLzk6EMwBWzJUn-7d-dRr"
-                width={28}
-                height={28}
-                unoptimized
-              />
-              <span>Temora</span>
-            </Link>
-            <button
-              className="flex w-full items-center justify-between rounded-lg bg-surface-low px-2.5 py-2 text-left hover:bg-surface-container"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
+        <div className="shrink-0 border-b border-border/30 p-4">
+          <Link
+            href="/"
+            className="mb-4 flex items-center gap-2.5 text-2xl font-bold tracking-tight"
+          >
+            <Image
+              alt="Temora logo"
+              className="h-7 w-7 object-contain"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw43DVqQmcq9E_M0x8ZHdAPHFuDaDW1tD6MFPK9O_GUjoyske-fSL4Mj65aL_YaODNAjvK0rrj5RNFosAywcTh3YwpX6dpX-zIfGD6D4d6RyWRlYzSaKSeajA5p9EM17M6gurLuIwDODQRLkq0utfRD3DlJsaHJ5ien6CRzwbcGWV9PmThlUY5MbBMblGLmdT9e1IET6PeoaPLKB74xtghLzk6EMwBWzJUn-7d-dRr"
+              width={28}
+              height={28}
+              unoptimized
+            />
+            <span>Temora</span>
+          </Link>
+          <button
+            className="flex w-full items-center justify-between rounded-lg bg-surface-low px-2.5 py-2 text-left hover:bg-surface-container"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
               <span className="flex min-w-0 items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded bg-accent px-1 font-mono text-xs font-bold text-white">
                   {activeWorkspace.name.slice(0, 2).toUpperCase()}
@@ -311,11 +310,14 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
             >
               <Icon name="add" size={18} className="text-accent" />
               New Item <span className="ml-auto font-mono text-xs text-outline">C</span>
-            </button>
-          </div>
-          <nav className="space-y-3 px-2 py-4">
-            {navGroups.map((group) => (
-              <div key={group.label}>
+          </button>
+        </div>
+        <nav
+          aria-label="Main navigation"
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-2 py-4"
+        >
+          {navGroups.map((group) => (
+            <div key={group.label}>
                 <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-outline">
                   {group.label}
                 </div>
@@ -325,10 +327,20 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                   }
                 >
                   {group.links.map((link) => {
+                    const fallbackLink =
+                      group.label === "Planning" &&
+                      ["/projects", "/tasks", "/reports"].includes(link.href);
+                    const projectId =
+                      group.label === "Projects" && link.href !== "/projects"
+                        ? link.href.split("/")[2]
+                        : null;
                     const active =
-                      link.href === "/my-tasks"
+                      !link.disabled &&
+                      !fallbackLink &&
+                      (link.href === "/my-tasks"
                         ? pathname.startsWith("/my-tasks")
-                        : pathname === link.href;
+                        : pathname === link.href ||
+                          (!!projectId && pathname.startsWith(`/projects/${projectId}/`)));
                     const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
                     const contents = (
                       <>
@@ -360,6 +372,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                       <Link
                         key={link.label}
                         href={link.href}
+                        aria-current={active ? "page" : undefined}
                         onClick={() => setMobileOpen(false)}
                         className={className}
                       >
@@ -370,9 +383,8 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                 </div>
               </div>
             ))}
-          </nav>
-        </div>
-        <div className="border-t border-border/30 bg-surface-low/60 p-2">
+        </nav>
+        <div className="shrink-0 border-t border-border/30 bg-surface-low/60 p-2">
           <div className="mb-1 flex items-center justify-between px-2 py-1 text-xs text-muted">
             <span className="flex items-center gap-2">
               <Icon name="help_outline" size={16} />
