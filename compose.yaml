@@ -115,6 +115,29 @@ services:
       redis:
         condition: service_healthy
 
+  
+  project:
+    build:
+      context: ./services/project-service
+
+    restart: unless-stopped
+
+    env_file:
+      - ./services/project-service/.env
+
+    ports:
+      - "127.0.0.1:8002:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      workspace:
+        condition: service_started      
+
 volumes:
   pgdata:
   redisdata:
+
+  
