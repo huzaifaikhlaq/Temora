@@ -134,7 +134,27 @@ services:
       identity:
         condition: service_started
       workspace:
-        condition: service_started      
+        condition: service_started
+
+  issue:
+    build:
+      context: ./services/issue-service
+
+    restart: unless-stopped
+
+    env_file:
+      - ./services/issue-service/.env
+
+    ports:
+      - "127.0.0.1:8003:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      workspace:
+        condition: service_started
 
 volumes:
   pgdata:
