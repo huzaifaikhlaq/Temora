@@ -29,6 +29,7 @@ class IssueReadSerializer(serializers.ModelSerializer):
     subtasks = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True, read_only=True)
     subtasks_completed = serializers.SerializerMethodField()
+    assignee_id = serializers.UUIDField(required=False,allow_null=True)
 
     class Meta:
         model = Issue
@@ -36,7 +37,7 @@ class IssueReadSerializer(serializers.ModelSerializer):
             "id", "workspace_id", "project_id", "number",
             "key", "issue_type", "title", "description",
             "status", "priority", "assignee_id",
-            "reporter_id", "sprint_id", "story_points",
+            "reporter_id","assignee_id", "sprint_id", "story_points",
             "epic_id", "parent_id", "components", "tags",
             "due_date", "is_draft", "archived_at",
             "created_at", "updated_at", "subtasks",
