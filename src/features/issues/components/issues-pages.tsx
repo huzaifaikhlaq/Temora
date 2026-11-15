@@ -97,6 +97,7 @@ export function IssueCreateForm({ initialProjectId = "" }: { initialProjectId?: 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeWorkspaceId || !projectId || title.trim().length < 3) { setError("Choose a project and enter a title with at least 3 characters."); return; }
+    if (storyPoints && ![1, 2, 3, 5, 8, 13].includes(Number(storyPoints))) { setError("Story points must be 1, 2, 3, 5, 8, or 13."); return; }
     setBusy(true); setError("");
     const input: IssueInput = { title: title.trim(), description: description.trim(), issue_type: issueType, priority, status, story_points: storyPoints ? Number(storyPoints) : null, due_date: dueDate || null };
     try { const issue = await issueApi.create(activeWorkspaceId, projectId, input); router.push(`/projects/${projectId}/issues/${issue.id}`); }
