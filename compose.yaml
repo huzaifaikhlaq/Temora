@@ -136,6 +136,7 @@ services:
       workspace:
         condition: service_started
 
+ 
   issue:
     build:
       context: ./services/issue-service
@@ -148,6 +149,9 @@ services:
     ports:
       - "127.0.0.1:8003:8000"
 
+    volumes:
+      - issue_media:/app/media
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -155,9 +159,14 @@ services:
         condition: service_started
       workspace:
         condition: service_started
+      project:
+        condition: service_started
+
+
 
 volumes:
   pgdata:
   redisdata:
+  issue_media:
 
   
