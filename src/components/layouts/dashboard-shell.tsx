@@ -30,6 +30,8 @@ const groups: {
       { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
       { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
       { label: "All Tasks", href: "/tasks", icon: "checklist" },
+      { label: "Issues", href: "/issues", icon: "bug_report" },
+      { label: "Create Issue", href: "/issues/new", icon: "add" },
       { label: "Create Task", href: "/tasks/new", icon: "add" },
     ],
   },
@@ -63,6 +65,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
+  const [quickAssigneeId, setQuickAssigneeId] = useState("");
   const [quickError, setQuickError] = useState("");
   const activeWorkspaceId = activeWorkspace.id;
   const activeMemberId = user.id;
@@ -211,6 +214,12 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
   const pageTitle =
     pathname === "/"
       ? "Overview"
+      : pathname === "/issues"
+        ? "Issues"
+        : pathname === "/issues/new"
+          ? "Create Issue"
+          : pathname.startsWith("/projects/") && pathname.includes("/issues/")
+            ? "Issue Details"
       : pathname.startsWith("/my-tasks")
         ? "My Tasks"
         : pathname === "/tasks"
@@ -374,6 +383,8 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                       !fallbackLink &&
                       (link.href === "/my-tasks"
                         ? pathname.startsWith("/my-tasks")
+                        : link.href === "/issues"
+                          ? pathname === "/issues" || (pathname.startsWith("/projects/") && pathname.includes("/issues/"))
                         : pathname === link.href ||
                           (!!projectId &&
                             (pathname === `/projects/${projectId}` ||
@@ -554,6 +565,23 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                 placeholder="What needs to be done?"
               />
             </label>
+            <label className="mt-4 block text-sm font-medium">
+              Assignee <span className="font-normal text-muted">(optional)</span>
+              <select
+                value={quickAssigneeId}
+                onChange={(event) => setQuickAssigneeId(event.target.value)}
+                className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+              >
+                <option value="">Unassigned</option>
+                {state.members
+                  .filter((member) => member.workspaceId === activeWorkspaceId)
+                  .map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             {quickError && (
               <p role="alert" className="mt-2 text-sm text-red">
                 {quickError}
@@ -594,8 +622,10 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                     const task = demoRepository.createTask({
                       projectId: project.id,
                       title: quickTitle.trim(),
+                      assigneeId: quickAssigneeId || null,
                     });
                     setQuickTitle("");
+                    setQuickAssigneeId("");
                     setQuickError("");
                     setCreateOpen(false);
                     router.push(`/tasks/${task.key}`);

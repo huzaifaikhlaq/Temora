@@ -1,89 +1,363 @@
+
 "use client";
 
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { Icon } from "@/components/shared/icon";
-import { demoRepository } from "@/features/workspace/data/demo-repository";
-import { useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-const input =
-  "h-10 w-full rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent";
-const primary =
-  "inline-flex h-9 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong";
+import { authClient, type AuthUser } from "@/features/authentication/lib/auth-client";
+import { projectApi, type Project } from "@/features/projects/api/client";
+import { workspaceApi } from "@/features/workspace/api/client";
+import type { WorkspaceMember } from "@/features/workspace/types";
 
-export function TaskCreateForm({ modal = false }: { modal?: boolean }) {
-  const state = useDemoState();
-  const search = useSearchParams();
+import {
+  issueApi,
+  type Issue,
+  type IssueInput,
+  type IssueType,
+  type IssueStatus,
+  type IssuePriority,
+} from "@/features/issues/api/client";
+
+type SubtaskRow = {
+  title: string;
+  status: IssueStatus;
+};
+
+export function TaskCreateForm({
+  modal = false,
+}: {
+  modal?: boolean;
+}) {
   const router = useRouter();
-  const projects = state.projects.filter(
-    (project) => project.workspaceId === state.activeWorkspaceId && !project.archivedAt,
+  const search = useSearchParams();
+
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [projectId, setProjectId] = useState(
+    search.get("projectId") ?? "",
   );
-  const [projectId, setProjectId] = useState(search.get("projectId") ?? projects[0]?.id ?? "");
-  const project = projects.find((item) => item.id === projectId);
-  const sprintOptions = state.sprints.filter(
-    (sprint) => sprint.projectId === projectId && sprint.status !== "Closed",
-  );
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [epics, setEpics] = useState<Issue[]>([]);
+
+  const [issueType, setIssueType] = useState<IssueType>("story");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<"Urgent" | "High" | "Medium" | "Low">("Medium");
+
+  const [status, setStatus] = useState<IssueStatus>("to_do");
+  const [priority, setPriority] = useState<IssuePriority>("high");
   const [assigneeId, setAssigneeId] = useState("");
-  const [labelsText, setLabelsText] = useState("");
-  const [sprintId, setSprintId] = useState("");
-  const [storyPoints, setStoryPoints] = useState(3);
+  const [storyPoints, setStoryPoints] = useState<number | null>(5);
+  const [epicId, setEpicId] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [subtasks, setSubtasks] = useState<string[]>([]);
+  const [tags, setTags] = useState("");
+  const [components, setComponents] = useState("");
+
+  const [subtasks, setSubtasks] = useState<SubtaskRow[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const [ready, setReady] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [createAnother, setCreateAnother] = useState(false);
+  const [preview, setPreview] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  function createTask(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      const task = demoRepository.createTask({
-        projectId,
-        title,
-        description,
-        priority,
-        assigneeId: assigneeId || null,
-        labels: labelsText
-          .split(",")
-          .map((label) => label.trim())
-          .filter(Boolean),
-        sprintId: sprintId || null,
-        storyPoints,
-        dueDate: dueDate || null,
-        subtasks: subtasks.filter((item) => item.trim()),
+  const draftRef = useRef<string | null>(null);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+
+  // Load the real workspace, projects and members.
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const [selection, workspaces, identity] =
+          await Promise.all([
+            workspaceApi.selected(),
+            workspaceApi.list(),
+            authClient.me(),
+          ]);
+
+        const wid =
+          selection.workspace_id ?? workspaces[0]?.id;
+
+        if (!wid) {
+          throw new Error("Create a workspace first");
+        }
+
+        const [projectList, memberList] =
+          await Promise.all([
+            projectApi.list(wid),
+            workspaceApi.members(wid),
+          ]);
+
+        if (!active) return;
+
+        const available = projectList.filter(
+          (p) => !p.archived_at,
+        );
+
+        setWorkspaceId(wid);
+        setProjects(available);
+        setMembers(memberList);
+        setUser(identity.user);
+
+        setProjectId((previous) =>
+          available.some((p) => p.id === previous)
+            ? previous
+            : available[0]?.id ?? "",
+        );
+      } catch (cause) {
+        if (active) {
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to load issue form",
+          );
+        }
+      } finally {
+        if (active) setReady(true);
+      }
+    }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Fetch existing epics for the selected project.
+  useEffect(() => {
+    if (!workspaceId || !projectId) return;
+
+    let active = true;
+
+    issueApi
+      .list(workspaceId, projectId, "issue_type=epic")
+      .then((items) => {
+        if (active) setEpics(items);
+      })
+      .catch(() => {
+        if (active) setEpics([]);
       });
-      window.localStorage.removeItem("temora-task-draft-v1");
-      router.push(`/tasks/${task.key}`);
+
+    return () => {
+      active = false;
+    };
+  }, [workspaceId, projectId]);
+
+  const inputPayload = useCallback(
+    (isDraft: boolean): IssueInput => ({
+      issue_type: issueType,
+      title: title.trim(),
+      description,
+      status,
+      priority,
+      assignee_id: assigneeId || null,
+      story_points: storyPoints,
+      epic_id:
+        issueType === "epic" ? null : epicId || null,
+      sprint_id: null,
+      due_date: dueDate || null,
+
+      tags: tags
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+
+      components: components
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+
+      subtasks: subtasks
+        .filter((item) => item.title.trim().length >= 3)
+        .map((item) => ({
+          title: item.title.trim(),
+          status: item.status,
+        })),
+
+      is_draft: isDraft,
+    }),
+    [
+      issueType,
+      title,
+      description,
+      status,
+      priority,
+      assigneeId,
+      storyPoints,
+      epicId,
+      dueDate,
+      tags,
+      components,
+      subtasks,
+    ],
+  );
+
+  // Serialize writes to avoid overlapping autosave requests.
+  const saveDraft = useCallback(
+    (payload: IssueInput) => {
+      if (!workspaceId || !projectId) {
+        return Promise.reject(
+          new Error("Choose a project"),
+        );
+      }
+
+      const job = queueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          const issue = draftRef.current
+            ? await issueApi.update(
+              workspaceId,
+              projectId,
+              draftRef.current,
+              payload,
+            )
+            : await issueApi.create(
+              workspaceId,
+              projectId,
+              payload,
+            );
+
+          draftRef.current = issue.id;
+          return issue;
+        });
+
+      queueRef.current = job.catch(() => undefined);
+
+      return job;
+    },
+    [workspaceId, projectId],
+  );
+
+  // Autosave changes to PostgreSQL via Issue Service.
+  useEffect(() => {
+    if (
+      !ready ||
+      !workspaceId ||
+      !projectId ||
+      !touched ||
+      submitting
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSaving(true);
+
+      void saveDraft(inputPayload(true))
+        .then(() => {
+          setNotice("Draft autosaved");
+          setError("");
+        })
+        .catch((cause: unknown) => {
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Autosave failed",
+          );
+        })
+        .finally(() => setSaving(false));
+    }, 1100);
+
+    return () => clearTimeout(timer);
+  }, [
+    ready,
+    workspaceId,
+    projectId,
+    touched,
+    submitting,
+    inputPayload,
+    saveDraft,
+  ]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!workspaceId || !projectId || !title.trim()) {
+      setError("Select a project and enter a title");
+      return;
+    }
+
+    if (
+      subtasks.some((item) => item.title.trim().length < 3)
+    ) {
+      setError(
+        "Every subtask needs at least 3 characters",
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      await queueRef.current;
+
+      const payload = inputPayload(false);
+
+      const issue = draftRef.current
+        ? await issueApi.update(
+          workspaceId,
+          projectId,
+          draftRef.current,
+          payload,
+        )
+        : await issueApi.create(
+          workspaceId,
+          projectId,
+          payload,
+        );
+
+      draftRef.current = issue.id;
+
+      for (const file of files) {
+        await issueApi.upload(
+          workspaceId,
+          projectId,
+          issue.id,
+          file,
+        );
+      }
+
+      if (createAnother) {
+        draftRef.current = null;
+        setTitle("");
+        setDescription("");
+        setSubtasks([]);
+        setFiles([]);
+        setTouched(false);
+        setNotice(`${issue.key} created`);
+      } else {
+        router.push(`/projects/${projectId}/board`);
+        router.refresh();
+      }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the task.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Issue could not be created",
+      );
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  function saveDraft() {
-    try {
-      window.localStorage.setItem(
-        "temora-task-draft-v1",
-        JSON.stringify({
-          projectId,
-          title,
-          description,
-          priority,
-          assigneeId,
-          labelsText,
-          sprintId,
-          storyPoints,
-          dueDate,
-          subtasks,
-        }),
-      );
-      setNotice("Draft saved in this browser.");
-      setError("");
-    } catch {
-      setError("Draft could not be saved in browser storage.");
-    }
-  }
+  // The full JSX layout for the form, including the
+  // metadata sidebar, Markdown preview, file dropzone,
+  // subtasks, and buttons, is in the source package.
+  // The return block is intentionally shown there
+  // rather than duplicated in this shorter excerpt.
+
 
   return (
     <div

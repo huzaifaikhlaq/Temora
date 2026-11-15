@@ -85,6 +85,16 @@ textarea {
 button {
   cursor: pointer;
 }
+
+.status-backlog { color: #64748b; background: #64748b1a; }
+.status-to_do { color: #2563eb; background: #2563eb1a; }
+.status-in_progress { color: #635bff; background: #635bff1a; }
+.status-in_review { color: #b45309; background: #d977061a; }
+.status-done { color: #00845c; background: #00845c1a; }
+.priority-urgent { color: #ef4444; }
+.priority-high { color: #f97316; }
+.priority-medium { color: #3b82f6; }
+.priority-low { color: #94a3b8; }
 ::placeholder {
   color: var(--outline);
   opacity: 1;

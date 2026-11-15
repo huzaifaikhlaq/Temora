@@ -78,13 +78,15 @@ class Issue(models.Model):
         default=Priority.MEDIUM,
     )
 
-    assignee_id = models.UUIDField(
-        null=True,
-        blank=True,
-        db_index=True,
-    )
+    
 
     reporter_id = models.UUIDField(db_index=True)
+    
+    assignee_id = models.UUIDField(
+    null=True,
+    blank=True,
+    db_index=True,
+    )
 
     sprint_id = models.UUIDField(
         null=True,
@@ -183,4 +185,3 @@ class IssueAttachment(models.Model):
 
     uploaded_by = models.UUIDField()
     created_at = models.DateTimeField(auto_now_add=True)
-    
