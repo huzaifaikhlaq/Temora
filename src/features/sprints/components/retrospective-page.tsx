@@ -135,7 +135,7 @@ export function RetrospectivePage({ sprintId }: { sprintId: string }) {
         <h2 className="mt-1 text-xl font-bold">{currentSprint.goal || "Sprint review"}</h2>
         <p className="mt-1 text-sm text-muted">
           {dateLabel(currentSprint.startDate)}–{dateLabel(currentSprint.endDate)} ·{" "}
-          {committedPoints} points in sprint tasks
+          {committedPoints} points in sprint issues
         </p>
       </Panel>
 
@@ -143,13 +143,13 @@ export function RetrospectivePage({ sprintId }: { sprintId: string }) {
         <MetricCard
           label="Points completed"
           value={`${donePoints} / ${committedPoints}`}
-          note="Based on current task status"
+          note="Based on current issue status"
           icon="bolt"
         />
         <MetricCard
           label="Sprint carryover"
-          value={`${tasks.filter((task) => task.status !== "Done").length} tasks`}
-          note="Tasks not marked done"
+          value={`${tasks.filter((task) => task.status !== "Done").length} issues`}
+          note="Issues not marked done"
           icon="sync_alt"
         />
         <MetricCard

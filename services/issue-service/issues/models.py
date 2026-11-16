@@ -20,7 +20,7 @@ class IssueCounter(models.Model):
 class Issue(models.Model):
     class Type(models.TextChoices):
         STORY = "story", "Story"
-        TASK = "task", "Task"
+        TASK = "task", "Issue"
         BUG = "bug", "Bug"
         EPIC = "epic", "Epic"
 

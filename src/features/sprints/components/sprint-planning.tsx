@@ -67,7 +67,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
       setGoal("");
       setEndDate("");
       setCreating(false);
-      setNotice("Sprint created in this browser’s demo workspace.");
+      setNotice("Sprint created in this browserâ€™s demo workspace.");
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create sprint.");
@@ -78,13 +78,13 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
       demoRepository.updateTask(taskId, patch);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update task.");
+      setError(cause instanceof Error ? cause.message : "Could not update issue.");
     }
   }
   function addToSprint(taskId: string, sprintId: string) {
     if (!sprintId) return;
     updateTask(taskId, { sprintId });
-    setNotice("Task added to sprint.");
+    setNotice("Issue added to sprint.");
   }
 
   if (!project)
@@ -92,7 +92,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
       <main className="p-8">
         <h1 className="text-xl font-semibold">Project not found</h1>
         <Link href="/projects" className="mt-3 inline-block text-accent">
-          Back to projects →
+          Back to projects â†’
         </Link>
       </main>
     );
@@ -186,7 +186,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
             {[
               ["Points done", `${donePoints} / ${totalPoints} pts`],
               [
-                "Tasks",
+                "Issues",
                 `${activeTasks.filter((task) => task.status === "Done").length} / ${activeTasks.length} done`,
               ],
               ["Capacity", `${activeSprint.capacityPoints} pts`],
@@ -210,7 +210,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
         <Panel>
           <h2 className="font-semibold">No active sprint</h2>
           <p className="mt-1 text-sm text-muted">
-            Start a planned sprint to begin tracking its tasks.
+            Start a planned sprint to begin tracking its issues.
           </p>
         </Panel>
       )}
@@ -242,7 +242,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
             <h2 className="text-lg font-semibold">
               Product backlog{" "}
               <span className="ml-1 rounded-full bg-surface-high px-2 font-mono text-xs">
-                {backlog.length} tasks
+                {backlog.length} issues
               </span>
             </h2>
             <p className="mt-1 text-xs text-muted">Unscheduled work in {project.name}.</p>
@@ -259,7 +259,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
               href={`/tasks/new?projectId=${encodeURIComponent(project.id)}`}
               className="h-9 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white"
             >
-              Create task
+              Create issue
             </Link>
           </div>
         </div>
@@ -287,7 +287,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
                 onChange={(event) => addToSprint(task.id, event.target.value)}
                 className="h-8 rounded border border-border bg-white px-2 text-xs"
               >
-                <option value="">Add to sprint…</option>
+                <option value="">Add to sprintâ€¦</option>
                 {sprints
                   .filter((sprint) => sprint.status !== "Closed")
                   .map((sprint) => (
@@ -301,7 +301,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
         </div>
         {backlog.length === 0 && (
           <p className="py-8 text-center text-sm text-muted">
-            No backlog tasks match this search.
+            No backlog issues match this search.
           </p>
         )}
       </Panel>
@@ -315,7 +315,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
               <div>
                 <h2 className="text-xl font-bold">Create sprint</h2>
                 <p className="mt-1 text-sm text-muted">
-                  For {project.name} · Changes stay in this browser.
+                  For {project.name} Â· Changes stay in this browser.
                 </p>
               </div>
               <button
@@ -324,7 +324,7 @@ export function SprintPlanning({ projectId }: { projectId: string }) {
                 aria-label="Close"
                 className="text-muted"
               >
-                ×
+                Ã—
               </button>
             </div>
             <label className="block text-sm font-medium">
@@ -443,7 +443,7 @@ function SprintSection({
             </span>
           </h2>
           <p className="mt-1 text-xs text-muted">
-            {sprint.startDate} – {sprint.endDate} · {goal || "No goal set"}
+            {sprint.startDate} â€“ {sprint.endDate} Â· {goal || "No goal set"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -538,7 +538,7 @@ function SprintSection({
           <strong>Sprint Goal:</strong> {sprint.goal || "No goal set"}
         </span>
         <span className="font-mono text-accent">
-          {completed} / {total} SP completed · {sprint.capacityPoints} SP capacity
+          {completed} / {total} SP completed Â· {sprint.capacityPoints} SP capacity
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -603,20 +603,20 @@ function SprintSection({
       </div>
       <div className="flex flex-wrap items-center gap-2 p-3">
         <select
-          aria-label={`Add backlog task to ${sprint.name}`}
+          aria-label={`Add backlog issue to ${sprint.name}`}
           defaultValue=""
           onChange={(event) => onAddTask(event.target.value, sprint.id)}
           className={`${input} max-w-sm`}
         >
-          <option value="">Add backlog task…</option>
+          <option value="">Add backlog issueâ€¦</option>
           {backlog.map((task) => (
             <option key={task.id} value={task.id}>
-              {task.key} · {task.title}
+              {task.key} Â· {task.title}
             </option>
           ))}
         </select>
         <span className="text-xs text-muted">
-          {tasks.length} tasks · {total} points
+          {tasks.length} issues Â· {total} points
         </span>
       </div>
     </section>

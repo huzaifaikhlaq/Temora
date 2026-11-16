@@ -1,16 +1,13 @@
 "use client";
 
-import { createContext, createElement, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { demoRepository } from "@/features/workspace/data/demo-repository";
+import { useWorkspaceScope, WorkspaceScopeProvider } from "@/features/workspace/hooks/workspace-scope";
 
-const RealWorkspaceScope = createContext<{ workspaceId: string; userId: string } | null>(null);
-
-export function DemoDataScopeProvider({ workspaceId, userId, children }: { workspaceId: string; userId: string; children: ReactNode }) {
-  return createElement(RealWorkspaceScope.Provider, { value: { workspaceId, userId } }, children);
-}
+export const DemoDataScopeProvider = WorkspaceScopeProvider;
 
 export function useDemoState() {
-  const realWorkspace = useContext(RealWorkspaceScope);
+  const realWorkspace = useWorkspaceScope();
   const state = useSyncExternalStore(
     demoRepository.subscribe,
     demoRepository.getSnapshot,

@@ -179,7 +179,7 @@ class IssueWriteSerializer(serializers.Serializer):
 
         if len(values.get("subtasks", [])) > 30:
             raise serializers.ValidationError({
-                "subtasks": "Maximum 30 subtasks per request"
+                "subtasks": "Maximum 30 child issues per request"
             })
 
         if values.get(

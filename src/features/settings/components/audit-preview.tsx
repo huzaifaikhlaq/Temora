@@ -12,7 +12,7 @@ type AuditEvent = {
   actor: string;
   event: string;
   resource: string;
-  category: "Task snapshot" | "Comment";
+  category: "Issue snapshot" | "Comment";
 };
 
 function downloadCsv(events: AuditEvent[]) {
@@ -44,9 +44,9 @@ export function AuditPreview() {
         id: `task-${task.id}`,
         date: task.updatedAt,
         actor: "Actor not recorded",
-        event: `Latest task snapshot · ${task.status}`,
+        event: `Latest issue snapshot · ${task.status}`,
         resource: `${task.key} · ${task.title}`,
-        category: "Task snapshot",
+        category: "Issue snapshot",
       }));
     const commentEvents: AuditEvent[] = state.comments
       .filter((comment) =>
@@ -59,7 +59,7 @@ export function AuditPreview() {
         date: comment.createdAt,
         actor: members.find((member) => member.id === comment.authorId)?.name ?? "Workspace member",
         event: "Comment added",
-        resource: state.tasks.find((task) => task.id === comment.taskId)?.key ?? "Task",
+        resource: state.tasks.find((task) => task.id === comment.taskId)?.key ?? "Issue",
         category: "Comment",
       }));
     return [...taskEvents, ...commentEvents].sort((a, b) => b.date.localeCompare(a.date));
@@ -127,15 +127,15 @@ export function AuditPreview() {
       </header>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-        The activity below is assembled from task and comment records. It is not a security audit
-        log and does not prove who changed an task.
+        The activity below is assembled from issue and comment records. It is not a security audit
+        log and does not prove who changed an issue.
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Visible activity records"
           value={String(filteredEvents.length)}
-          note="From task snapshots and comments"
+          note="From issue snapshots and comments"
           icon="history"
         />
         <MetricCard
@@ -171,7 +171,7 @@ export function AuditPreview() {
             <input
               id="audit-search"
               className="h-9 min-w-52 rounded-lg border border-border bg-white px-3 text-sm"
-              placeholder="Search actor, event, task…"
+              placeholder="Search actor, event, issue…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -185,7 +185,7 @@ export function AuditPreview() {
               className="h-9 rounded-lg border border-border bg-white px-3 text-sm"
             >
               <option>All activity</option>
-              <option>Task snapshot</option>
+              <option>Issue snapshot</option>
               <option>Comment</option>
             </select>
             <label className="sr-only" htmlFor="audit-range">

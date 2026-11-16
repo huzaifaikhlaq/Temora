@@ -56,7 +56,7 @@ export function MyTasksView() {
             Personal action queue
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            My Tasks{" "}
+            My Issues{" "}
             <span className="ml-1 rounded-full bg-surface-high px-2.5 py-1 align-middle font-mono text-sm">
               {open.length} Active
             </span>
@@ -75,7 +75,7 @@ export function MyTasksView() {
             className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
           >
             <Icon name="add_task" size={17} />
-            New Task
+            New Issue
           </Link>
           <div className="flex rounded-lg bg-surface-high p-0.5">
             {(["List", "Board", "Calendar"] as const).map((view, index) => (
@@ -114,11 +114,11 @@ export function MyTasksView() {
           <label className="relative min-w-48 flex-1">
             <Icon name="search" size={18} className="absolute left-2 top-2 text-outline" />
             <input
-              aria-label="Search my tasks"
+              aria-label="Search my issues"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="h-9 w-full rounded-lg border border-border/60 pl-8 pr-3 text-sm outline-none focus:border-accent"
-              placeholder="Search tasks…"
+              placeholder="Search issues…"
             />
           </label>
           <select
@@ -152,7 +152,7 @@ export function MyTasksView() {
           <span>
             Done <strong className="ml-1 text-green">{completed.length}</strong>
           </span>
-          <span>{tasks.length} matching tasks</span>
+          <span>{tasks.length} matching issues</span>
         </div>
         {tab === "Calendar" ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -193,7 +193,7 @@ export function MyTasksView() {
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <button
-                        aria-label={`Mark ${task.key} complete`}
+                        aria-label={`Mark issue ${task.key} complete`}
                         onClick={() => demoRepository.updateTask(task.id, { status: "Done" })}
                         className="size-4 shrink-0 rounded border border-border bg-white hover:border-accent"
                       />
@@ -219,7 +219,7 @@ export function MyTasksView() {
                     </span>
                     <span className="text-xs text-muted">{task.dueDate ?? "—"}</span>
                     <select
-                      aria-label={`${task.key} status`}
+                      aria-label={`Issue ${task.key} status`}
                       value={task.status}
                       onChange={(event) =>
                         demoRepository.updateTask(task.id, {
@@ -242,7 +242,7 @@ export function MyTasksView() {
           </div>
         )}
         {tasks.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted">No tasks match these filters.</p>
+          <p className="py-10 text-center text-sm text-muted">No issues match these filters.</p>
         )}
       </Panel>
     </div>

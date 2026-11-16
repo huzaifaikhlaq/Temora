@@ -1,4 +1,4 @@
-import { TaskDependenciesPage } from "@/features/tasks/components/task-dependencies-page";
+import { LegacyTaskDependencies } from "@/features/issues/components/legacy-task-dependencies";
 
 export default async function TaskDependenciesRoute({
   params,
@@ -6,5 +6,5 @@ export default async function TaskDependenciesRoute({
   params: Promise<{ taskId: string }>;
 }) {
   const { taskId } = await params;
-  return <TaskDependenciesPage taskId={taskId} />;
+  return <LegacyTaskDependencies taskId={taskId} />;
 }

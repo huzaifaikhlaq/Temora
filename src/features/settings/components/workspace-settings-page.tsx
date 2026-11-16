@@ -81,7 +81,7 @@ export function WorkspaceSettingsPage() {
       ? [...new Set([...settings.taskFields, field])]
       : settings.taskFields.filter((item) => item !== field);
     demoRepository.updateSettings({ taskFields: next });
-    setNotice("Task fields updated in this browser.");
+    setNotice("Issue fields updated in this browser.");
   }
   function toggleRule(ruleId: string) {
     demoRepository.updateSettings({
@@ -208,7 +208,7 @@ export function WorkspaceSettingsPage() {
             <Panel>
               <h2 className="text-lg font-semibold">Workflow statuses</h2>
               <p className="mt-1 text-sm text-muted">
-                Enable status columns used by the workspace’s task workflow.
+                Enable status columns used by the workspaceâ€™s issue workflow.
               </p>
               <div className="mt-5 space-y-2">
                 {(["Backlog", "To Do", "In Progress", "In Review", "Done"] as WorkStatus[]).map(
@@ -233,7 +233,7 @@ export function WorkspaceSettingsPage() {
                         {status}
                       </span>
                       <span className="flex-1 text-sm text-muted">
-                        {taskCounts[status] ?? 0} tasks currently use this status
+                        {taskCounts[status] ?? 0} issues currently use this status
                       </span>
                       {status === "Done" && <span className="text-xs text-muted">Required</span>}
                     </label>
@@ -241,16 +241,16 @@ export function WorkspaceSettingsPage() {
                 )}
               </div>
               <p className="mt-3 text-xs text-muted">
-                Statuses with assigned tasks and the required Done status stay enabled to preserve
-                task data.
+                Statuses with assigned issues and the required Done status stay enabled to preserve
+                issue data.
               </p>
             </Panel>
           )}
           {tab === "Custom Fields" && (
             <Panel>
-              <h2 className="text-lg font-semibold">Task fields</h2>
+              <h2 className="text-lg font-semibold">Issue fields</h2>
               <p className="mt-1 text-sm text-muted">
-                Choose which optional fields appear in task forms.
+                Choose which optional fields appear in issue forms.
               </p>
               <div className="mt-5 space-y-2">
                 {["Story points", "Labels", "Due date"].map((field) => (
@@ -289,7 +289,7 @@ export function WorkspaceSettingsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">{rule.name}</p>
                       <p className="text-xs text-muted">
-                        {rule.id} · {rule.successRate}% historical demo success
+                        {rule.id} Â· {rule.successRate}% historical demo success
                       </p>
                     </div>
                     <label className="flex items-center gap-2 text-xs text-muted">
@@ -385,7 +385,7 @@ export function WorkspaceSettingsPage() {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm("Reset this browser’s Temora demo data to the seeded sample?")) {
+                if (window.confirm("Reset this browserâ€™s Temora demo data to the seeded sample?")) {
                   demoRepository.resetDemo();
                   setNotice("Demo data reset to its initial sample state.");
                 }

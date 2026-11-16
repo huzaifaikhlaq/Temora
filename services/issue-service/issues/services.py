@@ -42,25 +42,25 @@ def resolve_references(workspace_id, project_id, values, current=None):
 
             if field == "parent_id" and target.parent_id:
                 raise ValidationError({
-                    field: "Only one level of subtasks is supported"
+                    field: "Only one level of child issues is supported"
                 })
 
             if field == "parent_id" and target.issue_type == Issue.Type.EPIC:
                 raise ValidationError({
-                    field: "An Epic cannot be a subtask parent"
+                    field: "A child issue cannot have an Epic as its parent"
                 })
             
 
             if field == "parent_id" and current and current.subtasks.exists():
                 raise ValidationError({
-                    field: "An issue containing subtasks cannot become a subtask"
+                    field: "An issue containing child issues cannot become a child issue"
                 })
 
         values[field[:-3]] = target
 
     if values.get("parent") and values.get("issue_type") == Issue.Type.EPIC:
         raise ValidationError({
-            "issue_type": "An Epic cannot be a subtask"
+            "issue_type": "An Epic cannot be a child issue"
         })
 
     if (
@@ -97,7 +97,7 @@ def insert_issue(workspace_id, project_id, project_key, reporter_id, values):
 
         if values.get("parent") is not None and titles:
             raise ValidationError({
-                "subtasks": "Nested subtasks are not supported"
+                "subtasks": "Nested child issues are not supported"
             })
 
         if values.get("sprint_id") is not None:
@@ -156,7 +156,7 @@ def modify_issue(issue, values):
 
         if issue.parent_id is not None and titles:
             raise ValidationError({
-                "subtasks": "Nested subtasks are not supported"
+                "subtasks": "Nested child issues are not supported"
             })
 
         if values.get("sprint_id") is not None:
@@ -169,7 +169,7 @@ def modify_issue(issue, values):
             and (values.get("parent") or issue.parent_id)
         ):
             raise ValidationError({
-                "issue_type": "An Epic cannot be a subtask"
+                "issue_type": "An Epic cannot be a child issue"
             })
 
         if (

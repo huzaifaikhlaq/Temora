@@ -24,7 +24,7 @@ services/
   identity-service/           Authentication and identity
   workspace-service/          Workspaces and membership
   project-service/             Projects and planning
-  issue-service/               Issues and tasks
+  issue-service/               Issue tracking and management
   notification-service/        Notifications and inbox
   billing-service/             Plans, subscriptions, and billing
 gateway/                      API routing to backend services

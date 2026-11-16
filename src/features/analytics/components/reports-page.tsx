@@ -76,10 +76,10 @@ export function ReportsPage() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "temora-workspace-tasks.csv";
+    link.download = "temora-workspace-issues.csv";
     link.click();
     URL.revokeObjectURL(url);
-    setNotice(`Exported ${reportTasks.length} workspace tasks as CSV.`);
+    setNotice(`Exported ${reportTasks.length} workspace issues as CSV.`);
   }
 
   return (
@@ -113,14 +113,14 @@ export function ReportsPage() {
       )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Tasks updated in range"
+          label="Issues updated in range"
           value={String(reportTasks.length)}
           note={`Last ${reportRange} days`}
           icon="task_alt"
           tone="green"
         />
         <MetricCard
-          label="Completed tasks"
+          label="Completed issues"
           value={String(reportTasks.filter((task) => task.status === "Done").length)}
           note="Current workspace"
           icon="avg_time"
@@ -133,7 +133,7 @@ export function ReportsPage() {
           icon="speed"
         />
         <MetricCard
-          label="Open tasks"
+          label="Open issues"
           value={String(reportTasks.filter((task) => task.status !== "Done").length)}
           note="In selected range"
           icon="flag"
@@ -183,7 +183,7 @@ export function ReportsPage() {
           </div>
         </Panel>
         <Panel>
-          <PanelTitle title="Tasks by status" />
+          <PanelTitle title="Issues by status" />
           <div className="space-y-5 py-3">
             {statusRows.map(([name, value, color]) => (
               <div key={name}>
@@ -209,7 +209,7 @@ export function ReportsPage() {
         <Panel className="xl:col-span-2">
           <PanelTitle title="Project health" />
           <DataTable
-            headings={["Project", "Completion", "Open tasks", "Health", "Lead"]}
+            headings={["Project", "Completion", "Open issues", "Health", "Lead"]}
             rows={workspaceProjects.map((project) => {
               const projectTasks = workspaceTasks.filter(
                 (task) => task.projectId === project.id,

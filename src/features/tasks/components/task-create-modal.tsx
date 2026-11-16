@@ -25,8 +25,8 @@ export function TaskCreateModal() {
       <section
         role="dialog"
         aria-modal="true"
-        aria-labelledby="task-create-title"
-        className="max-h-[calc(100vh-1.5rem)] w-full max-w-6xl overflow-y-auto rounded-2xl border border-border bg-surface-low shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+        aria-labelledby="issue-create-title"
+        className="flex h-[min(92vh,942px)] max-h-[calc(100vh-2rem)] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-border bg-white shadow-2xl"
       >
         <TaskCreateForm modal />
       </section>

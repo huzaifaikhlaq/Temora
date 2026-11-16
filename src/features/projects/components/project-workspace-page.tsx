@@ -181,7 +181,7 @@ export function ProjectWorkspacePage({
               tone="green"
             />
             <MetricCard
-              label="Open tasks"
+              label="Open issues"
               value={String(openTasks.length)}
               note={`${tasks.length} total`}
               icon="checklist"
@@ -202,10 +202,10 @@ export function ProjectWorkspacePage({
           <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
             <Panel>
               <PanelTitle
-                title="Recent tasks"
+                title="Recent issues"
                 trailing={
                   <Link href="/tasks/new" className="text-sm font-semibold text-accent">
-                    Create task
+                    Create issue
                   </Link>
                 }
               />
@@ -218,7 +218,7 @@ export function ProjectWorkspacePage({
                   <span className="font-mono text-xs text-accent">{task.key}</span>
                   {task.parentTaskId && (
                     <span className="rounded bg-accent/10 px-2 py-1 text-[10px] text-accent">
-                      Subtask
+                      Child issue
                     </span>
                   )}
                   <span className="min-w-40 flex-1 font-medium">{task.title}</span>
@@ -230,7 +230,7 @@ export function ProjectWorkspacePage({
               ))}
               {!tasks.length && (
                 <p className="py-8 text-center text-sm text-muted">
-                  No tasks yet. Add your first task to start the board.
+                  No issues yet. Add your first issue to start the board.
                 </p>
               )}
             </Panel>
@@ -258,7 +258,7 @@ export function ProjectWorkspacePage({
                 href={`/projects/${project.id}/settings`}
                 className="mt-5 inline-flex text-sm font-semibold text-accent"
               >
-                Edit project settings →
+                Edit project settings â†’
               </Link>
             </Panel>
           </div>
@@ -323,7 +323,7 @@ export function ProjectWorkspacePage({
                   />
                 </label>
                 <label className="block text-sm font-medium">
-                  Progress · {progress}%
+                  Progress Â· {progress}%
                   <input
                     className="mt-4 w-full accent-violet-600"
                     type="range"
@@ -365,7 +365,7 @@ export function ProjectWorkspacePage({
             <div className="mt-6 border-t border-border pt-5">
               <h2 className="font-semibold text-red-700">Archive project</h2>
               <p className="mt-1 text-xs leading-5 text-muted">
-                Archived projects are removed from active project lists. Their tasks remain in demo
+                Archived projects are removed from active project lists. Their issues remain in demo
                 storage.
               </p>
               <button
@@ -410,7 +410,7 @@ export function ProjectWorkspacePage({
                   <span className="min-w-0 flex-1">
                     <strong className="block truncate text-sm">{member.name}</strong>
                     <span className="text-xs text-muted">
-                      {member.email} · {member.team}
+                      {member.email} Â· {member.team}
                     </span>
                   </span>
                   <span className="text-xs text-muted">
@@ -442,7 +442,7 @@ export function ProjectWorkspacePage({
               </button>
             </form>
             <div className="mt-5 border-t border-border pt-4 text-xs text-muted">
-              Project membership changes are stored in this browser’s demo data.
+              Project membership changes are stored in this browserâ€™s demo data.
             </div>
           </Panel>
         </div>

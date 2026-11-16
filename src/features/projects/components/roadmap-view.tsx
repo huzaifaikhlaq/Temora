@@ -78,7 +78,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
 
   function exportRoadmap() {
     const records = [
-      ["Project", "Key", "Status", "Progress", "Task", "Due date"],
+      ["Project", "Key", "Status", "Progress", "Issue", "Due date"],
       ...rows.flatMap(({ project, tasks }) =>
         tasks.length
           ? tasks.map((task) => [
@@ -150,7 +150,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
               {activeProject ? `${activeProject.name} roadmap` : "Workspace roadmap"}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              Project progress and task due dates from this workspace’s demo data.
+              Project progress and issue due dates from this workspace’s demo data.
             </p>
           </div>
           <div className="flex gap-2">
@@ -261,13 +261,13 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
           </button>
         </div>
         <span className="text-xs text-muted">
-          {rows.length} projects · {dueTasks.length} dated tasks
+          {rows.length} projects · {dueTasks.length} dated issues
         </span>
       </div>
       <div className="flex min-h-0 flex-1 overflow-hidden" id="roadmap">
         <aside className="hidden w-[340px] shrink-0 flex-col border-r border-border/50 bg-white md:flex">
           <div className="grid h-[62px] grid-cols-[1fr_62px_72px] items-center border-b border-border/50 bg-surface-low px-4 text-[10px] font-semibold uppercase tracking-wider text-outline">
-            <span>Projects &amp; Tasks</span>
+            <span>Projects &amp; Issues</span>
             <span>Progress</span>
             <span>Status</span>
           </div>
@@ -320,7 +320,7 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
                       <span className="font-mono text-accent">{task.key}</span>
                       {task.parentTaskId && (
                         <span className="rounded bg-accent/10 px-1.5 py-0.5 text-accent">
-                          Subtask
+                          Child issue
                         </span>
                       )}
                       <span className="min-w-0 flex-1 truncate">{task.title}</span>
@@ -455,11 +455,11 @@ export function RoadmapView({ projectId }: { projectId?: string }) {
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-white px-4 py-3 text-xs sm:px-6">
         <span className="font-mono text-outline">
-          Projects: <strong className="text-foreground">{rows.length}</strong> · Tasks with due
+          Projects: <strong className="text-foreground">{rows.length}</strong> · Issues with due
           dates: <strong className="text-foreground">{dueTasks.length}</strong>
         </span>
         <span className="text-muted">
-          Timeline uses project and task due dates in this workspace.
+          Timeline uses project and issue due dates in this workspace.
         </span>
       </footer>
     </div>

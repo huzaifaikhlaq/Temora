@@ -526,7 +526,7 @@ export function createInitialDemoState(): DemoState {
     ...parentTasks,
     ...subtasks.map((subtask, index): Task => {
       const parent = parentTasks.find((item) => item.id === subtask.taskId);
-      if (!parent) throw new Error(`Missing parent task ${subtask.taskId}.`);
+      if (!parent) throw new Error(`Missing parent issue ${subtask.taskId}.`);
       return {
         id: subtask.id,
         key: `${parent.key}-S${index + 1}`,

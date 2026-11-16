@@ -23,9 +23,9 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
   if (!task)
     return (
       <main className="p-8">
-        <h1 className="text-xl font-semibold">Task not found</h1>
+        <h1 className="text-xl font-semibold">Issue not found</h1>
         <Link className="mt-3 inline-block text-accent" href="/tasks">
-          Back to tasks →
+          Back to issues →
         </Link>
       </main>
     );
@@ -97,7 +97,7 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
             </article>
           ))
         ) : (
-          <p className="rounded-lg bg-surface-low p-4 text-sm text-muted">No linked tasks</p>
+          <p className="rounded-lg bg-surface-low p-4 text-sm text-muted">No linked issues</p>
         )}
       </div>
     </section>
@@ -110,11 +110,11 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
           ← {currentTask.key}
         </Link>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-outline">
-          {project?.name ?? "Project"} / Task
+          {project?.name ?? "Project"} / Issue
         </p>
-        <h1 className="mt-1 text-2xl font-bold">Task dependencies &amp; activity</h1>
+        <h1 className="mt-1 text-2xl font-bold">Issue dependencies &amp; activity</h1>
         <p className="mt-1 text-sm text-muted">
-          Review and update the work blocking this task and the work it unblocks.
+          Review and update the work blocking this issue and the work it unblocks.
         </p>
       </div>
 
@@ -157,14 +157,14 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
               </select>
             </label>
             <label className="text-xs font-semibold">
-              Task
+              Issue
               <select
                 required
                 value={relatedTaskId}
                 onChange={(event) => setRelatedTaskId(event.target.value)}
                 className="mt-1 h-9 w-full rounded-lg border border-border bg-white px-2 text-sm font-normal"
               >
-                <option value="">Select an task</option>
+                <option value="">Select an issue</option>
                 {candidates.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.key} · {item.title}
@@ -191,7 +191,7 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
             </button>
             {candidates.length === 0 && (
               <p className="text-xs text-muted sm:col-span-4">
-                All tasks in this workspace are already linked.
+                All issues in this workspace are already linked.
               </p>
             )}
           </form>
@@ -210,7 +210,7 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
       )}
 
       <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-semibold">Task dependency graph</h2>
+        <h2 className="font-semibold">Issue dependency graph</h2>
         <p className="mt-1 text-xs text-muted">
           Links are stored in the shared browser demo state. Cyclic blocking relationships are
           prevented.
@@ -218,7 +218,7 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           {relationSection("Blocked by", blockedBy, "blocked-by")}
           {relationSection("Blocks downstream", blocks, "blocks")}
-          {relationSection("Related tasks", related, "relates-to")}
+          {relationSection("Related issues", related, "relates-to")}
         </div>
       </section>
 
@@ -240,7 +240,7 @@ export function TaskDependenciesPage({ taskId }: { taskId: string }) {
             </article>
           ))
         ) : (
-          <p className="mt-3 text-sm text-muted">No comments have been recorded for this task.</p>
+          <p className="mt-3 text-sm text-muted">No comments have been recorded for this issue.</p>
         )}
       </section>
     </main>
