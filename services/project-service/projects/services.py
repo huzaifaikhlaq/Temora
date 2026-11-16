@@ -18,17 +18,17 @@ def generate_project_key(name):
     return f"{prefix}{secrets.token_hex(3).upper()}"
 
 
-def create_project(workspace_id, user_id, data):
+def create_project(workspace_id, user_id, data, key=None):
     # Retry the extremely unlikely generated-key collision.
     for _ in range(5):
-        key = generate_project_key(data["name"])
+        generated_key = key or generate_project_key(data["name"])
 
         try:
             with transaction.atomic():
                 return Project.objects.create(
                     workspace_id=workspace_id,
                     created_by=user_id,
-                    key=key,
+                    key=generated_key,
                     **data,
                 )
         except IntegrityError:
