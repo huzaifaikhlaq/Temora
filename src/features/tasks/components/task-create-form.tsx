@@ -73,6 +73,8 @@ export function TaskCreateForm({
 
   const draftRef = useRef<string | null>(null);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const publishingRef = useRef(false);
+  const publishedIssueRef = useRef<Issue | null>(null);
 
   // Load the real workspace, projects and members.
   useEffect(() => {
@@ -218,6 +220,10 @@ export function TaskCreateForm({
       const job = queueRef.current
         .catch(() => undefined)
         .then(async () => {
+          if (publishingRef.current || publishedIssueRef.current) {
+            throw new Error("Issue is being published or is already published.");
+          }
+
           const issue = draftRef.current
             ? await issueApi.update(
               workspaceId,
@@ -249,20 +255,32 @@ export function TaskCreateForm({
       !workspaceId ||
       !projectId ||
       !touched ||
-      submitting
+      submitting ||
+      publishingRef.current ||
+      publishedIssueRef.current
     ) {
       return;
     }
 
     const timer = setTimeout(() => {
+      if (publishingRef.current || publishedIssueRef.current) {
+        return;
+      }
+
       setSaving(true);
 
       void saveDraft(inputPayload(true))
         .then(() => {
-          setNotice("Draft autosaved");
-          setError("");
+          if (!publishingRef.current && !publishedIssueRef.current) {
+            setNotice("Draft autosaved");
+            setError("");
+          }
         })
         .catch((cause: unknown) => {
+          if (publishingRef.current || publishedIssueRef.current) {
+            return;
+          }
+
           setError(
             cause instanceof Error
               ? cause.message
@@ -286,6 +304,8 @@ export function TaskCreateForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (publishingRef.current) return;
+
     if (!workspaceId || !projectId || !title.trim()) {
       setError("Select a project and enter a title");
       return;
@@ -300,28 +320,38 @@ export function TaskCreateForm({
       return;
     }
 
+    // Stop any further draft saves immediately.
+    publishingRef.current = true;
     setSubmitting(true);
     setError("");
 
     try {
+      // Finish an autosave already in progress.
       await queueRef.current;
 
-      const payload = inputPayload(false);
+      let issue = publishedIssueRef.current;
 
-      const issue = draftRef.current
-        ? await issueApi.update(
-          workspaceId,
-          projectId,
-          draftRef.current,
-          payload,
-        )
-        : await issueApi.create(
-          workspaceId,
-          projectId,
-          payload,
-        );
+      // Publish only once.
+      if (!issue) {
+        const payload = inputPayload(false);
 
-      draftRef.current = issue.id;
+        issue = draftRef.current
+          ? await issueApi.update(
+            workspaceId,
+            projectId,
+            draftRef.current,
+            payload,
+          )
+          : await issueApi.create(
+            workspaceId,
+            projectId,
+            payload,
+          );
+
+        // Mark as published BEFORE uploading files.
+        publishedIssueRef.current = issue;
+        draftRef.current = null;
+      }
 
       for (const file of files) {
         await issueApi.upload(
@@ -330,32 +360,52 @@ export function TaskCreateForm({
           issue.id,
           file,
         );
+
+        setFiles((current) =>
+          current.filter((item) => item !== file),
+        );
       }
 
       if (createAnother) {
+        publishedIssueRef.current = null;
         draftRef.current = null;
         setTitle("");
         setDescription("");
         setSubtasks([]);
         setFiles([]);
         setTouched(false);
-        setNotice(`${issue.key} created`);
+        setNotice(`${issue.key} created successfully`);
       } else {
         router.push(`/projects/${projectId}/board`);
         router.refresh();
       }
     } catch (cause) {
-      setError(
+      const message =
         cause instanceof Error
           ? cause.message
-          : "Issue could not be created",
-      );
+          : "Unknown error";
+
+      if (publishedIssueRef.current) {
+        setError(
+          `Issue ${publishedIssueRef.current.key} was created, ` +
+          `but attachment upload failed: ${message}. ` +
+          `Retry to upload the remaining attachments.`,
+        );
+      } else {
+        setError(`Could not create issue: ${message}`);
+      }
     } finally {
+      publishingRef.current = false;
       setSubmitting(false);
     }
   }
 
   async function saveDraftNow() {
+    if (publishingRef.current || publishedIssueRef.current) {
+      setError("This issue has already been published. It cannot be saved as a draft.");
+      return;
+    }
+
     if (!workspaceId || !projectId) {
       setError("Choose a project before saving a draft.");
       return;
@@ -533,7 +583,11 @@ export function TaskCreateForm({
               {saving ? "Saving…" : "Save draft"}
             </button>
             <button type="submit" disabled={!ready || submitting || !projects.length} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60">
-              {submitting ? "Creating…" : "Create task"}
+              {submitting
+                ? "Processing..."
+                : publishedIssueRef.current
+                  ? "Retry attachments"
+                  : "Create task"}
             </button>
           </div>
           {error && (
