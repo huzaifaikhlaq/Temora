@@ -251,7 +251,7 @@ function AuthForm({
           </h1>
 
           <p className="mt-4 max-w-md text-sm leading-6 text-white/65">
-            Plan projects, manage tasks, and collaborate
+            Plan projects, manage issues, and collaborate
             across your organization with Temora.
           </p>
 

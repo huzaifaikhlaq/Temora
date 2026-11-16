@@ -1,6 +1,6 @@
-import { TaskDetailPage } from "@/features/tasks/components/task-detail-page";
+import { LegacyTaskResolver } from "@/features/issues/components/legacy-task-resolver";
 
 export default async function TaskRoute({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
-  return <TaskDetailPage key={taskId} taskId={taskId} />;
+  return <LegacyTaskResolver taskId={taskId} />;
 }

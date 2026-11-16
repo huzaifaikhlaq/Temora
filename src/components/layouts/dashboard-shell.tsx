@@ -5,8 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "@/components/shared/icon";
-import { demoRepository } from "@/features/workspace/data/demo-repository";
-import { DemoDataScopeProvider, useDemoState } from "@/features/workspace/hooks/use-demo-state";
+import { WorkspaceScopeProvider } from "@/features/workspace/hooks/workspace-scope";
 import { LogoutButton } from "@/features/authentication/components/logout-button";
 import type { AuthUser } from "@/features/authentication/lib/auth-client";
 import type { Workspace } from "@/features/workspace/types";
@@ -27,12 +26,9 @@ const groups: {
     label: "Workspace",
     links: [
       { label: "Overview", href: "/", icon: "grid_view" },
-      { label: "My Tasks", href: "/my-tasks", icon: "check_circle", count: "5" },
-      { label: "Inbox", href: "/inbox", icon: "inbox", count: "3" },
-      { label: "All Tasks", href: "/tasks", icon: "checklist" },
-      { label: "Issues", href: "/issues", icon: "bug_report" },
-      { label: "Create Issue", href: "/issues/new", icon: "add" },
-      { label: "Create Task", href: "/tasks/new", icon: "add" },
+      { label: "My Work", href: "/my-work", icon: "check_circle" },
+      { label: "Inbox", href: "/inbox", icon: "inbox" },
+      { label: "Work Items", href: "/work-items", icon: "checklist" },
     ],
   },
   {
@@ -52,23 +48,18 @@ const groups: {
 type DashboardShellProps = { children: ReactNode; user: AuthUser; workspaces: Workspace[]; activeWorkspace: Workspace };
 
 export function DashboardShell(props: DashboardShellProps) {
-  return <DemoDataScopeProvider workspaceId={props.activeWorkspace.id} userId={props.user.id}><DashboardShellContent {...props} /></DemoDataScopeProvider>;
+  return <WorkspaceScopeProvider workspaceId={props.activeWorkspace.id} userId={props.user.id}><DashboardShellContent {...props} /></WorkspaceScopeProvider>;
 }
 
 function DashboardShellContent({ children, user, workspaces, activeWorkspace }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const state = useDemoState();
   const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [quickTitle, setQuickTitle] = useState("");
-  const [quickAssigneeId, setQuickAssigneeId] = useState("");
-  const [quickError, setQuickError] = useState("");
   const activeWorkspaceId = activeWorkspace.id;
-  const activeMemberId = user.id;
   useEffect(() => {
     let active = true;
     projectApi
@@ -85,60 +76,16 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
     };
   }, [activeWorkspaceId]);
 
-  const workspaceProjects = state.projects.filter(
-    (item) => item.workspaceId === activeWorkspaceId && !item.archivedAt,
-  );
-  const listedProjects = workspaceProjects.length
-    ? workspaceProjects.map((project) => ({
-        id: project.id,
-        name: project.name,
-        dot: project.color,
-      }))
-    : apiProjects
-        .filter((project) => project.workspace_id === activeWorkspaceId && !project.archived_at)
-        .map((project, index) => ({
-          id: project.id,
-          name: project.name,
-          dot: ["bg-violet-500", "bg-sky-500", "bg-emerald-500", "bg-amber-500"][index % 4],
-        }));
-  const workspaceTasks = state.tasks.filter(
-    (item) => item.workspaceId === activeWorkspaceId,
-  );
-  const workspaceProjectIds = new Set(workspaceProjects.map((item) => item.id));
-  const workspaceSprints = state.sprints.filter(
-    (item) =>
-      item.workspaceId === activeWorkspaceId && workspaceProjectIds.has(item.projectId),
-  );
-  const planningProject =
-    workspaceProjects.find((project) =>
-      workspaceSprints.some(
-        (sprint) => sprint.projectId === project.id && sprint.status === "Active",
-      ),
-    )?.id ?? workspaceProjects[0]?.id ?? listedProjects[0]?.id;
-  const activeSprint = workspaceSprints.find((sprint) => sprint.status === "Active");
-  const referenceSprint =
-    activeSprint ??
-    [...workspaceSprints].sort((first, second) => second.endDate.localeCompare(first.endDate))[0];
-  const unreadCount = state.notifications.filter(
-    (item) => item.workspaceId === activeWorkspaceId && !item.readAt,
-  ).length;
-  const taskCount = state.tasks.filter(
-    (item) =>
-      item.workspaceId === activeWorkspaceId &&
-      item.assigneeId === activeMemberId &&
-      item.status !== "Done",
-  ).length;
+  const listedProjects = apiProjects
+    .filter((project) => project.workspace_id === activeWorkspaceId && !project.archived_at)
+    .map((project, index) => ({
+      id: project.id,
+      name: project.name,
+      dot: ["bg-violet-500", "bg-sky-500", "bg-emerald-500", "bg-amber-500"][index % 4],
+    }));
+  const planningProject = listedProjects[0]?.id;
   const navGroups: typeof groups = [
-    {
-      label: "Workspace",
-      links: groups[0].links.map((link) =>
-        link.href === "/my-tasks"
-          ? { ...link, count: String(taskCount) }
-          : link.href === "/inbox"
-            ? { ...link, count: String(unreadCount) }
-            : link,
-      ),
-    },
+    groups[0],
     {
       label: "Projects",
       links: [
@@ -160,42 +107,14 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
           icon: "view_kanban",
         },
         {
-          label: "Task Dependencies",
-          href: workspaceTasks.find((task) => task.key === "TEM-101")
-            ? "/tasks/TEM-101/dependencies"
-            : workspaceTasks[0]
-              ? `/tasks/${workspaceTasks[0].key}/dependencies`
-              : "/tasks",
-          icon: "account_tree",
-          disabled: workspaceTasks.length === 0,
-        },
-        {
           label: "Sprints & Backlog",
           href: planningProject ? `/projects/${planningProject}/sprints` : "/projects",
           icon: "cycle",
         },
         {
-          label: "Complete Sprint",
-          href: activeSprint ? `/sprints/${activeSprint.id}/complete` : "/projects",
-          icon: "task_alt",
-          disabled: !activeSprint,
-        },
-        {
-          label: "Sprint Retrospective",
-          href: referenceSprint ? `/sprints/${referenceSprint.id}/retrospective` : "/projects",
-          icon: "replay",
-          disabled: !referenceSprint,
-        },
-        {
           label: "Roadmap & Timeline",
           href: planningProject ? `/projects/${planningProject}/roadmap` : "/projects",
           icon: "timeline",
-        },
-        {
-          label: "Burndown Report",
-          href: referenceSprint ? `/reports/sprints/${referenceSprint.id}` : "/reports",
-          icon: "bar_chart",
-          disabled: !referenceSprint,
         },
         { label: "Calendar", href: "/calendar", icon: "calendar_today" },
       ],
@@ -203,29 +122,21 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
     ...groups.filter((group) => group.label === "Management"),
   ];
   const currentProjectName =
-    workspaceProjects.find(
-      (project) =>
-        pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`),
-    )?.name ??
-    apiProjects.find(
+    listedProjects.find(
       (project) =>
         pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`),
     )?.name;
   const pageTitle =
     pathname === "/"
       ? "Overview"
-      : pathname === "/issues"
-        ? "Issues"
-        : pathname === "/issues/new"
-          ? "Create Issue"
+      : pathname === "/work-items"
+        ? "Work Items"
+        : pathname === "/work-items/new"
+          ? "Create Work Item"
           : pathname.startsWith("/projects/") && pathname.includes("/issues/")
-            ? "Issue Details"
-      : pathname.startsWith("/my-tasks")
-        ? "My Tasks"
-        : pathname === "/tasks"
-          ? "All Tasks"
-          : pathname === "/tasks/new"
-            ? "Create Task"
+            ? "Work Item Details"
+      : pathname.startsWith("/my-work")
+        ? "My Work"
             : pathname.endsWith("/dependencies")
               ? "Dependencies & Audit Trail"
               : pathname.startsWith("/sprints/") && pathname.endsWith("/complete")
@@ -328,7 +239,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                         setMenuOpen(false);
                         router.replace("/");
                         router.refresh();
-                      }).catch((error: unknown) => setQuickError(error instanceof Error ? error.message : "Workspace could not be selected."));
+                      }).catch((error: unknown) => setWorkspaceError(error instanceof Error ? error.message : "Workspace could not be selected."));
                     }}
                   >
                     {workspace.name}
@@ -337,6 +248,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                     )}
                   </button>
                 ))}
+                {workspaceError && <p role="alert" className="px-2 py-1 text-red">{workspaceError}</p>}
                 <button
                   className="w-full rounded px-2 py-1.5 text-left text-muted hover:bg-surface-low"
                   onClick={() => {
@@ -348,13 +260,14 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                 </button>
               </div>
             )}
-            <button
-              onClick={() => setCreateOpen(true)}
+            <Link
+              href="/work-items/new"
+              onClick={() => setMenuOpen(false)}
               className="mt-2 flex h-9 w-full items-center gap-2 rounded-lg border border-border/60 bg-white px-3 text-sm hover:bg-surface-low"
             >
               <Icon name="add" size={18} className="text-accent" />
-              New Item <span className="ml-auto font-mono text-xs text-outline">C</span>
-          </button>
+              Create Work Item <span className="ml-auto font-mono text-xs text-outline">C</span>
+            </Link>
         </div>
         <nav
           aria-label="Main navigation"
@@ -381,10 +294,10 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                     const active =
                       !link.disabled &&
                       !fallbackLink &&
-                      (link.href === "/my-tasks"
-                        ? pathname.startsWith("/my-tasks")
-                        : link.href === "/issues"
-                          ? pathname === "/issues" || (pathname.startsWith("/projects/") && pathname.includes("/issues/"))
+                      (link.href === "/my-work"
+                        ? pathname.startsWith("/my-work")
+                        : link.href === "/work-items"
+                          ? pathname === "/work-items" || (pathname.startsWith("/projects/") && pathname.includes("/issues/"))
                         : pathname === link.href ||
                           (!!projectId &&
                             (pathname === `/projects/${projectId}` ||
@@ -492,21 +405,18 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
           </label>
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href="/tasks/new"
+              href="/work-items/new"
               className="flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-strong"
             >
               <Icon name="add" size={18} />
-              <span className="hidden sm:inline">Create Task</span>
+              <span className="hidden sm:inline">Create Work Item</span>
             </Link>
             <Link
               href="/inbox"
-              aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+              aria-label="Notifications"
               className="relative rounded p-1 text-muted hover:bg-surface-low"
             >
               <Icon name="notifications" />
-              {unreadCount > 0 && (
-                <i className="absolute right-1 top-1 size-2 rounded-full bg-red" />
-              )}
             </Link>
             <button
               aria-label="Help"
@@ -527,122 +437,6 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
         </header>
         <main className="min-h-screen bg-surface-low pt-14">{children}</main>
       </div>
-      {createOpen && (
-        <div
-          className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/40 p-4"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setCreateOpen(false);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-title"
-            className="w-full max-w-md rounded-xl border border-border bg-white p-5 shadow-2xl"
-          >
-            <div className="flex items-center justify-between">
-              <h2 id="create-title" className="text-lg font-semibold">
-                Create an task
-              </h2>
-              <button aria-label="Close" onClick={() => setCreateOpen(false)}>
-                <Icon name="close" />
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-muted">
-              Tasks are saved in this browser’s demo data only.
-            </p>
-            <label className="mt-4 block text-sm font-medium">
-              Task title
-              <input
-                autoFocus
-                value={quickTitle}
-                onChange={(event) => {
-                  setQuickTitle(event.target.value);
-                  setQuickError("");
-                }}
-                className="mt-1 h-10 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-                placeholder="What needs to be done?"
-              />
-            </label>
-            <label className="mt-4 block text-sm font-medium">
-              Assignee <span className="font-normal text-muted">(optional)</span>
-              <select
-                value={quickAssigneeId}
-                onChange={(event) => setQuickAssigneeId(event.target.value)}
-                className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-              >
-                <option value="">Unassigned</option>
-                {state.members
-                  .filter((member) => member.workspaceId === activeWorkspaceId)
-                  .map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            {quickError && (
-              <p role="alert" className="mt-2 text-sm text-red">
-                {quickError}
-              </p>
-            )}
-            <div className="mt-4 flex justify-end gap-2">
-              <Link
-                href="/tasks/new"
-                onClick={() => {
-                  setCreateOpen(false);
-                  setQuickError("");
-                }}
-                className="mr-auto self-center text-xs font-medium text-accent hover:underline"
-              >
-                Open full task form
-              </Link>
-              <button
-                onClick={() => {
-                  setCreateOpen(false);
-                  setQuickError("");
-                }}
-                className="h-9 rounded-lg border border-border px-3 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const project = workspaceProjects[0];
-                  if (!quickTitle.trim()) {
-                    setQuickError("Enter an task title.");
-                    return;
-                  }
-                  if (!project) {
-                    setQuickError("Create a project before adding an task.");
-                    return;
-                  }
-                  try {
-                    const task = demoRepository.createTask({
-                      projectId: project.id,
-                      title: quickTitle.trim(),
-                      assigneeId: quickAssigneeId || null,
-                    });
-                    setQuickTitle("");
-                    setQuickAssigneeId("");
-                    setQuickError("");
-                    setCreateOpen(false);
-                    router.push(`/tasks/${task.key}`);
-                  } catch (error) {
-                    setQuickError(
-                      error instanceof Error ? error.message : "Could not create the task.",
-                    );
-                  }
-                }}
-                className="h-9 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
-              >
-                Create task
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

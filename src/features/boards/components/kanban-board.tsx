@@ -67,7 +67,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
       setComposer(null);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the task.");
+      setError(cause instanceof Error ? cause.message : "Could not create the issue.");
     }
   }
 
@@ -79,7 +79,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
           Switch to the workspace that owns this project, or choose another project.
         </p>
         <Link className="mt-4 inline-block text-sm text-accent" href="/projects">
-          View projects →
+          View projects â†’
         </Link>
       </div>
     );
@@ -138,7 +138,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                 className="flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
               >
                 <Icon name="add" size={17} />
-                Add Task
+                Add Issue
               </button>
             </div>
           </div>
@@ -167,11 +167,11 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
             </nav>
             <div className="flex flex-wrap items-center gap-2">
               <label className="relative">
-                <span className="sr-only">Search tasks</span>
+                <span className="sr-only">Search issues</span>
                 <Icon name="search" size={15} className="absolute left-2 top-2 text-outline" />
                 <input
                   className="h-8 w-40 rounded-lg border border-border pl-7 pr-2 text-xs"
-                  placeholder="Search tasks"
+                  placeholder="Search issues"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
@@ -229,7 +229,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                     </span>
                   </div>
                   <button
-                    aria-label={`Add task to ${columnName}`}
+                    aria-label={`Add issue to ${columnName}`}
                     onClick={() => {
                       setComposer(columnName);
                       setError("");
@@ -269,7 +269,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                           type="submit"
                           className="rounded bg-accent px-2 py-1 text-xs font-semibold text-white"
                         >
-                          Add task
+                          Add issue
                         </button>
                       </div>
                     </form>
@@ -289,7 +289,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                   ))}
                   {!cards.length && !composerOpen && (
                     <p className="rounded-lg border border-dashed border-border/80 p-4 text-center text-xs text-muted">
-                      No tasks in this column
+                      No issues in this column
                     </p>
                   )}
                 </div>
@@ -331,13 +331,13 @@ function TaskCard({
 }) {
   const assignee = members.find((member) => member.id === task.assigneeId);
   function removeTask() {
-    if (!window.confirm(`Delete ${task.key}? This will also remove its subtasks and comments.`))
+    if (!window.confirm(`Delete ${task.key}? This will also remove its child issues and comments.`))
       return;
     try {
       demoRepository.deleteTask(task.id);
       onError("");
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "Could not delete the task.");
+      onError(cause instanceof Error ? cause.message : "Could not delete the issue.");
     }
   }
   return (
@@ -365,7 +365,7 @@ function TaskCard({
             className="absolute right-0 z-10 w-28 rounded border border-border bg-white px-3 py-2 text-left text-xs text-red-700 shadow"
             onClick={removeTask}
           >
-            Delete task
+            Delete issue
           </button>
         </details>
       </div>
@@ -377,7 +377,7 @@ function TaskCard({
       </Link>
       {parentTask && (
         <p className="mt-1 text-[10px] text-muted">
-          Subtask of{" "}
+          Child issue of{" "}
           <Link href={`/tasks/${parentTask.key}`} className="text-accent hover:underline">
             {parentTask.key}
           </Link>
@@ -398,7 +398,7 @@ function TaskCard({
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-surface-low pt-2">
         <label className="sr-only" htmlFor={`status-${task.id}`}>
-          Status for {task.key}
+          Status for issue {task.key}
         </label>
         <select
           id={`status-${task.id}`}
@@ -419,7 +419,7 @@ function TaskCard({
           {assignee?.name
             .split(" ")
             .map((name) => name[0])
-            .join("") ?? "—"}
+            .join("") ?? "â€”"}
         </span>
       </div>
     </article>

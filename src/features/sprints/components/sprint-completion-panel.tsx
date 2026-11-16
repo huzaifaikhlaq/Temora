@@ -49,7 +49,7 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
           </h1>
           <p className="mt-2 text-sm text-muted">
             {completed
-              ? "Open tasks were moved to your selected destination."
+              ? "Open issues were moved to your selected destination."
               : "Start a sprint from project planning before completing it."}
           </p>
           <Link
@@ -87,7 +87,7 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {[
             [
-              "Completed tasks",
+              "Completed issues",
               `${tasks.filter((task) => task.status === "Done").length} · ${completePoints} pts`,
             ],
             [
@@ -106,7 +106,7 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
           ))}
         </div>
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <strong>{openTasks.length} tasks are incomplete</strong>
+          <strong>{openTasks.length} issues are incomplete</strong>
           <p className="mt-1">Select a destination for open work before closing this sprint.</p>
         </div>
         <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
@@ -124,7 +124,7 @@ export function SprintCompletionPanel({ sprintId }: { sprintId?: string } = {}) 
           ))}
         </div>
         <label className="mt-4 block text-sm font-medium">
-          Move incomplete tasks to
+          Move incomplete issues to
           <select
             className={select}
             value={destination}

@@ -1,5 +1,5 @@
-import { TaskCreateModal } from "@/features/tasks/components/task-create-modal";
+import { redirect } from "next/navigation";
 
 export default function InterceptedNewTaskRoute() {
-  return <TaskCreateModal />;
+  redirect("/work-items/new?type=task");
 }

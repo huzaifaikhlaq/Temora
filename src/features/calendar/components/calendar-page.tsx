@@ -71,11 +71,11 @@ export function CalendarPage() {
     <WorkspacePageShell>
       <WorkspacePageHeader
         title="Planning Calendar"
-        subtitle="See sprint cycles, project milestones, and task due dates across your workspace."
+        subtitle="See sprint cycles, project milestones, and issue due dates across your workspace."
         action={
           <Link className={button} href="/tasks/new">
             <Icon name="add" />
-            New Task / Deadline
+            New Issue / Deadline
           </Link>
         }
       />

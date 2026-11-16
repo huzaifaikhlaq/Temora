@@ -33,7 +33,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
       <main className="p-8">
         <h1 className="text-xl font-semibold">Sprint not found</h1>
         <Link href="/projects" className="mt-3 inline-block text-accent">
-          Back to projects →
+          Back to projects â†’
         </Link>
       </main>
     );
@@ -66,7 +66,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
           </p>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Sprint burndown report</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Current remaining points are computed from task status. Daily history and scope changes
+            Current remaining points are computed from issue status. Daily history and scope changes
             are not tracked in this demo.
           </p>
         </div>
@@ -82,11 +82,11 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="font-mono text-xs font-semibold text-accent">
-              {sprint.name.toUpperCase()} · {sprint.status.toUpperCase()}
+              {sprint.name.toUpperCase()} Â· {sprint.status.toUpperCase()}
             </span>
             <h2 className="mt-1 text-lg font-semibold">{sprint.goal || "No sprint goal set"}</h2>
             <p className="mt-1 text-sm text-muted">
-              {formatDate(sprint.startDate)}–{formatDate(sprint.endDate)}
+              {formatDate(sprint.startDate)}â€“{formatDate(sprint.endDate)}
             </p>
           </div>
           <span className="rounded-full bg-surface-low px-3 py-1.5 text-xs text-muted">
@@ -97,7 +97,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Committed tasks"
+          label="Committed issues"
           value={String(tasks.length)}
           note={`${total} story points`}
           icon="assignment"
@@ -105,13 +105,13 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
         <MetricCard
           label="Points completed"
           value={`${completed} / ${total}`}
-          note="Tasks marked Done"
+          note="Issues marked Done"
           icon="task_alt"
         />
         <MetricCard
           label="Points remaining"
           value={String(remaining)}
-          note={`${remainingTasks.length} open tasks`}
+          note={`${remainingTasks.length} open issues`}
           icon="trending_down"
         />
         <MetricCard
@@ -191,9 +191,9 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
               )}
             </svg>
             <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted">
-              <span>┄ Ideal guideline</span>
+              <span>â”„ Ideal guideline</span>
               {sprint.status === "Active" && (
-                <span className="text-accent">● Current snapshot</span>
+                <span className="text-accent">â— Current snapshot</span>
               )}
               <span>Daily history is unavailable in demo data</span>
             </div>
@@ -218,7 +218,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
               <tbody>
                 <tr className="border-b border-border/70">
                   <th scope="row" className="px-3 py-3 font-medium">
-                    Current task state
+                    Current issue state
                   </th>
                   <td className="px-3 py-3">{formatDate(DEMO_TODAY)}</td>
                   <td className="px-3 py-3">{remaining} pts</td>
@@ -230,7 +230,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
           </div>
         </Panel>
         <Panel className="h-fit">
-          <PanelTitle title="Tasks remaining" />
+          <PanelTitle title="Issues remaining" />
           <div className="space-y-3">
             {remainingTasks.map((task) => (
               <Link
@@ -244,7 +244,7 @@ export function BurndownReport({ sprintId }: { sprintId: string }) {
               </Link>
             ))}
             {remainingTasks.length === 0 && (
-              <p className="text-sm text-muted">All sprint tasks are marked Done.</p>
+              <p className="text-sm text-muted">All sprint issues are marked Done.</p>
             )}
           </div>
           <div className="mt-4 border-t border-border pt-4 text-xs text-muted">

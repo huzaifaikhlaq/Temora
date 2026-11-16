@@ -284,7 +284,7 @@ export const demoRepository = {
     );
     if (!project) throw new Error("Choose an active project in this workspace.");
     const title = input.title.trim();
-    if (title.length < 3) throw new Error("Task summary must have at least three characters.");
+    if (title.length < 3) throw new Error("Issue summary must have at least three characters.");
     const workspace = scopedWorkspace(workspaceId);
     const reporterId = input.reporterId ?? state.activeMemberId;
     if (!workspace.memberIds.includes(reporterId))
@@ -353,7 +353,7 @@ export const demoRepository = {
   ) {
     const task = findTask(taskId);
     if (patch.title !== undefined && patch.title.trim().length < 3)
-      throw new Error("Task summary must have at least three characters.");
+      throw new Error("Issue summary must have at least three characters.");
     if (patch.storyPoints !== undefined && patch.storyPoints < 0)
       throw new Error("Story points cannot be negative.");
     if (patch.assigneeId && !scopedWorkspace(task.workspaceId).memberIds.includes(patch.assigneeId))
@@ -366,7 +366,7 @@ export const demoRepository = {
           item.projectId === task.projectId &&
           item.status !== "Closed",
       );
-      if (!sprint) throw new Error("Choose an open sprint in this task’s project.");
+      if (!sprint) throw new Error("Choose an open sprint in this issue’s project.");
     }
     persist({
       ...state,
@@ -390,12 +390,12 @@ export const demoRepository = {
   ) {
     const task = findTask(taskId);
     const related = findTask(relatedTaskId);
-    if (task.id === related.id) throw new Error("An task cannot depend on itself.");
+    if (task.id === related.id) throw new Error("An issue cannot depend on itself.");
     if (task.workspaceId !== related.workspaceId)
       throw new Error("Dependencies must stay within the active workspace.");
     if (relation === "relates-to") {
       if (task.relatedIds?.includes(related.id) || related.relatedIds?.includes(task.id))
-        throw new Error("These tasks are already related.");
+        throw new Error("These issues are already related.");
       persist({
         ...state,
         tasks: state.tasks.map((item) =>
@@ -456,7 +456,7 @@ export const demoRepository = {
       throw new Error("Dependencies must stay within the active workspace.");
     if (relation === "relates-to") {
       if (!task.relatedIds?.includes(related.id) || !related.relatedIds?.includes(task.id))
-        throw new Error("These tasks are not related.");
+        throw new Error("These issues are not related.");
       persist({
         ...state,
         tasks: state.tasks.map((item) =>
@@ -536,11 +536,11 @@ export const demoRepository = {
 
   addSubtask(taskId: EntityId, title: string) {
     const parent = findTask(taskId);
-    if (parent.parentTaskId) throw new Error("Subtasks cannot have their own subtasks.");
+    if (parent.parentTaskId) throw new Error("Child issues cannot have their own child issues.");
     const subtaskId = `TEM-${state.counters.task + 1}`;
     const next = addSubtaskTo(state, taskId, title, state.activeMemberId);
     const subtask = next.tasks.find((item) => item.id === subtaskId);
-    if (!subtask) throw new Error("Subtask was not created.");
+    if (!subtask) throw new Error("Child issue was not created.");
     persist(next);
     return subtask;
   },
@@ -909,11 +909,11 @@ function addSubtaskTo(
   assigneeId: EntityId | null,
 ): DemoState {
   const parent = current.tasks.find((item) => item.id === taskId);
-  if (!parent) throw new Error("Task not found.");
-  if (parent.parentTaskId) throw new Error("Subtasks cannot have their own subtasks.");
+  if (!parent) throw new Error("Issue not found.");
+  if (parent.parentTaskId) throw new Error("Child issues cannot have their own child issues.");
   const text = title.trim();
-  if (!text) throw new Error("Subtask title cannot be empty.");
-  if (text.length < 3) throw new Error("Subtask title must have at least three characters.");
+  if (!text) throw new Error("Child issue title cannot be empty.");
+  if (text.length < 3) throw new Error("Child issue title must have at least three characters.");
   const id = `TEM-${current.counters.task + 1}`;
   const subtask: Task = {
     id,
@@ -957,7 +957,7 @@ function findTask(taskId: EntityId) {
     (item) =>
       (item.id === taskId || item.key === taskId) && item.workspaceId === state.activeWorkspaceId,
   );
-  if (!task) throw new Error("Task not found in the active workspace.");
+  if (!task) throw new Error("Issue not found in the active workspace.");
   return task;
 }
 

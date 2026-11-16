@@ -39,7 +39,7 @@ export function TasksDirectory() {
   function setSelectedStatus(nextStatus: WorkStatus) {
     selected.forEach((taskId) => demoRepository.updateTask(taskId, { status: nextStatus }));
     setSelected([]);
-    setNotice(`Selected tasks moved to ${nextStatus}.`);
+    setNotice(`Selected issues moved to ${nextStatus}.`);
   }
 
   return (
@@ -48,11 +48,11 @@ export function TasksDirectory() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[.16em] text-outline">
             {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Workspace
-            tasks
+            issues
           </p>
-          <h1 className="mt-1 text-2xl font-bold">All tasks</h1>
+          <h1 className="mt-1 text-2xl font-bold">All issues</h1>
           <p className="mt-1 text-sm text-muted">
-            Search and review tasks across your active projects.
+            Search and review issues across your active projects.
           </p>
         </div>
         <Link
@@ -60,12 +60,12 @@ export function TasksDirectory() {
           className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-semibold text-white"
         >
           <Icon name="add" />
-          Create task
+          Create issue
         </Link>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric
-          label="Total tasks"
+          label="Total issues"
           value={String(
             state.tasks.filter((task) => task.workspaceId === state.activeWorkspaceId).length,
           )}
@@ -93,7 +93,7 @@ export function TasksDirectory() {
       <section className="overflow-hidden rounded-xl border border-border bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
           <input
-            aria-label="Search tasks"
+            aria-label="Search issues"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search key, summary, or label…"
@@ -139,7 +139,7 @@ export function TasksDirectory() {
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-accent/5 px-4 py-2 text-sm">
             <strong>{selected.length} selected</strong>
             <select
-              aria-label="Move selected tasks"
+              aria-label="Move selected issues"
               className="h-8 rounded border border-border bg-white px-2"
               defaultValue=""
               onChange={(event) => {
@@ -178,7 +178,7 @@ export function TasksDirectory() {
                   <tr key={task.id} className="border-t border-border/70 hover:bg-surface-low/50">
                   <td className="px-3 py-3">
                     <input
-                      aria-label={`Select ${task.key}`}
+                      aria-label={`Select issue ${task.key}`}
                       type="checkbox"
                       checked={selected.includes(task.id)}
                       onChange={(event) =>
@@ -205,7 +205,7 @@ export function TasksDirectory() {
                     <p className="mt-1 text-xs text-muted">{task.labels.join(" · ")}</p>
                     {parentTask && (
                       <p className="mt-1 text-xs text-muted">
-                        Subtask of{" "}
+                        Child issue of{" "}
                         <Link className="text-accent hover:underline" href={`/tasks/${parentTask.key}`}>
                           {parentTask.key}
                         </Link>
@@ -217,7 +217,7 @@ export function TasksDirectory() {
                   </td>
                   <td className="px-3 py-3">
                     <select
-                      aria-label={`${task.key} status`}
+                      aria-label={`Issue ${task.key} status`}
                       className="rounded border border-border bg-white px-2 py-1 text-xs"
                       value={task.status}
                       onChange={(event) =>
@@ -233,7 +233,7 @@ export function TasksDirectory() {
                   </td>
                   <td className="px-3 py-3">
                     <select
-                      aria-label={`${task.key} priority`}
+                      aria-label={`Issue ${task.key} priority`}
                       className="rounded border border-border bg-white px-2 py-1 text-xs"
                       value={task.priority}
                       onChange={(event) =>
@@ -263,15 +263,15 @@ export function TasksDirectory() {
         </div>
         {tasks.length === 0 && (
           <div className="p-10 text-center">
-            <h2 className="font-semibold">No matching tasks</h2>
+            <h2 className="font-semibold">No matching issues</h2>
             <p className="mt-1 text-sm text-muted">
-              Change the filters or create an task for this project.
+              Change the filters or create an issue for this project.
             </p>
             <Link
               className="mt-3 inline-block text-sm font-semibold text-accent"
               href="/tasks/new"
             >
-              Create task →
+              Create issue →
             </Link>
           </div>
         )}
@@ -279,7 +279,7 @@ export function TasksDirectory() {
           <span>
             Showing {tasks.length} of{" "}
             {state.tasks.filter((task) => task.workspaceId === state.activeWorkspaceId).length}{" "}
-            tasks
+            issues
           </span>
           <span>Demo workspace data is stored in this browser.</span>
         </div>

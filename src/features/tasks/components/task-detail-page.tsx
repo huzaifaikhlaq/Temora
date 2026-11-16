@@ -23,12 +23,12 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   if (!task)
     return (
       <main className="mx-auto max-w-3xl p-8">
-        <h1 className="text-xl font-semibold">Task not found</h1>
+        <h1 className="text-xl font-semibold">Issue not found</h1>
         <p className="mt-2 text-sm text-muted">
-          This task is not available in the active workspace.
+          This issue is not available in the active workspace.
         </p>
         <Link href="/tasks" className="mt-4 inline-block text-accent">
-          Back to all tasks →
+          Back to all issues →
         </Link>
       </main>
     );
@@ -78,7 +78,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
               </span>
               {parentTask && (
                 <span className="rounded bg-surface-low px-2 py-1 text-[10px] font-medium text-muted">
-                  Subtask
+                  Child issue
                 </span>
               )}
               <span className="text-xs text-muted">{project?.name}</span>
@@ -99,11 +99,11 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
                   }
                 }}
               >
-                Delete task
+                Delete issue
               </button>
             </div>
             <input
-              aria-label="Task title"
+              aria-label="Issue title"
               className="mt-4 w-full border-0 bg-transparent p-0 text-2xl font-bold outline-none"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -125,7 +125,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
               }
             />
             <div className="mt-5">
-              <h2 className="font-semibold">Subtasks</h2>
+              <h2 className="font-semibold">Child issues</h2>
               <div className="mt-2 space-y-2">
                 {subtasks.map((item) => (
                   <Link
@@ -270,17 +270,17 @@ function AddSubtask({ taskId }: { taskId: string }) {
           setTitle("");
           setError("");
         } catch (cause) {
-          setError(cause instanceof Error ? cause.message : "Could not add subtask.");
+          setError(cause instanceof Error ? cause.message : "Could not add child issue.");
         }
       }}
     >
       <input
         className={`${field} min-w-0 flex-1`}
-        aria-label="Subtask title"
+        aria-label="Child issue title"
         minLength={3}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        placeholder="Add a subtask"
+        placeholder="Add a child issue"
       />
       <button className="rounded-lg border border-border px-3 text-sm">Add</button>
       {error && (
