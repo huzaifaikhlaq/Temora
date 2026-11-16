@@ -4,8 +4,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import Link from "next/link";
+import { Icon } from "@/components/shared/icon";
 
 import { authClient, type AuthUser } from "@/features/authentication/lib/auth-client";
 import { projectApi, type Project } from "@/features/projects/api/client";
@@ -31,10 +31,12 @@ export function TaskCreateForm({
 }: {
   modal?: boolean;
 }) {
+  const input = "h-9 w-full rounded-lg border border-border bg-white px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent";
   const router = useRouter();
   const search = useSearchParams();
 
   const [workspaceId, setWorkspaceId] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("Workspace");
   const [projectId, setProjectId] = useState(
     search.get("projectId") ?? "",
   );
@@ -44,7 +46,7 @@ export function TaskCreateForm({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [epics, setEpics] = useState<Issue[]>([]);
 
-  const [issueType, setIssueType] = useState<IssueType>("story");
+  const [issueType, setIssueType] = useState<IssueType>("task");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -105,6 +107,7 @@ export function TaskCreateForm({
         );
 
         setWorkspaceId(wid);
+        setWorkspaceName(workspaces.find((workspace) => workspace.id === wid)?.name ?? "Workspace");
         setProjects(available);
         setMembers(memberList);
         setUser(identity.user);
@@ -352,6 +355,26 @@ export function TaskCreateForm({
     }
   }
 
+  async function saveDraftNow() {
+    if (!workspaceId || !projectId) {
+      setError("Choose a project before saving a draft.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await queueRef.current;
+      const draft = await saveDraft(inputPayload(true));
+      draftRef.current = draft.id;
+      setNotice("Draft saved");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Draft could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // The full JSX layout for the form, including the
   // metadata sidebar, Markdown preview, file dropzone,
   // subtasks, and buttons, is in the source package.
@@ -368,7 +391,7 @@ export function TaskCreateForm({
           <p
             className={`${modal ? "text-[10px]" : "text-xs"} font-semibold uppercase tracking-[.16em] text-outline`}
           >
-            {state.workspaces.find((item) => item.id === state.activeWorkspaceId)?.name} / Tasks
+            {workspaceName} / Tasks
           </p>
           <h1
             id={modal ? "task-create-title" : undefined}
@@ -396,40 +419,69 @@ export function TaskCreateForm({
         )}
       </header>
       <form
-        onSubmit={createTask}
+        onSubmit={submit}
+        onChange={() => {
+          setTouched(true);
+          setNotice("");
+        }}
         className={`grid gap-4 ${modal ? "lg:grid-cols-[minmax(0,1fr)_280px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}
       >
         <section
           className={`rounded-xl border border-border bg-white ${modal ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}
         >
+          <div className="mb-5 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Issue type
+              <select className={`${input} mt-1`} value={issueType} onChange={(event) => setIssueType(event.target.value as IssueType)}>
+                {(["task", "story", "bug", "epic"] as IssueType[]).map((type) => <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>)}
+              </select>
+            </label>
+            <label className="block text-sm font-semibold">
+              Status
+              <select className={`${input} mt-1`} value={status} onChange={(event) => setStatus(event.target.value as IssueStatus)}>
+                {([["backlog", "Backlog"], ["to_do", "To do"], ["in_progress", "In progress"], ["in_review", "In review"], ["done", "Done"]] as [IssueStatus, string][]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+          </div>
           <label className="block text-sm font-semibold">
             Summary *
             <input
               className={`${input} mt-1`}
               required
               minLength={3}
-              maxLength={255}
+              maxLength={120}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="What needs to be done?"
             />
           </label>
-          <label className="mt-5 block text-sm font-semibold">
-            Description
-            <textarea
+          <div className="mt-5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="task-description" className="text-sm font-semibold">Description</label>
+              <button type="button" onClick={() => setPreview((value) => !value)} className="text-xs font-medium text-accent">{preview ? "Edit" : "Preview"}</button>
+            </div>
+            {preview ? <div className="mt-1 min-h-36 whitespace-pre-wrap rounded-lg border border-border p-3 text-sm">{description || "Nothing to preview yet."}</div> : <textarea
+              id="task-description"
+              maxLength={50000}
               className="mt-1 min-h-36 w-full rounded-lg border border-border p-3 text-sm outline-none focus:border-accent"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Add context, scope, and expected outcome…"
-            />
+            />}
+          </div>
+          <label className="mt-5 block text-sm font-semibold">
+            Attachments
+            <input type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.webm" className="mt-1 block w-full text-sm" onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setTouched(true); }} />
+            <span className="mt-1 block text-xs font-normal text-muted">PNG, JPG, PDF, or WEBM · up to 25 MB each</span>
           </label>
+          {files.length > 0 && <ul className="mt-2 space-y-1 text-xs text-muted">{files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name} · {Math.max(1, Math.round(file.size / 1024))} KB</li>)}</ul>}
           <div className="mt-6">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">Subtasks</h2>
               <button
                 type="button"
                 className="text-sm font-medium text-accent"
-                onClick={() => setSubtasks((items) => [...items, ""])}
+                onClick={() => { setSubtasks((items) => [...items, { title: "", status: "to_do" }]); setTouched(true); }}
               >
                 + Add subtask
               </button>
@@ -440,11 +492,11 @@ export function TaskCreateForm({
                   <input
                     aria-label={`Subtask ${index + 1}`}
                     className={input}
-                    value={item}
+                    value={item.title}
                     onChange={(event) =>
                       setSubtasks((current) =>
                         current.map((value, itemIndex) =>
-                          itemIndex === index ? event.target.value : value,
+                          itemIndex === index ? { ...value, title: event.target.value } : value,
                         ),
                       )
                     }
@@ -454,11 +506,12 @@ export function TaskCreateForm({
                     type="button"
                     aria-label={`Remove subtask ${index + 1}`}
                     className="rounded-lg border border-border px-3 text-sm"
-                    onClick={() =>
+                    onClick={() => {
+                      setTouched(true);
                       setSubtasks((current) =>
                         current.filter((_, itemIndex) => itemIndex !== index),
-                      )
-                    }
+                      );
+                    }}
                   >
                     ×
                   </button>
@@ -467,14 +520,21 @@ export function TaskCreateForm({
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input type="checkbox" checked={createAnother} onChange={(event) => setCreateAnother(event.target.checked)} />
+              Create another after this
+            </label>
             <button
               type="button"
-              onClick={saveDraft}
+              onClick={() => void saveDraftNow()}
+              disabled={saving || submitting}
               className="rounded-lg border border-border px-3 py-2 text-sm"
             >
-              Save draft
+              {saving ? "Saving…" : "Save draft"}
             </button>
-            <button className={primary}>Create task</button>
+            <button type="submit" disabled={!ready || submitting || !projects.length} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60">
+              {submitting ? "Creating…" : "Create task"}
+            </button>
           </div>
           {error && (
             <p role="alert" className="mt-3 text-sm text-red-700">
@@ -497,7 +557,6 @@ export function TaskCreateForm({
               value={projectId}
               onChange={(event) => {
                 setProjectId(event.target.value);
-                setSprintId("");
               }}
               required
             >
@@ -516,25 +575,42 @@ export function TaskCreateForm({
               onChange={(event) => setAssigneeId(event.target.value)}
             >
               <option value="">Unassigned</option>
-              {state.members
-                .filter((member) => member.workspaceId === state.activeWorkspaceId)
-                .map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
+              {members.map((member) => (
+                <option key={member.id} value={member.user_id}>
+                  {member.user_id === user?.id ? user.full_name : member.user_id.slice(0, 8)}
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-xs font-semibold text-muted">
             Labels
             <input
               className={`${input} mt-1`}
-              value={labelsText}
-              onChange={(event) => setLabelsText(event.target.value)}
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
               placeholder="e.g. frontend, mobile"
             />
             <span className="mt-1 block font-normal">Separate labels with commas.</span>
           </label>
+          <label className="block text-xs font-semibold text-muted">
+            Components
+            <input
+              className={`${input} mt-1`}
+              value={components}
+              onChange={(event) => setComponents(event.target.value)}
+              placeholder="e.g. web, API"
+            />
+            <span className="mt-1 block font-normal">Separate components with commas.</span>
+          </label>
+          {issueType !== "epic" && (
+            <label className="block text-xs font-semibold text-muted">
+              Epic
+              <select className={`${input} mt-1`} value={epicId} onChange={(event) => setEpicId(event.target.value)}>
+                <option value="">No epic</option>
+                {epics.map((epic) => <option key={epic.id} value={epic.id}>{epic.key} · {epic.title}</option>)}
+              </select>
+            </label>
+          )}
           <label className="block text-xs font-semibold text-muted">
             Priority
             <select
@@ -543,35 +619,20 @@ export function TaskCreateForm({
               onChange={(event) => setPriority(event.target.value as typeof priority)}
             >
               {["Urgent", "High", "Medium", "Low"].map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-xs font-semibold text-muted">
-            Sprint
-            <select
-              className={`${input} mt-1`}
-              value={sprintId}
-              onChange={(event) => setSprintId(event.target.value)}
-            >
-              <option value="">Backlog</option>
-              {sprintOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} · {item.status}
-                </option>
+                <option key={item} value={item.toLowerCase()}>{item}</option>
               ))}
             </select>
           </label>
           <label className="block text-xs font-semibold text-muted">
             Story points
-            <input
+            <select
               className={`${input} mt-1`}
-              type="number"
-              min="0"
-              max="100"
-              value={storyPoints}
-              onChange={(event) => setStoryPoints(Number(event.target.value))}
-            />
+              value={storyPoints ?? ""}
+              onChange={(event) => setStoryPoints(event.target.value ? Number(event.target.value) : null)}
+            >
+              <option value="">Not estimated</option>
+              {[1, 2, 3, 5, 8, 13].map((points) => <option key={points} value={points}>{points}</option>)}
+            </select>
           </label>
           <label className="block text-xs font-semibold text-muted">
             Due date
@@ -582,14 +643,13 @@ export function TaskCreateForm({
               onChange={(event) => setDueDate(event.target.value)}
             />
           </label>
-          {project && (
+          {projects.find((item) => item.id === projectId) && (
             <p className="text-xs leading-5 text-muted">
-              This task will be added to {project.name} ({project.key}).
+              This task will be added to {projects.find((item) => item.id === projectId)?.name} ({projects.find((item) => item.id === projectId)?.key}).
             </p>
           )}
           <p className="text-xs leading-5 text-muted">
-            This frontend preview saves task data in this browser only. It does not send email or
-            contact a service.
+            Task data is saved to this Temora workspace.
           </p>
         </aside>
       </form>

@@ -201,10 +201,8 @@ function AuthForm({
           );
         }
 
-        const response =
-          await authClient.verifyEmail(token);
-
-        setMessage(response.message);
+        await authClient.verifyEmail(token);
+        setMessage("Your email is verified. You are now signed in.");
         return;
       }
 
