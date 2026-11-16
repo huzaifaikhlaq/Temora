@@ -47,6 +47,8 @@ groups. Route groups do not affect URL paths.
 - `pnpm build` - create a production build.
 - `pnpm start` - serve the production build.
 
+For backend development data, follow [the Docker Compose seeder guide](docs/development-seeding.md).
+
 ## Configuration
 
 Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_API_BASE_URL` when the

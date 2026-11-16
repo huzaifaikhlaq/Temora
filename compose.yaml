@@ -46,6 +46,9 @@ services:
 
     env_file:
       - ./services/identity-service/.env
+    environment:
+      TEMORA_ENVIRONMENT: ${TEMORA_ENVIRONMENT:-}
+      TEMORA_SEEDING_ENABLED: ${TEMORA_SEEDING_ENABLED:-false}
 
     ports:
       - "127.0.0.1:8000:8000"
@@ -85,6 +88,9 @@ services:
 
     env_file:
       - ./services/workspace-service/.env
+    environment:
+      TEMORA_ENVIRONMENT: ${TEMORA_ENVIRONMENT:-}
+      TEMORA_SEEDING_ENABLED: ${TEMORA_SEEDING_ENABLED:-false}
 
     ports:
       - "127.0.0.1:8001:8000"
@@ -124,6 +130,9 @@ services:
 
     env_file:
       - ./services/project-service/.env
+    environment:
+      TEMORA_ENVIRONMENT: ${TEMORA_ENVIRONMENT:-}
+      TEMORA_SEEDING_ENABLED: ${TEMORA_SEEDING_ENABLED:-false}
 
     ports:
       - "127.0.0.1:8002:8000"
@@ -145,6 +154,9 @@ services:
 
     env_file:
       - ./services/issue-service/.env
+    environment:
+      TEMORA_ENVIRONMENT: ${TEMORA_ENVIRONMENT:-}
+      TEMORA_SEEDING_ENABLED: ${TEMORA_SEEDING_ENABLED:-false}
 
     ports:
       - "127.0.0.1:8003:8000"
