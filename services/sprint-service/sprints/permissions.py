@@ -4,79 +4,128 @@ from django.conf import settings
 
 from rest_framework.exceptions import (
     APIException,
+    AuthenticationFailed,
+    NotFound,
+    PermissionDenied,
     ValidationError,
 )
 
 
-class IssueServiceUnavailable(APIException):
+class DependencyUnavailable(APIException):
     status_code = 503
-    default_detail = "Issue service unavailable."
+    default_detail = "Required service unavailable."
 
 
-def issue_request(method, path, payload=None):
-    headers = {
-        "X-Service-Id": settings.SERVICE_ID,
-        "X-Service-Key": settings.INTERNAL_SERVICE_KEY,
-        "Accept": "application/json",
-    }
+def service_get(request, base_url, path):
+    token = request.auth
+
+    if not isinstance(token, str) or not token:
+        raise AuthenticationFailed("Session required.")
 
     try:
-        response = requests.request(
-            method,
-            f"{settings.ISSUE_API_URL}/api/{path}",
-            headers=headers,
-            json=payload,
-            timeout=(2, 20),
+        response = requests.get(
+            f"{base_url}/api/{path}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+            },
+            timeout=(2, 5),
             allow_redirects=False,
         )
     except requests.RequestException as exc:
-        raise IssueServiceUnavailable() from exc
+        raise DependencyUnavailable() from exc
 
-    if response.status_code in (400, 409):
-        try:
-            detail = response.json()
-        except ValueError:
-            detail = {"detail": "Invalid issue operation"}
+    if response.status_code == 401:
+        raise AuthenticationFailed("Session expired.")
 
-        raise ValidationError(detail)
+    if response.status_code in (403, 404):
+        raise NotFound("Resource not found.")
 
     if response.status_code != 200:
-        raise IssueServiceUnavailable()
+        raise DependencyUnavailable()
 
     try:
         return response.json()
     except ValueError as exc:
-        raise IssueServiceUnavailable() from exc
+        raise DependencyUnavailable() from exc
 
 
-def get_sprint_issues(sprint):
-    return issue_request(
-        "GET",
-        (
-            f"internal/sprints/{sprint.id}/issues/"
-            f"?workspace_id={sprint.workspace_id}"
-            f"&project_id={sprint.project_id}"
-        ),
-    )["issues"]
-
-
-def rollover_issues(sprint):
-    plan = sprint.completion_plan
-
-    return issue_request(
-        "POST",
-        (
-            f"internal/sprints/{sprint.id}/complete/"
-        ),
-        {
-            "operation_id": str(
-                sprint.completion_operation_id
-            ),
-            "workspace_id": str(sprint.workspace_id),
-            "project_id": str(sprint.project_id),
-            "target_sprint_id": plan.get("target_sprint_id"),
-            "selected_issue_ids": plan.get(
-                "selected_issue_ids"
-            ),
-        },
+def require_scope(
+    request,
+    workspace_id,
+    project_id,
+    write=False,
+    manage=False,
+):
+    workspace = service_get(
+        request,
+        settings.WORKSPACE_API_URL,
+        f"workspaces/{workspace_id}/",
     )
+
+    if (
+        not isinstance(workspace, dict)
+        or str(workspace.get("id")) != str(workspace_id)
+    ):
+        raise DependencyUnavailable()
+
+    role = workspace.get("role")
+
+    if role not in ("owner", "admin", "member", "viewer"):
+        raise DependencyUnavailable()
+
+    if write and role == "viewer":
+        raise PermissionDenied(
+            "Viewers cannot modify sprint data."
+        )
+
+    if manage and role not in ("owner", "admin"):
+        raise PermissionDenied(
+            "Only owners and admins can manage sprint lifecycle."
+        )
+
+    project = service_get(
+        request,
+        settings.PROJECT_API_URL,
+        (
+            f"workspaces/{workspace_id}"
+            f"/projects/{project_id}/"
+        ),
+    )
+
+    if (
+        not isinstance(project, dict)
+        or str(project.get("workspace_id")) != str(workspace_id)
+        or str(project.get("id")) != str(project_id)
+    ):
+        raise DependencyUnavailable()
+
+    if (write or manage) and project.get("archived_at"):
+        raise ValidationError(
+            "Restore the project before making changes."
+        )
+
+    return role
+
+
+def validate_assignee(request, workspace_id, assignee_id):
+    if assignee_id is None:
+        return
+
+    members = service_get(
+        request,
+        settings.WORKSPACE_API_URL,
+        f"workspaces/{workspace_id}/members/",
+    )
+
+    if not isinstance(members, list):
+        raise DependencyUnavailable()
+
+    if not any(
+        isinstance(member, dict)
+        and str(member.get("user_id")) == str(assignee_id)
+        for member in members
+    ):
+        raise ValidationError({
+            "assignee_id": "User is not a workspace member."
+        })
