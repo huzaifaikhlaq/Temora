@@ -23,6 +23,7 @@ class SprintSerializer(serializers.ModelSerializer):
             "end_date",
             "capacity_points",
             "status",
+            "retrospective_phase",
             "created_by",
             "started_at",
             "completed_at",

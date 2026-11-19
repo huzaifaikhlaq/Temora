@@ -35,10 +35,12 @@ function validPath(parts: string[], method: Method) {
     const read = ["metrics", "complete", "retrospective", "burndown", "report"];
 
     const write = ["start", "complete", "notes", "check-in", "burndown", "themes"];
+    const patch = ["voting-phase"];
 
     return (
       (method === "GET" && read.includes(parts[2])) ||
-      (method === "POST" && write.includes(parts[2]))
+      (method === "POST" && write.includes(parts[2])) ||
+      (method === "PATCH" && patch.includes(parts[2]))
     );
   }
 

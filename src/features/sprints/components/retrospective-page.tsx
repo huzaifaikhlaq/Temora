@@ -19,6 +19,7 @@ type Category = RetroNote["category"];
 
 type RetroData = {
   sprint: Sprint;
+  can_manage: boolean;
   notes: RetroNote[];
   attendance_count: number;
   average_sentiment: number | null;
@@ -59,6 +60,12 @@ const columns: {
 
 const input =
   "w-full rounded-lg border border-border bg-white p-2 text-sm";
+
+const phaseLabels: Record<Sprint["retrospective_phase"], string> = {
+  collecting: "Collecting feedback",
+  voting: "Voting open",
+  closed: "Voting closed",
+};
 
 export function RetrospectivePage({
   sprintId,
@@ -179,6 +186,13 @@ export function RetrospectivePage({
   const percentage = metrics
     ? metrics.velocity_percent
     : 0;
+  const isCompleted = sprint.status === "completed";
+  const carryoverIssues = isCompleted
+    ? sprint.carryover_issues
+    : metrics?.open_issues ?? 0;
+  const carryoverPoints = isCompleted
+    ? sprint.carryover_points
+    : metrics?.remaining_points ?? 0;
 
   return (
     <main className="mx-auto max-w-[1500px] space-y-6 p-4 sm:p-6">
@@ -225,6 +239,39 @@ export function RetrospectivePage({
         </div>
       </header>
 
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-white px-4 py-3">
+        <p role="status" className="text-sm">
+          Retrospective phase: {phaseLabels[sprint.retrospective_phase]}.
+        </p>
+
+        {data.can_manage && sprint.retrospective_phase !== "closed" && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                await sprintApi(
+                  `sprints/${sprintId}/voting-phase`,
+                  "PATCH",
+                  {},
+                );
+              })
+            }
+            className="rounded-lg border border-accent px-3 py-2 text-sm font-semibold text-accent disabled:opacity-50"
+          >
+            {sprint.retrospective_phase === "collecting"
+              ? "Open voting"
+              : "Close voting"}
+          </button>
+        )}
+
+        {sprint.retrospective_phase === "closed" && (
+          <p className="text-sm text-muted">
+            Discussion and action items remain open.
+          </p>
+        )}
+      </div>
+
       {error && (
         <p role="alert" className="rounded-lg border border-red-200 p-3 text-red-700">
           {error}
@@ -239,9 +286,11 @@ export function RetrospectivePage({
         />
 
         <Metric
-          label="Sprint Carryover"
-          value={`${metrics?.open_issues ?? 0} issues`}
-          detail={`${metrics?.remaining_points ?? 0} unfinished points`}
+          label={isCompleted ? "Issues Rolled Over" : "Unfinished Issues"}
+          value={`${carryoverIssues} issues`}
+          detail={`${carryoverPoints} ${
+            isCompleted ? "carried" : "unfinished"
+          } points`}
         />
 
         <Metric
@@ -358,6 +407,28 @@ export function RetrospectivePage({
                       {note.body}
                     </p>
 
+                    {note.category !== "action" && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          void run(() =>
+                            sprintApi(
+                              `sprints/${sprintId}/notes/${note.id}`,
+                              "PATCH",
+                              {
+                                category: "action",
+                                action_status: "assigned",
+                              },
+                            ),
+                          )
+                        }
+                        className="mt-3 text-xs font-semibold text-accent disabled:opacity-50"
+                      >
+                        Convert to Action Item
+                      </button>
+                    )}
+
                     {column.id === "action" && (
                       <div className="mt-3 space-y-2 text-xs">
                         <p>
@@ -401,7 +472,10 @@ export function RetrospectivePage({
 
                     <div className="mt-4 flex items-center justify-between text-xs">
                       <button
-                        disabled={busy}
+                        type="button"
+                        disabled={
+                          busy || sprint.retrospective_phase !== "voting"
+                        }
                         aria-pressed={note.voted}
                         onClick={() =>
                           void run(() =>

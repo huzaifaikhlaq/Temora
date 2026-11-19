@@ -276,8 +276,19 @@ class SprintMetrics(APIView):
 
         issues = get_sprint_issues(sprint)
 
+        metrics = calculate_metrics(issues)
+        metrics["velocity_percent"] = (
+            round(
+                100 * metrics["completed_points"]
+                / sprint.committed_points,
+                1,
+            )
+            if sprint.committed_points
+            else 0
+        )
+
         return Response({
-            "metrics": calculate_metrics(issues),
+            "metrics": metrics,
             "committed_points": sprint.committed_points,
             "committed_issues": sprint.committed_issues,
         })
@@ -304,6 +315,15 @@ class SprintCompletion(APIView):
 
         issues = get_sprint_issues(sprint)
         metrics = calculate_metrics(issues)
+        metrics["velocity_percent"] = (
+            round(
+                100 * metrics["completed_points"]
+                / sprint.committed_points,
+                1,
+            )
+            if sprint.committed_points
+            else 0
+        )
 
         open_issues = [
             issue for issue in issues
@@ -451,6 +471,22 @@ class SprintCompletion(APIView):
         # The Issue service owns an idempotent atomic rollover.
         result = rollover_issues(sprint)
         metrics = result["metrics"]
+        metrics["velocity_percent"] = (
+            round(
+                100 * metrics["completed_points"]
+                / sprint.committed_points,
+                1,
+            )
+            if sprint.committed_points
+            else 0
+        )
+
+        moved_ids = set(result["moved_issue_ids"])
+        moved = [
+            issue
+            for issue in result["issues"]
+            if issue["id"] in moved_ids
+        ]
 
         with transaction.atomic():
             sprint = (
@@ -470,12 +506,11 @@ class SprintCompletion(APIView):
                     "completed_issues"
                 ]
 
-                sprint.carryover_points = metrics[
-                    "remaining_points"
-                ]
-                sprint.carryover_issues = metrics[
-                    "open_issues"
-                ]
+                sprint.carryover_issues = len(moved)
+                sprint.carryover_points = sum(
+                    int(issue.get("story_points") or 0)
+                    for issue in moved
+                )
 
                 sprint.completion_snapshot = result
 
@@ -507,7 +542,7 @@ class SprintRetrospective(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, sprint_id):
-        sprint, _ = scoped_sprint(request, sprint_id)
+        sprint, role = scoped_sprint(request, sprint_id)
 
         participation = SprintParticipation.objects.filter(
             sprint=sprint
@@ -523,6 +558,7 @@ class SprintRetrospective(APIView):
 
         return Response({
             "sprint": SprintSerializer(sprint).data,
+            "can_manage": role in ("owner", "admin"),
             "notes": serialized_notes(
                 sprint,
                 request.user.id,
@@ -542,6 +578,48 @@ class SprintRetrospective(APIView):
                 category=RetrospectiveNote.Category.ACTION
             ).count(),
         })
+
+
+class SprintVotingPhase(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, sprint_id):
+        scoped_sprint(
+            request,
+            sprint_id,
+            manage=True,
+        )
+
+        with transaction.atomic():
+            sprint = (
+                Sprint.objects
+                .select_for_update()
+                .get(pk=sprint_id)
+            )
+            transitions = {
+                Sprint.RetrospectivePhase.COLLECTING:
+                    Sprint.RetrospectivePhase.VOTING,
+                Sprint.RetrospectivePhase.VOTING:
+                    Sprint.RetrospectivePhase.CLOSED,
+            }
+            next_phase = transitions.get(
+                sprint.retrospective_phase
+            )
+
+            if next_phase is None:
+                raise ValidationError(
+                    "Voting is already closed."
+                )
+
+            sprint.retrospective_phase = next_phase
+            sprint.save(
+                update_fields=[
+                    "retrospective_phase",
+                    "updated_at",
+                ]
+            )
+
+        return Response(SprintSerializer(sprint).data)
 
 
 class NoteCollection(APIView):
@@ -661,6 +739,12 @@ class NoteVote(APIView):
             write=True,
         )
 
+        if (
+            sprint.retrospective_phase
+            != Sprint.RetrospectivePhase.VOTING
+        ):
+            raise ValidationError("Voting is not open.")
+
         note = get_note(sprint, note_id)
 
         RetrospectiveVote.objects.get_or_create(
@@ -676,6 +760,12 @@ class NoteVote(APIView):
             sprint_id,
             write=True,
         )
+
+        if (
+            sprint.retrospective_phase
+            != Sprint.RetrospectivePhase.VOTING
+        ):
+            raise ValidationError("Voting is not open.")
 
         note = get_note(sprint, note_id)
 

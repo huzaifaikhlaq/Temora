@@ -9,6 +9,7 @@ export type Sprint = {
   end_date: string;
   capacity_points: number;
   status: "planned" | "active" | "completing" | "completed";
+  retrospective_phase: "collecting" | "voting" | "closed";
   committed_points: number;
   committed_issues: number;
   completed_points: number;
