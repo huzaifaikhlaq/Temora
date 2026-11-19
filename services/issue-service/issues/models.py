@@ -185,3 +185,19 @@ class IssueAttachment(models.Model):
 
     uploaded_by = models.UUIDField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+class SprintRolloverOperation(models.Model):
+    operation_id = models.UUIDField(
+        primary_key=True,
+    )
+
+    sprint_id = models.UUIDField(db_index=True)
+
+    workspace_id = models.UUIDField()
+    project_id = models.UUIDField()
+
+    request_payload = models.JSONField(default=dict)
+
+    result = models.JSONField(default=dict)
+
+    created_at = models.DateTimeField(auto_now_add=True)

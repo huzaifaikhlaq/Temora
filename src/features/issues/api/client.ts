@@ -1,12 +1,6 @@
-
 export type IssueType = "story" | "task" | "bug" | "epic";
 
-export type IssueStatus =
-  | "backlog"
-  | "to_do"
-  | "in_progress"
-  | "in_review"
-  | "done";
+export type IssueStatus = "backlog" | "to_do" | "in_progress" | "in_review" | "done";
 
 export type IssuePriority = "urgent" | "high" | "medium" | "low";
 
@@ -98,10 +92,7 @@ async function parse<T>(response: Response): Promise<T> {
   }));
 
   if (!response.ok) {
-    const message =
-      typeof payload.detail === "string"
-        ? payload.detail
-        : JSON.stringify(payload);
+    const message = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload);
 
     throw new Error(message);
   }
@@ -109,11 +100,7 @@ async function parse<T>(response: Response): Promise<T> {
   return payload as T;
 }
 
-async function send<T>(
-  url: string,
-  method = "GET",
-  data?: IssueInput,
-): Promise<T> {
+async function send<T>(url: string, method = "GET", data?: IssueInput): Promise<T> {
   const response = await fetch(url, {
     method,
     credentials: "same-origin",
@@ -129,79 +116,34 @@ async function send<T>(
 
 export const issueApi = {
   list: (workspaceId: string, projectId: string, query = "") =>
-    send<Issue[]>(
-      `${base(workspaceId, projectId)}${query ? `?${query}` : ""}`,
-    ),
+    send<Issue[]>(`${base(workspaceId, projectId)}${query ? `?${query}` : ""}`),
 
-  create: (
-    workspaceId: string,
-    projectId: string,
-    input: IssueInput,
-  ) =>
-    send<Issue>(
-      base(workspaceId, projectId),
-      "POST",
-      input,
-    ),
+  create: (workspaceId: string, projectId: string, input: IssueInput) =>
+    send<Issue>(base(workspaceId, projectId), "POST", input),
 
-  get: (
-    workspaceId: string,
-    projectId: string,
-    issueId: string,
-  ) =>
-    send<Issue>(
-      `${base(workspaceId, projectId)}/${issueId}`,
-    ),
+  get: (workspaceId: string, projectId: string, issueId: string) =>
+    send<Issue>(`${base(workspaceId, projectId)}/${issueId}`),
 
-  update: (
-    workspaceId: string,
-    projectId: string,
-    issueId: string,
-    input: IssueInput,
-  ) =>
-    send<Issue>(
-      `${base(workspaceId, projectId)}/${issueId}`,
-      "PATCH",
-      input,
-    ),
+  update: (workspaceId: string, projectId: string, issueId: string, input: IssueInput) =>
+    send<Issue>(`${base(workspaceId, projectId)}/${issueId}`, "PATCH", input),
 
-  remove: (
-    workspaceId: string,
-    projectId: string,
-    issueId: string,
-  ) =>
-    send<void>(
-      `${base(workspaceId, projectId)}/${issueId}`,
-      "DELETE",
-    ),
+  remove: (workspaceId: string, projectId: string, issueId: string) =>
+    send<void>(`${base(workspaceId, projectId)}/${issueId}`, "DELETE"),
 
-  upload: async (
-    workspaceId: string,
-    projectId: string,
-    issueId: string,
-    file: File,
-  ) => {
+  upload: async (workspaceId: string, projectId: string, issueId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
 
-    const response = await fetch(
-      `${base(workspaceId, projectId)}/${issueId}/attachments`,
-      {
-        method: "POST",
-        body: form,
-        cache: "no-store",
-        credentials: "same-origin",
-      },
-    );
+    const response = await fetch(`${base(workspaceId, projectId)}/${issueId}/attachments`, {
+      method: "POST",
+      body: form,
+      cache: "no-store",
+      credentials: "same-origin",
+    });
 
     return parse<IssueAttachment>(response);
   },
 
-  attachmentUrl: (
-    workspaceId: string,
-    projectId: string,
-    issueId: string,
-    attachmentId: string,
-  ) =>
+  attachmentUrl: (workspaceId: string, projectId: string, issueId: string, attachmentId: string) =>
     `${base(workspaceId, projectId)}/${issueId}/attachments/${attachmentId}`,
 };

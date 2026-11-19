@@ -174,7 +174,29 @@ services:
       project:
         condition: service_started
 
+  sprint:
+    build:
+      context: ./services/sprint-service
 
+    restart: unless-stopped
+
+    env_file:
+      - ./services/sprint-service/.env
+
+    ports:
+      - "127.0.0.1:8004:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      workspace:
+        condition: service_started
+      project:
+        condition: service_started
+      issue:
+        condition: service_started
 
 volumes:
   pgdata:
