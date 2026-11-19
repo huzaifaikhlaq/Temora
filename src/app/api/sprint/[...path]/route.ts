@@ -9,46 +9,54 @@ type Context = {
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function validPath(parts: string[], method: Method) {
+function validPath(parts: string[], method: Method): boolean {
+  // GET /workspaces/:wid/projects/:pid/sprints
+  // POST /workspaces/:wid/projects/:pid/sprints
   if (
     parts.length === 5 &&
     parts[0] === "workspaces" &&
-    uuid.test(parts[1]) &&
+    UUID_RE.test(parts[1]) &&
     parts[2] === "projects" &&
-    uuid.test(parts[3]) &&
+    UUID_RE.test(parts[3]) &&
     parts[4] === "sprints"
   ) {
     return method === "GET" || method === "POST";
   }
 
-  if (parts[0] !== "sprints" || !uuid.test(parts[1])) {
+  // All other routes begin with /sprints/:id
+  if (parts.length < 2 || parts[0] !== "sprints" || !UUID_RE.test(parts[1])) {
     return false;
   }
 
   if (parts.length === 2) {
-    return method === "GET" || method === "PATCH";
+    return ["GET", "PATCH"].includes(method);
   }
 
   if (parts.length === 3) {
-    const read = ["metrics", "complete", "retrospective", "burndown", "report"];
+    const action = parts[2];
 
-    const write = ["start", "complete", "notes", "check-in", "burndown", "themes"];
-    const patch = ["voting-phase"];
+    if (method === "GET") {
+      return ["metrics", "complete", "retrospective", "burndown", "report"].includes(action);
+    }
 
-    return (
-      (method === "GET" && read.includes(parts[2])) ||
-      (method === "POST" && write.includes(parts[2])) ||
-      (method === "PATCH" && patch.includes(parts[2]))
-    );
+    if (method === "POST") {
+      return ["start", "complete", "notes", "check-in", "burndown", "themes"].includes(action);
+    }
+
+    if (method === "PATCH") {
+      return action === "voting-phase";
+    }
+
+    return false;
   }
 
-  if (parts.length === 4 && parts[2] === "notes" && uuid.test(parts[3])) {
+  if (parts.length === 4 && parts[2] === "notes" && UUID_RE.test(parts[3])) {
     return method === "PATCH" || method === "DELETE";
   }
 
-  if (parts.length === 5 && parts[2] === "notes" && uuid.test(parts[3])) {
+  if (parts.length === 5 && parts[2] === "notes" && UUID_RE.test(parts[3])) {
     if (parts[4] === "vote") {
       return method === "POST" || method === "DELETE";
     }
@@ -73,6 +81,13 @@ function failure(detail: string, status: number) {
 
 async function forward(request: NextRequest, context: Context, method: Method) {
   const { path } = await context.params;
+
+  console.log("[SPRINT ROUTE DEBUG]", {
+    method,
+    path,
+    pathLength: path.length,
+    isValid: validPath(path, method),
+  });
 
   if (!validPath(path, method)) {
     return failure("Invalid sprint route", 400);
@@ -161,7 +176,16 @@ async function forward(request: NextRequest, context: Context, method: Method) {
     }
 
     if (!type.includes("application/json")) {
-      return failure("Invalid sprint service response", 502);
+      const responseBody = await upstream.text();
+
+      console.error("[SPRINT UPSTREAM ERROR]", {
+        status: upstream.status,
+        contentType: type,
+        url,
+        responsePreview: responseBody.slice(0, 1000),
+      });
+
+      return failure(`Sprint backend returned HTTP ${upstream.status}`, 502);
     }
 
     const response = new NextResponse(await upstream.text(), {

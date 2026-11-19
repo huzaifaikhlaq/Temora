@@ -169,7 +169,7 @@ class IssueDetail(APIView):
             write=True,
         )
 
-        issue = get_issue(  
+        issue = get_issue(
             request,
             workspace_id,
             project_id,
@@ -181,24 +181,25 @@ class IssueDetail(APIView):
             data=request.data,
             partial=True,
         )
-
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
-        
-                    validate_sprint_assignment(
-                         request,
-                       workspace_id,
-                      project_id,
-                      issue.sprint_id, 
-              )
 
-            if "sprint_id" in serializer.validated_data:
-    validate_sprint_assignment(
-        request,
-        workspace_id,
-        project_id,
-        serializer.validated_data["sprint_id"],
-    )
+        # The current sprint must permit changes.
+        validate_sprint_assignment(
+            request,
+            workspace_id,
+            project_id,
+            issue.sprint_id,
+        )
+
+        # Validate a newly selected sprint as well.
+        if "sprint_id" in values:
+            validate_sprint_assignment(
+                request,
+                workspace_id,
+                project_id,
+                values["sprint_id"],
+            )
 
         validate_assignee(
             request,
@@ -218,18 +219,18 @@ class IssueDetail(APIView):
             write=True,
         )
 
-        validate_sprint_assignment(
-    request,
-    workspace_id,
-    project_id,
-    issue.sprint_id,
-)
-
         issue = get_issue(
             request,
             workspace_id,
             project_id,
             issue_id,
+        )
+
+        validate_sprint_assignment(
+            request,
+            workspace_id,
+            project_id,
+            issue.sprint_id,
         )
 
         issue.archived_at = timezone.now()
