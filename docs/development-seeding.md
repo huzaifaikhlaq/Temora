@@ -2,7 +2,7 @@
 
 The seeder writes through four service-owned Django management commands. Identity creates users in the Identity database; Workspace creates workspaces and memberships in the Workspace database; Project creates projects in the Project database; Issue creates epics, issues, and child issues in the Issue database. The runner passes a JSON manifest between commands and never opens another service's database.
 
-The issue service uses its existing `insert_issue` business logic for issue keys, project-scoped sequential numbering, epic references, and parent validation. Sprints, comments, and notifications are not seeded because those backend services/models are not implemented.
+The issue service uses its existing `insert_issue` business logic for issue keys, project-scoped sequential numbering, epic references, and parent validation. The seeder does not create sprint data, comments, or notifications.
 
 ## Enable local seeding
 
@@ -11,7 +11,7 @@ From the repository root in Windows PowerShell, explicitly enable the developmen
 ```powershell
 $env:TEMORA_ENVIRONMENT = "development"
 $env:TEMORA_SEEDING_ENABLED = "true"
-docker compose up -d --build identity workspace project issue
+docker compose up -d --build identity workspace project issue sprint
 ```
 
 The Compose services must have their normal local `.env` files configured. Apply migrations to each service database once:
@@ -21,6 +21,8 @@ docker compose exec identity python manage.py migrate
 docker compose exec workspace python manage.py migrate
 docker compose exec project python manage.py migrate
 docker compose exec issue python manage.py migrate
+# The sprint service predates its initial migration; fake the existing schema when present.
+docker compose exec sprint python manage.py migrate --fake-initial
 ```
 
 ## Generate demo data

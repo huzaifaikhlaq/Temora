@@ -42,6 +42,11 @@ urlpatterns = [
     ),
 
     path(
+        sprint_base + "voting-phase/",
+        views.SprintVotingPhase.as_view(),
+    ),
+
+    path(
         sprint_base + "retrospective/",
         views.SprintRetrospective.as_view(),
     ),

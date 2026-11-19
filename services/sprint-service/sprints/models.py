@@ -17,6 +17,11 @@ class Sprint(models.Model):
         COMPLETING = "completing", "Completing"
         COMPLETED = "completed", "Completed"
 
+    class RetrospectivePhase(models.TextChoices):
+        COLLECTING = "collecting", "Collecting Feedback"
+        VOTING = "voting", "Voting Open"
+        CLOSED = "closed", "Voting Closed"
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -44,6 +49,12 @@ class Sprint(models.Model):
         choices=Status.choices,
         default=Status.PLANNED,
         db_index=True,
+    )
+
+    retrospective_phase = models.CharField(
+        max_length=12,
+        choices=RetrospectivePhase.choices,
+        default=RetrospectivePhase.COLLECTING,
     )
 
     created_by = models.UUIDField()
