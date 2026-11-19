@@ -100,10 +100,6 @@ def insert_issue(workspace_id, project_id, project_key, reporter_id, values):
                 "subtasks": "Nested child issues are not supported"
             })
 
-        if values.get("sprint_id") is not None:
-            raise ValidationError({
-                "sprint_id": "Sprint Service is not connected yet"
-            })
 
         number = next_issue_number(project_id)
 
@@ -159,10 +155,7 @@ def modify_issue(issue, values):
                 "subtasks": "Nested child issues are not supported"
             })
 
-        if values.get("sprint_id") is not None:
-            raise ValidationError({
-                "sprint_id": "Sprint Service is not connected yet"
-            })
+    
 
         if (
             values.get("issue_type") == Issue.Type.EPIC

@@ -70,6 +70,9 @@ PROJECT_API_URL = required("PROJECT_API_URL").rstrip("/")
 INTERNAL_SERVICE_KEY = required("INTERNAL_SERVICE_KEY")
 SERVICE_ID = "issue-service"
 
+SPRINT_API_URL = required("SPRINT_API_URL").rstrip("/")
+SPRINT_INTERNAL_KEY = required("SPRINT_INTERNAL_KEY")
+
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 

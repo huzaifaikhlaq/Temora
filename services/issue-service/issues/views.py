@@ -22,6 +22,8 @@ from .serializers import (
 )
 from .services import insert_issue, modify_issue
 
+from .sprint_guard import validate_sprint_assignment
+
 
 def get_issue(request, workspace_id, project_id, issue_id):
     issue = get_object_or_404(
@@ -114,6 +116,13 @@ class IssueCollection(APIView):
 
         serializer = IssueWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        validate_sprint_assignment(
+                   request,
+                   workspace_id,
+                   project_id,
+                   serializer.validated_data.get("sprint_id"),
+               )
 
         values = serializer.validated_data
 
@@ -175,6 +184,21 @@ class IssueDetail(APIView):
 
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
+        
+                    validate_sprint_assignment(
+                         request,
+                       workspace_id,
+                      project_id,
+                      issue.sprint_id, 
+              )
+
+            if "sprint_id" in serializer.validated_data:
+    validate_sprint_assignment(
+        request,
+        workspace_id,
+        project_id,
+        serializer.validated_data["sprint_id"],
+    )
 
         validate_assignee(
             request,
@@ -193,6 +217,13 @@ class IssueDetail(APIView):
             project_id,
             write=True,
         )
+
+        validate_sprint_assignment(
+    request,
+    workspace_id,
+    project_id,
+    issue.sprint_id,
+)
 
         issue = get_issue(
             request,
