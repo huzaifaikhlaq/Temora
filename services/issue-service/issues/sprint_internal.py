@@ -43,6 +43,7 @@ def serialize_issue(issue):
         "issue_type": issue.issue_type,
         "status": issue.status,
         "story_points": issue.story_points or 0,
+        "epic_id": str(issue.epic_id) if issue.epic_id else None,
         "assignee_id": (
             str(issue.assignee_id)
             if issue.assignee_id else None
@@ -52,6 +53,35 @@ def serialize_issue(issue):
             if issue.sprint_id else None
         ),
     }
+
+
+def serialize_epics(issues, workspace_id, project_id):
+    epic_ids = {
+        issue.epic_id
+        for issue in issues
+        if issue.epic_id
+    }
+
+    if not epic_ids:
+        return []
+
+    epics = Issue.objects.filter(
+        id__in=epic_ids,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        issue_type=Issue.Type.EPIC,
+        archived_at__isnull=True,
+        is_draft=False,
+    ).order_by("key")
+
+    return [
+        {
+            "id": str(epic.id),
+            "key": epic.key,
+            "title": epic.title,
+        }
+        for epic in epics
+    ]
 
 
 class RolloverInput(serializers.Serializer):
@@ -106,9 +136,10 @@ class InternalSprintIssues(APIView):
             is_draft=False,
         ).order_by("id")[:5001]
 
+        issue_items = list(issues)
         items = [
             serialize_issue(issue)
-            for issue in issues
+            for issue in issue_items
         ]
 
         if len(items) > 5000:
@@ -116,12 +147,64 @@ class InternalSprintIssues(APIView):
                 "Sprint exceeds the supported issue batch size."
             )
 
-        return Response({"issues": items})
+        return Response({
+            "issues": items,
+            "epics": serialize_epics(
+                issue_items,
+                values["workspace_id"],
+                values["project_id"],
+            ),
+        })
 
 
 class InternalSprintComplete(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+     
+    def get(self, request, sprint_id):
+        require_sprint_service(request)
+
+        class Scope(serializers.Serializer):
+            workspace_id = serializers.UUIDField()
+            project_id = serializers.UUIDField()
+            operation_id = serializers.UUIDField()
+
+        scope = Scope(data=request.query_params)
+        scope.is_valid(raise_exception=True)
+        values = scope.validated_data
+
+        operation = SprintRolloverOperation.objects.filter(
+            operation_id=values["operation_id"],
+            sprint_id=sprint_id,
+            workspace_id=values["workspace_id"],
+            project_id=values["project_id"],
+        ).first()
+
+        if operation and operation.result:
+            issues = operation.result.get("issues", [])
+            epics = operation.result.get("epics", [])
+        else:
+            issue_items = list(
+                Issue.objects.filter(
+                    sprint_id=sprint_id,
+                    workspace_id=values["workspace_id"],
+                    project_id=values["project_id"],
+                    archived_at__isnull=True,
+                    is_draft=False,
+                ).order_by("id")[:5001]
+            )
+            if len(issue_items) > 5000:
+                raise ValidationError(
+                    "Sprint exceeds the supported issue batch size."
+                )
+            issues = [serialize_issue(issue) for issue in issue_items]
+            epics = serialize_epics(
+                issue_items,
+                values["workspace_id"],
+                values["project_id"],
+            )
+
+        return Response({"issues": issues, "epics": epics})
 
     def post(self, request, sprint_id):
         require_sprint_service(request)
@@ -199,6 +282,11 @@ class InternalSprintComplete(APIView):
                 serialize_issue(issue)
                 for issue in issues
             ]
+            epics = serialize_epics(
+                issues,
+                values["workspace_id"],
+                values["project_id"],
+            )
 
             incomplete = {
                 issue.id: issue
@@ -256,6 +344,7 @@ class InternalSprintComplete(APIView):
                     for issue_id in sorted(move_ids)
                 ],
                 "issues": snapshot,
+                "epics": epics,
                 "metrics": {
                     "total_issues": len(issues),
                     "completed_issues": len(completed),

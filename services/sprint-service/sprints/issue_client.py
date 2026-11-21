@@ -49,7 +49,7 @@ def issue_request(method, path, payload=None):
         raise IssueServiceUnavailable() from exc
 
 
-def get_sprint_issues(sprint):
+def get_sprint_issue_data(sprint):
     return issue_request(
         "GET",
         (
@@ -57,7 +57,26 @@ def get_sprint_issues(sprint):
             f"?workspace_id={sprint.workspace_id}"
             f"&project_id={sprint.project_id}"
         ),
-    )["issues"]
+    )
+
+
+def get_sprint_issues(sprint):
+    return get_sprint_issue_data(sprint)["issues"]
+
+
+def get_sprint_completion_issues(sprint):
+    if not sprint.completion_operation_id:
+        return get_sprint_issue_data(sprint)
+
+    return issue_request(
+        "GET",
+        (
+            f"internal/sprints/{sprint.id}/complete/"
+            f"?workspace_id={sprint.workspace_id}"
+            f"&project_id={sprint.project_id}"
+            f"&operation_id={sprint.completion_operation_id}"
+        ),
+    )
 
 
 def rollover_issues(sprint):

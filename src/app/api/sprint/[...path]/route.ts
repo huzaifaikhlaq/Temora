@@ -82,13 +82,6 @@ function failure(detail: string, status: number) {
 async function forward(request: NextRequest, context: Context, method: Method) {
   const { path } = await context.params;
 
-  console.log("[SPRINT ROUTE DEBUG]", {
-    method,
-    path,
-    pathLength: path.length,
-    isValid: validPath(path, method),
-  });
-
   if (!validPath(path, method)) {
     return failure("Invalid sprint route", 400);
   }
@@ -163,7 +156,12 @@ async function forward(request: NextRequest, context: Context, method: Method) {
 
     const isReport = method === "GET" && path[2] === "report" && upstream.ok;
 
-    if (isReport && (type.includes("application/pdf") || type.includes("text/markdown"))) {
+    if (
+      isReport &&
+      (type.includes("application/pdf") ||
+        type.includes("text/markdown") ||
+        type.includes("text/csv"))
+    ) {
       return new Response(upstream.body, {
         status: upstream.status,
         headers: {
