@@ -123,3 +123,14 @@ h3 {
 ::selection {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
+
+dialog.sprint-modal:modal {
+  margin: auto;
+  overscroll-behavior: contain;
+}
+
+dialog.sprint-modal::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(15 23 42 / 54%);
+}

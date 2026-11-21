@@ -21,6 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .issue_client import (
+    get_sprint_completion_issues,
     get_sprint_issues,
     rollover_issues,
 )
@@ -58,6 +59,9 @@ from .services import (
     store_snapshot,
     build_report_markdown,
     build_report_pdf,
+    build_burndown_report_data,
+    build_burndown_csv,
+    build_burndown_pdf,
     extract_ai_themes,
 )
 
@@ -301,16 +305,64 @@ class SprintCompletion(APIView):
         sprint, _ = scoped_sprint(request, sprint_id)
 
         if sprint.status == Sprint.Status.COMPLETED:
+            target_sprint_id = (
+                sprint.completion_snapshot or {}
+            ).get("target_sprint_id")
+            destination = None
+            if target_sprint_id:
+                destination = Sprint.objects.filter(
+                    pk=target_sprint_id,
+                    workspace_id=sprint.workspace_id,
+                    project_id=sprint.project_id,
+                ).values(
+                    "id", "name", "status", "capacity_points",
+                    "start_date", "end_date",
+                ).first()
+
             return Response({
                 "sprint": SprintSerializer(sprint).data,
                 "snapshot": sprint.completion_snapshot,
+                "destination": destination,
             })
 
         if sprint.status == Sprint.Status.COMPLETING:
+            completion_data = get_sprint_completion_issues(sprint)
+            issues = completion_data.get("issues", [])
+            metrics = calculate_metrics(issues)
+            metrics["velocity_percent"] = (
+                round(
+                    100 * metrics["completed_points"]
+                    / sprint.committed_points,
+                    1,
+                )
+                if sprint.committed_points
+                else 0
+            )
+            target_sprint_id = sprint.completion_plan.get(
+                "target_sprint_id"
+            )
+            destination = None
+            if target_sprint_id:
+                destination = Sprint.objects.filter(
+                    pk=target_sprint_id,
+                    workspace_id=sprint.workspace_id,
+                    project_id=sprint.project_id,
+                ).values(
+                    "id", "name", "status", "capacity_points",
+                    "start_date", "end_date",
+                ).first()
+
             return Response({
                 "sprint": SprintSerializer(sprint).data,
                 "pending": True,
                 "plan": sprint.completion_plan,
+                "issues": issues,
+                "open_issues": [
+                    issue for issue in issues
+                    if issue["status"] != "done"
+                ],
+                "metrics": metrics,
+                "destination": destination,
             })
 
         issues = get_sprint_issues(sprint)
@@ -897,6 +949,39 @@ class SprintReport(APIView):
 
         safe_name = f"sprint-{sprint.number}-retrospective"
 
+        if report_format == "data":
+            report_data = build_burndown_report_data(sprint)
+            report_data["sprint"] = SprintSerializer(sprint).data
+            report_data["snapshots"] = BurndownSerializer(
+                sprint.burndown.order_by("date"),
+                many=True,
+            ).data
+            return Response(report_data)
+
+        if report_format == "burndown-csv":
+            report_data = build_burndown_report_data(sprint)
+            response = HttpResponse(
+                build_burndown_csv(sprint, report_data),
+                content_type="text/csv; charset=utf-8",
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="sprint-{sprint.number}-burndown-history.csv"'
+            )
+            response["Cache-Control"] = "private, no-store"
+            return response
+
+        if report_format == "burndown-pdf":
+            report_data = build_burndown_report_data(sprint)
+            response = HttpResponse(
+                build_burndown_pdf(sprint, report_data),
+                content_type="application/pdf",
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="sprint-{sprint.number}-burndown-report.pdf"'
+            )
+            response["Cache-Control"] = "private, no-store"
+            return response
+
         if report_format == "md":
             response = HttpResponse(
                 build_report_markdown(sprint),
@@ -919,7 +1004,7 @@ class SprintReport(APIView):
 
         else:
             raise ValidationError({
-                "format": "Use md or pdf."
+                "format": "Use md, pdf, data, burndown-csv, or burndown-pdf."
             })
 
         response["Cache-Control"] = "private, no-store"

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -9,6 +10,8 @@ import { identityFetch } from "@/lib/identity";
 import { workspaceFetch } from "@/lib/workspace";
 
 async function AuthenticatedDashboard({ children, modal }: { children: ReactNode; modal?: ReactNode }) {
+  await connection();
+
   let identity: Response;
   try { identity = await identityFetch("me", { method: "GET" }, true); }
   catch { throw new Error("Identity service is currently unavailable."); }
