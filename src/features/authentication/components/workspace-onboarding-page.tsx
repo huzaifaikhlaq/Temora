@@ -50,7 +50,7 @@ export function WorkspaceOnboardingPage() {
         await workspaceApi.invite(workspace.id, email, "member");
         setSentInvites((current) => [...current, email]);
       }
-      router.replace("/");
+      router.replace("/overview");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Workspace setup could not be completed.");

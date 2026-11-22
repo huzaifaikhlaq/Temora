@@ -44,7 +44,7 @@ export function WorkspaceSelectionPage() {
     try {
       await workspaceApi.select(id);
       setSelectedId(id);
-      router.replace("/");
+      router.replace("/overview");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Workspace could not be selected.");
@@ -59,7 +59,7 @@ export function WorkspaceSelectionPage() {
       const created = await workspaceApi.create(name.trim());
       await workspaceApi.select(created.id);
       setWorkspaces((items) => [...items, created]);
-      router.replace("/");
+      router.replace("/overview");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Workspace could not be created.");
