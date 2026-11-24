@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -114,6 +114,7 @@ function AuthForm({
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const signupEmailInputRef = useRef<HTMLInputElement>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
     useState("");
@@ -121,6 +122,20 @@ function AuthForm({
     useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] =
     useState(false);
+
+  useEffect(() => {
+    if (mode !== "sign-up") return;
+
+    try {
+      const leadEmail = window.sessionStorage.getItem("temora:pending-signup-email");
+      if (leadEmail && signupEmailInputRef.current) {
+        signupEmailInputRef.current.value = leadEmail;
+        window.sessionStorage.removeItem("temora:pending-signup-email");
+      }
+    } catch {
+      // Signup remains available when browser storage is disabled.
+    }
+  }, [mode]);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -173,7 +188,7 @@ function AuthForm({
       if (isRegister) {
         await authClient.register({
           full_name: fullName,
-          email,
+          email: signupEmailInputRef.current?.value.trim() ?? email,
           password,
         });
 
@@ -247,7 +262,7 @@ function AuthForm({
           </span>
 
           <h1 className="mt-8 text-3xl font-bold leading-tight sm:text-4xl">
-            Your team's work, in one focused space.
+            Your team&apos;s work, in one focused space.
           </h1>
 
           <p className="mt-4 max-w-md text-sm leading-6 text-white/65">
@@ -304,7 +319,9 @@ function AuthForm({
                   <input
                     className={input}
                     type="email"
-                    value={email}
+                    {...(isRegister
+                      ? { ref: signupEmailInputRef, defaultValue: "" }
+                      : { value: email })}
                     onChange={(event) =>
                       setEmail(event.target.value)
                     }

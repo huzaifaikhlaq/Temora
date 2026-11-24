@@ -134,3 +134,108 @@ dialog.sprint-modal::backdrop {
   overscroll-behavior: contain;
   background: rgb(15 23 42 / 54%);
 }
+
+.marketing-shell :where(a:any-link, button, input):focus-visible {
+  outline: 3px solid #493ee5;
+  outline-offset: 3px;
+}
+
+.marketing-skip-link {
+  position: fixed;
+  z-index: 100;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  transform: translateY(-180%);
+  border-radius: 0.5rem;
+  background: #181b24;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.marketing-skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+}
+
+.site-nav-list {
+  display: none;
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+
+.site-nav-list[popover] {
+  position: fixed;
+  inset: auto 1rem auto auto;
+  inset-block-start: 4.5rem;
+  inline-size: min(80dvw, 24rem);
+  max-inline-size: calc(100dvw - 2rem);
+  max-block-size: calc(100dvh - 6rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #c7c4d8;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: 0 1rem 3rem rgb(24 27 36 / 18%);
+}
+
+.site-nav-list:popover-open,
+.site-nav-list[data-manual-open="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.site-nav-list[data-manual-open="true"] {
+  position: fixed;
+  inset: 4.5rem 1rem auto auto;
+  inline-size: min(80dvw, 24rem);
+  max-inline-size: calc(100dvw - 2rem);
+  max-block-size: calc(100dvh - 6rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #c7c4d8;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: 0 1rem 3rem rgb(24 27 36 / 18%);
+}
+
+.site-header.is-wide .site-nav-toggle {
+  display: none;
+}
+
+.site-header.is-wide .site-nav-list {
+  position: static;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  inline-size: auto;
+  max-inline-size: none;
+  max-block-size: none;
+  overflow: visible;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.site-nav-list a {
+  display: block;
+  min-block-size: 2.75rem;
+  align-content: center;
+}
+
+@media (forced-colors: active) {
+  .marketing-shell :where(a:any-link, button, input):focus-visible {
+    outline-color: Highlight;
+  }
+}

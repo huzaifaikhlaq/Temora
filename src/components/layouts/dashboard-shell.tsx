@@ -25,7 +25,7 @@ const groups: {
   {
     label: "Workspace",
     links: [
-      { label: "Overview", href: "/", icon: "grid_view" },
+      { label: "Overview", href: "/overview", icon: "grid_view" },
       { label: "My Work", href: "/my-work", icon: "check_circle" },
       { label: "Inbox", href: "/inbox", icon: "inbox" },
       { label: "Work Items", href: "/work-items", icon: "checklist" },
@@ -127,7 +127,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
         pathname === `/projects/${project.id}` || pathname.startsWith(`/projects/${project.id}/`),
     )?.name;
   const pageTitle =
-    pathname === "/"
+    pathname === "/overview"
       ? "Overview"
       : pathname === "/work-items"
         ? "Work Items"
@@ -194,7 +194,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
       >
         <div className="shrink-0 border-b border-border/30 p-4">
           <Link
-            href="/"
+            href="/overview"
             className="mb-4 flex items-center gap-2.5 text-2xl font-bold tracking-tight"
           >
             <Image
@@ -237,7 +237,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                       void fetch("/api/workspace/selection", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: workspace.id }) }).then(async (response) => {
                         if (!response.ok) throw new Error("Workspace could not be selected.");
                         setMenuOpen(false);
-                        router.replace("/");
+                        router.replace("/overview");
                         router.refresh();
                       }).catch((error: unknown) => setWorkspaceError(error instanceof Error ? error.message : "Workspace could not be selected."));
                     }}

@@ -70,6 +70,7 @@ services:
       celery -A config worker
       --loglevel=info
       --concurrency=2
+      -Q identity
 
     env_file:
       - ./services/identity-service/.env

@@ -90,8 +90,12 @@ class AtomicAuthThrottle(BaseThrottle):
                 if count > self.limit:
                     return False
 
-        except RedisError as exc:
-            raise RateLimitUnavailable() from exc
+       except RedisError as exc:
+           logger.exception(
+             "Redis authentication rate limiter failed."
+            )
+
+    raise RateLimitUnavailable() from exc
 
         return True
 
@@ -113,7 +117,7 @@ class LoginThrottle(AtomicAuthThrottle):
 
 class RecoverThrottle(AtomicAuthThrottle):
     scope = "recover"
-    limit = 50
+    limit = 50  
     seconds = 3600
 
 

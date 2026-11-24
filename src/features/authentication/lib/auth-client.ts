@@ -56,12 +56,16 @@ function errorMessage(data: ApiError): string {
 }
 
 async function parseJson(response: Response): Promise<unknown> {
-  const text = await response.text();
+  // const text = await response.text();
 
-  if (!text) return null;
+  const res = await response
+
+  // if (!text) return null;
+  if (!res) return null;
 
   try {
-    return JSON.parse(text);
+    // return JSON.parse(text);
+    return res
   } catch {
     throw new AuthApiError("Invalid response from server.", 502);
   }
