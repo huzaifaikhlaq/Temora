@@ -51,16 +51,15 @@ def queue_link(user, purpose):
     query = urlencode({"token": raw_token})
 
     if purpose == "verify":
-        # The fragment is not sent in the HTTP GET.
-        url = (
-            f"{settings.FRONTEND_URL}"
-            f"/auth/confirm#{query}"
-        )
+       url = (
+        f"{settings.FRONTEND_URL}"
+        f"/confirm#{query}"
+       )
     else:
-        url = (
-            f"{settings.FRONTEND_URL}"
-            f"/reset-password?{query}"
-        )
+       url = (
+        f"{settings.FRONTEND_URL}"
+        f"/reset-password?{query}"
+       )
 
     send_token_email.delay_on_commit(
         user.email,
