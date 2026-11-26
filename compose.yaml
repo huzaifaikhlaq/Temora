@@ -198,6 +198,73 @@ services:
         condition: service_started
       issue:
         condition: service_started
+  
+  billing:
+    build:
+      context: ./services/billing-service
+
+    restart: unless-stopped
+
+    env_file:
+         - ./services/billing-service/.env
+
+    ports:
+         - "127.0.0.1:8005:8000"
+
+    depends_on:
+        postgres:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        identity:
+          condition: service_started
+        workspace:
+           condition: service_started
+
+  billing-worker:
+    build:
+      context: ./services/billing-service
+
+    restart: unless-stopped
+
+    command: >
+      celery -A config worker
+      -Q billing
+      --loglevel=info
+      --concurrency=2
+
+    env_file:
+      - ./services/billing-service/.env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      billing:
+        condition: service_started
+
+  billing-beat:
+    build:
+      context: ./services/billing-service
+
+    restart: unless-stopped
+
+    command: >
+      celery -A config beat
+      --loglevel=info
+      --schedule=/tmp/billing-celerybeat-schedule
+
+    env_file:
+      - ./services/billing-service/.env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      billing:
+        condition: service_started
 
 volumes:
   pgdata:
