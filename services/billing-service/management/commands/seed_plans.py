@@ -30,7 +30,7 @@ class Command(BaseCommand):
                 "description": "For professional teams.",
                 "monthly_price": 900,
                 "provider_price_id": (
-                    settings.PADDLE_PRO_PRICE_ID or None
+                    settings.STRIPE_PRO_PRICE_ID or None
                 ),
                 "max_members": 15,
                 "max_projects": 20,
@@ -43,7 +43,7 @@ class Command(BaseCommand):
                 "description": "For growing organizations.",
                 "monthly_price": 2900,
                 "provider_price_id": (
-                    settings.PADDLE_TEAM_PRICE_ID or None
+                    settings.STRIPE_TEAM_PRICE_ID or None
                 ),
                 "max_members": 50,
                 "max_projects": None,
