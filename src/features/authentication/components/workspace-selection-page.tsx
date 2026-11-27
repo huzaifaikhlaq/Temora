@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { AuthLogo, authInputClass, authPrimaryClass } from "@/features/authentication/components/auth-ui";
 import { workspaceApi } from "@/features/workspace/api/client";
 import type { Workspace } from "@/features/workspace/types";
 
 export function WorkspaceSelectionPage() {
-  const router = useRouter();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,8 +42,7 @@ export function WorkspaceSelectionPage() {
     try {
       await workspaceApi.select(id);
       setSelectedId(id);
-      router.replace("/overview");
-      router.refresh();
+      window.location.replace("/overview");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Workspace could not be selected.");
     } finally { setBusy(false); }
@@ -59,8 +56,7 @@ export function WorkspaceSelectionPage() {
       const created = await workspaceApi.create(name.trim());
       await workspaceApi.select(created.id);
       setWorkspaces((items) => [...items, created]);
-      router.replace("/overview");
-      router.refresh();
+      window.location.replace("/overview");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Workspace could not be created.");
     } finally { setBusy(false); }
@@ -93,7 +89,7 @@ export function WorkspaceSelectionPage() {
             </form>}
             {loading ? <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500">Loading workspaces…</p> : workspaces.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">You do not belong to a workspace yet. Create one or accept an invitation.</div> : <div className="space-y-3">{workspaces.map((workspace, index) => {
               const active = workspace.id === selectedId;
-              return <article key={workspace.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className={`grid size-10 place-items-center rounded-lg ${["bg-violet-600", "bg-sky-600", "bg-slate-800"][index % 3]} text-white`}><Icon name="hub" /></span><span className="flex-1"><strong>{workspace.name}</strong><span className="block text-xs capitalize text-slate-500">{workspace.role} · {workspace.slug}</span></span>{active && <span className="text-xs font-medium text-emerald-700">Active</span>}</div><button type="button" className={`${active ? authPrimaryClass : "h-10 w-full rounded-lg border border-slate-200 text-sm font-semibold"} mt-4 w-full`} disabled={active || busy} onClick={() => void select(workspace.id)}>{active ? "Current workspace" : "Switch workspace"}</button></article>;
+              return <article key={workspace.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className={`grid size-10 place-items-center rounded-lg ${["bg-violet-600", "bg-sky-600", "bg-slate-800"][index % 3]} text-white`}><Icon name="hub" /></span><span className="flex-1"><strong>{workspace.name}</strong><span className="block text-xs capitalize text-slate-500">{workspace.role} · {workspace.slug}</span></span>{active && <span className="text-xs font-medium text-emerald-700">Active</span>}</div><button type="button" className={`${active ? authPrimaryClass : "h-10 w-full rounded-lg border border-slate-200 text-sm font-semibold"} mt-4 w-full disabled:opacity-50`} disabled={busy} onClick={() => void select(workspace.id)}>{busy ? "Opening workspace…" : active ? "Open current workspace" : "Switch workspace"}</button></article>;
             })}</div>}
             {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
           </section>

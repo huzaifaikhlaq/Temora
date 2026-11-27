@@ -238,8 +238,7 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
                     void fetch("/api/workspace/selection", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: workspace.id }) }).then(async (response) => {
                       if (!response.ok) throw new Error("Workspace could not be selected.");
                       setMenuOpen(false);
-                      router.replace("/overview");
-                      router.refresh();
+                      window.location.assign("/overview");
                     }).catch((error: unknown) => setWorkspaceError(error instanceof Error ? error.message : "Workspace could not be selected."));
                   }}
                 >
