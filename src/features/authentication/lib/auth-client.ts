@@ -56,16 +56,12 @@ function errorMessage(data: ApiError): string {
 }
 
 async function parseJson(response: Response): Promise<unknown> {
-  // const text = await response.text();
+  const text = await response.text();
 
-  const res = await response
-
-  // if (!text) return null;
-  if (!res) return null;
+  if (!text) return null;
 
   try {
-    // return JSON.parse(text);
-    return res
+    return JSON.parse(text);
   } catch {
     throw new AuthApiError("Invalid response from server.", 502);
   }
@@ -130,8 +126,8 @@ export const authClient = {
   },
 
   verifyEmail(token: string) {
-  return post<AuthResponse>("verify-email", { token });
-},
+    return post<AuthResponse>("verify-email", { token });
+  },
 
   resetPassword(token: string, password: string) {
     return post<MessageResponse>("reset-password", { token, password });

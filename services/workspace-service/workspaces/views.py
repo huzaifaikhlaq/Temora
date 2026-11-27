@@ -146,26 +146,20 @@ class WorkspaceDetail(APIView):
         )
 
     def delete(self, request, workspace_id):
-        with transaction.atomic():
-            workspace = (
-                Workspace.objects
-                .select_for_update()
-                .filter(pk=workspace_id)
-                .first()
-            )
-
-            if not workspace:
-                raise NotFound("Workspace not found.")
-
-            require_role(
-                request.user,
-                workspace_id,
-                [Membership.Role.OWNER],
-            )
-
-            workspace.delete()
-
-        return Response(status=204)
+        require_role(
+            request.user,
+            workspace_id,
+            [Membership.Role.OWNER],
+        )
+        return Response(
+            {
+                "detail": (
+                    "Permanent workspace deletion is temporarily "
+                    "disabled until billing cleanup is supported."
+                )
+            },
+            status=409,
+        )
 
 
 class WorkspaceMembers(APIView):

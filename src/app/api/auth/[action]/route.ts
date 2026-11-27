@@ -93,7 +93,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     return response;
-  } catch {
+  } catch (error) {
+    console.error("[Identity Service Error]", error);
+
     return errorResponse("Identity service unavailable", 503);
   }
 }
@@ -245,7 +247,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     return response;
-  } catch {
+  } catch (error) {
+    console.error("[Identity Service Error]", error);
+
     return errorResponse("Identity service unavailable", 503);
   }
 }

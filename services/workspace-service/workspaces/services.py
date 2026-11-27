@@ -16,6 +16,8 @@ from rest_framework.exceptions import (
 
 from .models import Workspace, Membership, Invitation
 
+from .billing_client import enforce_limit
+
 
 def token_digest(token):
     return hashlib.sha256(
@@ -110,13 +112,42 @@ def create_invitation(workspace, actor, email, role):
 
 
 def accept_invitation(user, raw_token):
+
+    digest = token_digest(raw_token)
+
+    candidate = Invitation.objects.filter(
+        token_hash=digest,
+        status=Invitation.Status.PENDING,
+    ).values("workspace_id").first()
+
+    if not candidate:
+        raise ValidationError({
+            "token": "Invalid or expired invitation."
+        })
+
     with transaction.atomic():
+
+        # All membership admissions for this workspace
+        # must acquire this same workspace row lock.
+
+        workspace = (
+            Workspace.objects
+            .select_for_update()
+            .filter(pk=candidate["workspace_id"])
+            .first()
+        )
+
+        if not workspace:
+            raise ValidationError({
+                "token": "Workspace no longer exists."
+            })
+
         invitation = (
             Invitation.objects
             .select_for_update()
-            .select_related("workspace")
             .filter(
-                token_hash=token_digest(raw_token),
+                workspace=workspace,
+                token_hash=digest,
                 status=Invitation.Status.PENDING,
             )
             .first()
@@ -132,19 +163,38 @@ def accept_invitation(user, raw_token):
                 "This invitation belongs to another email."
             )
 
-        membership, created = (
-            Membership.objects.get_or_create(
-                workspace=invitation.workspace,
-                user_id=user.id,
-                defaults={"role": invitation.role},
+        membership = Membership.objects.filter(
+            workspace=workspace,
+            user_id=user.id,
+        ).first()
+
+        if membership is None:
+
+            current_count = Membership.objects.filter(
+                workspace=workspace,
+            ).count()
+
+            enforce_limit(
+                workspace_id=workspace.id,
+                resource="max_members",
+                current_count=current_count,
             )
-        )
 
-        # Existing members keep their current roles.
+            membership = Membership.objects.create(
+                workspace=workspace,
+                user_id=user.id,
+                role=invitation.role,
+            )
+
         invitation.status = Invitation.Status.ACCEPTED
+
         invitation.accepted_at = timezone.now()
+
         invitation.save(
-            update_fields=["status", "accepted_at"]
+            update_fields=[
+                "status",
+                "accepted_at",
+            ]
         )
 
-    return membership
+        return membership

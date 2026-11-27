@@ -1,5 +1,7 @@
+
 import hashlib
 import time
+import logging
 
 from django.conf import settings
 
@@ -7,6 +9,9 @@ from redis import Redis, RedisError
 
 from rest_framework.exceptions import APIException
 from rest_framework.throttling import BaseThrottle
+
+
+logger = logging.getLogger(__name__)
 
 
 LUA = """
@@ -32,9 +37,7 @@ class RateLimitUnavailable(APIException):
 class AtomicAuthThrottle(BaseThrottle):
 
     scope = "auth"
-
     limit = 10
-
     seconds = 60
 
     def allow_request(self, request, view):
@@ -90,12 +93,12 @@ class AtomicAuthThrottle(BaseThrottle):
                 if count > self.limit:
                     return False
 
-       except RedisError as exc:
-           logger.exception(
-             "Redis authentication rate limiter failed."
+        except RedisError as exc:
+            logger.exception(
+                "Redis authentication rate limiter failed."
             )
 
-    raise RateLimitUnavailable() from exc
+            raise RateLimitUnavailable() from exc
 
         return True
 
@@ -117,7 +120,7 @@ class LoginThrottle(AtomicAuthThrottle):
 
 class RecoverThrottle(AtomicAuthThrottle):
     scope = "recover"
-    limit = 50  
+    limit = 50
     seconds = 3600
 
 

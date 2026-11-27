@@ -3,6 +3,10 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from .models import Issue, IssueCounter
+from .billing_client import (
+    lock_workspace_quota,
+    enforce_limit,
+)
 
 
 def resolve_references(workspace_id, project_id, values, current=None):
@@ -92,6 +96,22 @@ def insert_issue(workspace_id, project_id, project_key, reporter_id, values):
     with transaction.atomic():
         values = values.copy()
         titles = values.pop("subtasks", [])
+        
+        lock_workspace_quota(
+            workspace_id,
+            "max_issues",
+        )
+
+        current_count = Issue.objects.filter(
+            workspace_id=workspace_id,
+        ).count()
+
+        enforce_limit(
+            workspace_id=workspace_id,
+            resource="max_issues",
+            current_count=current_count,
+            requested=1 + len(titles),
+        )
 
         resolve_references(workspace_id, project_id, values)
 
@@ -137,11 +157,34 @@ def insert_issue(workspace_id, project_id, project_key, reporter_id, values):
 
 def modify_issue(issue, values):
     with transaction.atomic():
+        lock_workspace_quota(
+            issue.workspace_id,
+            "max_issues",
+        )
         issue = Issue.objects.select_for_update().get(pk=issue.pk)
 
         values = values.copy()
         sync_subtasks = "subtasks" in values
         titles = values.pop("subtasks", [])
+
+        if sync_subtasks:
+            existing_children = issue.subtasks.filter(
+                archived_at__isnull=True,
+            ).count()
+            additional_issues = max(
+                0,
+                len(titles) - existing_children,
+            )
+            if additional_issues > 0:
+                current_count = Issue.objects.filter(
+                    workspace_id=issue.workspace_id,
+                ).count()
+                enforce_limit(
+                    workspace_id=issue.workspace_id,
+                    resource="max_issues",
+                    current_count=current_count,
+                    requested=additional_issues,
+                )
 
         resolve_references(
             issue.workspace_id,

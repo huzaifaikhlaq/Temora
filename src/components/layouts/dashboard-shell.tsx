@@ -22,28 +22,29 @@ const groups: {
     disabled?: boolean;
   }[];
 }[] = [
-  {
-    label: "Workspace",
-    links: [
-      { label: "Overview", href: "/overview", icon: "grid_view" },
-      { label: "My Work", href: "/my-work", icon: "check_circle" },
-      { label: "Inbox", href: "/inbox", icon: "inbox" },
-      { label: "Work Items", href: "/work-items", icon: "checklist" },
-    ],
-  },
-  {
-    label: "Management",
-    links: [
-      { label: "Members & Roles", href: "/members", icon: "group" },
-      { label: "Permissions Matrix", href: "/roles", icon: "admin_panel_settings" },
-      { label: "Reports & Analytics", href: "/reports", icon: "insights" },
-      { label: "Integrations", href: "/integrations", icon: "hub" },
-      { label: "Settings", href: "/settings", icon: "settings" },
-      { label: "Automation Rules", href: "/settings/automation", icon: "auto_mode" },
-      { label: "Security & Audit", href: "/security/audit-logs", icon: "shield" },
-    ],
-  },
-];
+    {
+      label: "Workspace",
+      links: [
+        { label: "Overview", href: "/overview", icon: "grid_view" },
+        { label: "My Work", href: "/my-work", icon: "check_circle" },
+        { label: "Inbox", href: "/inbox", icon: "inbox" },
+        { label: "Work Items", href: "/work-items", icon: "checklist" },
+      ],
+    },
+    {
+      label: "Management",
+      links: [
+        { label: "Members & Roles", href: "/members", icon: "group" },
+        { label: "Permissions Matrix", href: "/roles", icon: "admin_panel_settings" },
+        { label: "Reports & Analytics", href: "/reports", icon: "insights" },
+        { label: "Integrations", href: "/integrations", icon: "hub" },
+        { label: "Settings", href: "/settings", icon: "settings" },
+        { label: "Plan & Billing", href: "/billing", icon: "credit_card", },
+        { label: "Automation Rules", href: "/settings/automation", icon: "auto_mode" },
+        { label: "Security & Audit", href: "/security/audit-logs", icon: "shield" },
+      ],
+    },
+  ];
 
 type DashboardShellProps = { children: ReactNode; user: AuthUser; workspaces: Workspace[]; activeWorkspace: Workspace };
 
@@ -135,49 +136,49 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
           ? "Create Work Item"
           : pathname.startsWith("/projects/") && pathname.includes("/issues/")
             ? "Work Item Details"
-      : pathname.startsWith("/my-work")
-        ? "My Work"
-            : pathname.endsWith("/dependencies")
-              ? "Dependencies & Audit Trail"
-              : pathname.startsWith("/sprints/") && pathname.endsWith("/complete")
-                ? "Complete Sprint"
-                : pathname.endsWith("/retrospective")
-                  ? "Sprint Retrospective"
-                  : pathname.includes("/reports/sprints/")
-                    ? "Sprint Burndown Report"
-                    : pathname === "/roles"
-                      ? "Roles & Permissions"
-                      : pathname.includes("/settings/automation")
-                        ? "Custom Fields & Automation"
-                        : pathname.includes("/security/audit-logs")
-                          ? "Security & Audit Logs"
-                          : pathname.includes("/roadmap")
-                            ? "Roadmap & Timeline"
-                            : pathname.includes("/sprints")
-                              ? "Sprint Planning"
-                              : pathname.includes("/board")
-                                ? (currentProjectName ?? "Project Board")
-                                : pathname.startsWith("/tasks/")
-                                  ? pathname.split("/").at(-1)
-                                  : pathname === "/projects"
-                                    ? "Projects Directory"
-                                    : pathname === "/projects/new"
-                                      ? "New Project"
-                                      : pathname === "/inbox"
-                                        ? "Inbox"
-                                        : pathname === "/calendar"
-                                          ? "Planning Calendar"
-                                          : pathname === "/members"
-                                            ? "Members & Permissions"
-                                            : pathname === "/reports"
-                                              ? "Reports & Analytics"
-                                              : pathname === "/integrations"
-                                                ? "Integrations"
-                                                : pathname === "/billing"
-                                                  ? "Billing & Subscription"
-                                                  : pathname === "/settings"
-                                                    ? "Workspace Settings"
-                                                    : "Temora";
+            : pathname.startsWith("/my-work")
+              ? "My Work"
+              : pathname.endsWith("/dependencies")
+                ? "Dependencies & Audit Trail"
+                : pathname.startsWith("/sprints/") && pathname.endsWith("/complete")
+                  ? "Complete Sprint"
+                  : pathname.endsWith("/retrospective")
+                    ? "Sprint Retrospective"
+                    : pathname.includes("/reports/sprints/")
+                      ? "Sprint Burndown Report"
+                      : pathname === "/roles"
+                        ? "Roles & Permissions"
+                        : pathname.includes("/settings/automation")
+                          ? "Custom Fields & Automation"
+                          : pathname.includes("/security/audit-logs")
+                            ? "Security & Audit Logs"
+                            : pathname.includes("/roadmap")
+                              ? "Roadmap & Timeline"
+                              : pathname.includes("/sprints")
+                                ? "Sprint Planning"
+                                : pathname.includes("/board")
+                                  ? (currentProjectName ?? "Project Board")
+                                  : pathname.startsWith("/tasks/")
+                                    ? pathname.split("/").at(-1)
+                                    : pathname === "/projects"
+                                      ? "Projects Directory"
+                                      : pathname === "/projects/new"
+                                        ? "New Project"
+                                        : pathname === "/inbox"
+                                          ? "Inbox"
+                                          : pathname === "/calendar"
+                                            ? "Planning Calendar"
+                                            : pathname === "/members"
+                                              ? "Members & Permissions"
+                                              : pathname === "/reports"
+                                                ? "Reports & Analytics"
+                                                : pathname === "/integrations"
+                                                  ? "Integrations"
+                                                  : pathname === "/billing"
+                                                    ? "Billing & Subscription"
+                                                    : pathname === "/settings"
+                                                      ? "Workspace Settings"
+                                                      : "Temora";
 
   return (
     <div className="min-h-screen bg-surface-low text-foreground">
@@ -211,63 +212,63 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
             className="flex w-full items-center justify-between rounded-lg bg-surface-low px-2.5 py-2 text-left hover:bg-surface-container"
             onClick={() => setMenuOpen(!menuOpen)}
           >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="grid size-8 shrink-0 place-items-center rounded bg-accent px-1 font-mono text-xs font-bold text-white">
-                  {activeWorkspace.name.slice(0, 2).toUpperCase()}
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="grid size-8 shrink-0 place-items-center rounded bg-accent px-1 font-mono text-xs font-bold text-white">
+                {activeWorkspace.name.slice(0, 2).toUpperCase()}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">
+                  {activeWorkspace.name}
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">
-                    {activeWorkspace.name}
-                  </span>
-                  <span className="block font-mono text-[11px] text-muted">
-                    {activeWorkspace.role}
-                  </span>
+                <span className="block font-mono text-[11px] text-muted">
+                  {activeWorkspace.role}
                 </span>
               </span>
-              <Icon name="unfold_more" size={18} className="text-muted" />
-            </button>
-            {menuOpen && (
-              <div className="mt-2 rounded-lg border border-border bg-white p-2 text-xs shadow-lg">
-                <p className="px-2 py-1 font-semibold">Switch workspace</p>
-                {workspaces.map((workspace) => (
-                  <button
-                    key={workspace.id}
-                    className="w-full rounded px-2 py-1.5 text-left hover:bg-surface-low"
-                    onClick={() => {
-                      void fetch("/api/workspace/selection", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: workspace.id }) }).then(async (response) => {
-                        if (!response.ok) throw new Error("Workspace could not be selected.");
-                        setMenuOpen(false);
-                        router.replace("/overview");
-                        router.refresh();
-                      }).catch((error: unknown) => setWorkspaceError(error instanceof Error ? error.message : "Workspace could not be selected."));
-                    }}
-                  >
-                    {workspace.name}
-                    {workspace.id === activeWorkspaceId && (
-                      <span className="float-right text-accent">✓</span>
-                    )}
-                  </button>
-                ))}
-                {workspaceError && <p role="alert" className="px-2 py-1 text-red">{workspaceError}</p>}
+            </span>
+            <Icon name="unfold_more" size={18} className="text-muted" />
+          </button>
+          {menuOpen && (
+            <div className="mt-2 rounded-lg border border-border bg-white p-2 text-xs shadow-lg">
+              <p className="px-2 py-1 font-semibold">Switch workspace</p>
+              {workspaces.map((workspace) => (
                 <button
-                  className="w-full rounded px-2 py-1.5 text-left text-muted hover:bg-surface-low"
+                  key={workspace.id}
+                  className="w-full rounded px-2 py-1.5 text-left hover:bg-surface-low"
                   onClick={() => {
-                    setMenuOpen(false);
-                    router.push("/workspace/setup");
+                    void fetch("/api/workspace/selection", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: workspace.id }) }).then(async (response) => {
+                      if (!response.ok) throw new Error("Workspace could not be selected.");
+                      setMenuOpen(false);
+                      router.replace("/overview");
+                      router.refresh();
+                    }).catch((error: unknown) => setWorkspaceError(error instanceof Error ? error.message : "Workspace could not be selected."));
                   }}
                 >
-                  Create workspace…
+                  {workspace.name}
+                  {workspace.id === activeWorkspaceId && (
+                    <span className="float-right text-accent">✓</span>
+                  )}
                 </button>
-              </div>
-            )}
-            <Link
-              href="/work-items/new"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 flex h-9 w-full items-center gap-2 rounded-lg border border-border/60 bg-white px-3 text-sm hover:bg-surface-low"
-            >
-              <Icon name="add" size={18} className="text-accent" />
-              Create Work Item <span className="ml-auto font-mono text-xs text-outline">C</span>
-            </Link>
+              ))}
+              {workspaceError && <p role="alert" className="px-2 py-1 text-red">{workspaceError}</p>}
+              <button
+                className="w-full rounded px-2 py-1.5 text-left text-muted hover:bg-surface-low"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/workspace/setup");
+                }}
+              >
+                Create workspace…
+              </button>
+            </div>
+          )}
+          <Link
+            href="/work-items/new"
+            onClick={() => setMenuOpen(false)}
+            className="mt-2 flex h-9 w-full items-center gap-2 rounded-lg border border-border/60 bg-white px-3 text-sm hover:bg-surface-low"
+          >
+            <Icon name="add" size={18} className="text-accent" />
+            Create Work Item <span className="ml-auto font-mono text-xs text-outline">C</span>
+          </Link>
         </div>
         <nav
           aria-label="Main navigation"
@@ -275,75 +276,75 @@ function DashboardShellContent({ children, user, workspaces, activeWorkspace }: 
         >
           {navGroups.map((group) => (
             <div key={group.label}>
-                <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-outline">
-                  {group.label}
-                </div>
-                <div
-                  className={
-                    group.label === "Projects" ? "ml-3 border-l border-border/50 pl-2" : ""
-                  }
-                >
-                  {group.links.map((link) => {
-                    const fallbackLink =
-                      group.label === "Planning" &&
-                      ["/projects", "/tasks", "/reports"].includes(link.href);
-                    const projectId =
-                      group.label === "Projects" && link.href !== "/projects"
-                        ? link.href.split("/")[2]
-                        : null;
-                    const active =
-                      !link.disabled &&
-                      !fallbackLink &&
-                      (link.href === "/my-work"
-                        ? pathname.startsWith("/my-work")
-                        : link.href === "/work-items"
-                          ? pathname === "/work-items" || (pathname.startsWith("/projects/") && pathname.includes("/issues/"))
-                        : pathname === link.href ||
-                          (!!projectId &&
-                            (pathname === `/projects/${projectId}` ||
-                              pathname.startsWith(`/projects/${projectId}/`))));
-                    const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
-                    const contents = (
-                      <>
-                        {group.label === "Projects" ? (
-                          <span className={`size-1.5 rounded-full ${link.dot}`} />
-                        ) : (
-                          <Icon name={link.icon} size={18} />
-                        )}
-                        <span className="truncate">{link.label}</span>
-                        {"count" in link && link.count && (
-                          <span
-                            className={`ml-auto rounded-full px-1.5 py-0.5 font-mono text-[11px] ${active ? "bg-white/20 text-white" : "bg-surface-high text-muted"}`}
-                          >
-                            {link.count}
-                          </span>
-                        )}
-                      </>
-                    );
-                    return link.disabled ? (
-                      <span
-                        key={link.label}
-                        aria-disabled="true"
-                        title="This screen is not included in the current preview"
-                        className={className}
-                      >
-                        {contents}
-                      </span>
-                    ) : (
-                      <Link
-                        key={link.label}
-                        href={link.href}
-                        aria-current={active ? "page" : undefined}
-                        onClick={() => setMobileOpen(false)}
-                        className={className}
-                      >
-                        {contents}
-                      </Link>
-                    );
-                  })}
-                </div>
+              <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-outline">
+                {group.label}
               </div>
-            ))}
+              <div
+                className={
+                  group.label === "Projects" ? "ml-3 border-l border-border/50 pl-2" : ""
+                }
+              >
+                {group.links.map((link) => {
+                  const fallbackLink =
+                    group.label === "Planning" &&
+                    ["/projects", "/tasks", "/reports"].includes(link.href);
+                  const projectId =
+                    group.label === "Projects" && link.href !== "/projects"
+                      ? link.href.split("/")[2]
+                      : null;
+                  const active =
+                    !link.disabled &&
+                    !fallbackLink &&
+                    (link.href === "/my-work"
+                      ? pathname.startsWith("/my-work")
+                      : link.href === "/work-items"
+                        ? pathname === "/work-items" || (pathname.startsWith("/projects/") && pathname.includes("/issues/"))
+                        : pathname === link.href ||
+                        (!!projectId &&
+                          (pathname === `/projects/${projectId}` ||
+                            pathname.startsWith(`/projects/${projectId}/`))));
+                  const className = `mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${active ? "bg-accent text-white" : link.disabled ? "cursor-not-allowed text-outline" : "text-muted hover:bg-surface-container hover:text-foreground"}`;
+                  const contents = (
+                    <>
+                      {group.label === "Projects" ? (
+                        <span className={`size-1.5 rounded-full ${link.dot}`} />
+                      ) : (
+                        <Icon name={link.icon} size={18} />
+                      )}
+                      <span className="truncate">{link.label}</span>
+                      {"count" in link && link.count && (
+                        <span
+                          className={`ml-auto rounded-full px-1.5 py-0.5 font-mono text-[11px] ${active ? "bg-white/20 text-white" : "bg-surface-high text-muted"}`}
+                        >
+                          {link.count}
+                        </span>
+                      )}
+                    </>
+                  );
+                  return link.disabled ? (
+                    <span
+                      key={link.label}
+                      aria-disabled="true"
+                      title="This screen is not included in the current preview"
+                      className={className}
+                    >
+                      {contents}
+                    </span>
+                  ) : (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => setMobileOpen(false)}
+                      className={className}
+                    >
+                      {contents}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         <div className="shrink-0 border-t border-border/30 bg-surface-low/60 p-2">
           <div className="mb-1 flex items-center justify-between px-2 py-1 text-xs text-muted">

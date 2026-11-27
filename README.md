@@ -49,6 +49,30 @@ groups. Route groups do not affect URL paths.
 
 For backend development data, follow [the Docker Compose seeder guide](docs/development-seeding.md).
 
+## Stripe billing
+
+Billing uses Stripe Checkout in subscription mode. Keep the secret key and
+webhook signing secret in `services/billing-service/.env`; the frontend never
+receives either value. The billing container applies database migrations and
+seeds the initial plan catalog on startup. To update an existing catalog after
+changing Stripe Price IDs, run:
+
+```bash
+docker compose exec billing python manage.py seed_plans
+```
+
+For local webhooks, run the Stripe CLI and copy its printed `whsec_...` value
+to `STRIPE_WEBHOOK_SECRET` in the billing service environment:
+
+```bash
+stripe login
+stripe listen --forward-to localhost:8005/api/webhooks/stripe/
+```
+
+Restart the billing service after changing its environment. Subscription access
+updates from verified Stripe webhooks and the billing reconciliation worker,
+not from the Checkout success redirect.
+
 ## Configuration
 
 Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_API_BASE_URL` when the

@@ -1,5 +1,5 @@
-import { AdditionalPage } from "@/features/workspace/components/additional-pages";
+import { BillingPage } from "@/features/billing/components/billing-page";
 
 export default function BillingRoute() {
-  return <AdditionalPage kind="billing" />;
+  return <BillingPage />;
 }
