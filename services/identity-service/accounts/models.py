@@ -9,6 +9,8 @@ from django.contrib.auth.models import (
 from django.db import models
 from django.utils import timezone
 
+from django.utils.text import slugify
+
 
 class UserManager(BaseUserManager):
 
@@ -79,6 +81,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=150
     )
 
+    username = models.CharField(
+      max_length=64,
+      unique=True,
+      editable=False,
+    )
+
     is_active = models.BooleanField(
         default=True
     )
@@ -103,6 +111,21 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
+    def save(self, *args, **kwargs):
+    if not self.username:
+        prefix = slugify(self.full_name)[:30].strip("-")
+        prefix = prefix or "user"
+
+        self.username = f"{prefix}-{self.id.hex}"
+
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {
+                *kwargs["update_fields"],
+                "username",
+            }
+
+    super().save(*args, **kwargs)
 
 
 class Session(models.Model):

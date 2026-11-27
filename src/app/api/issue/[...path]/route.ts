@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+
 import { sameOrigin, SESSION_COOKIE } from "@/lib/identity";
 
 type Context = {
@@ -22,9 +23,17 @@ function validPath(p: string[]) {
     return false;
   }
 
-  if (p.length > 5 && !uuid.test(p[5])) return false;
-  if (p.length > 6 && p[6] !== "attachments") return false;
-  if (p.length > 7 && !uuid.test(p[7])) return false;
+  if (p.length > 5 && !uuid.test(p[5])) {
+    return false;
+  }
+
+  if (p.length > 6 && !["attachments", "comments"].includes(p[6])) {
+    return false;
+  }
+
+  if (p.length > 7 && !uuid.test(p[7])) {
+    return false;
+  }
 
   return true;
 }
@@ -34,7 +43,9 @@ function failure(detail: string, status: number) {
     { detail },
     {
       status,
-      headers: { "Cache-Control": "no-store" },
+      headers: {
+        "Cache-Control": "no-store",
+      },
     },
   );
 }
@@ -48,15 +59,22 @@ async function forward(request: NextRequest, context: Context, method: Method) {
 
   const list = path.length === 5;
   const detail = path.length === 6;
-  const upload = path.length === 7;
-  const download = path.length === 8;
 
-  if (!(
-    (method === "GET" && (list || detail || download)) ||
-    (method === "POST" && (list || upload)) ||
-    (method === "PATCH" && detail) ||
-    (method === "DELETE" && (detail || download))
-  )) {
+  const upload = path.length === 7 && path[6] === "attachments";
+
+  const download = path.length === 8 && path[6] === "attachments";
+
+  const commentList = path.length === 7 && path[6] === "comments";
+
+  const commentDetail = path.length === 8 && path[6] === "comments";
+
+  const allowed =
+    (method === "GET" && (list || detail || download || commentList)) ||
+    (method === "POST" && (list || upload || commentList)) ||
+    (method === "PATCH" && (detail || commentDetail)) ||
+    (method === "DELETE" && (detail || download || commentDetail));
+
+  if (!allowed) {
     return failure("Method not allowed", 405);
   }
 
@@ -92,6 +110,7 @@ async function forward(request: NextRequest, context: Context, method: Method) {
       }
 
       const multipart = await request.formData().catch(() => null);
+
       const file = multipart?.get("file");
 
       if (!(file instanceof File) || file.size === 0 || file.size > 25 * 1024 * 1024) {
@@ -99,7 +118,9 @@ async function forward(request: NextRequest, context: Context, method: Method) {
       }
 
       const form = new FormData();
+
       form.set("file", file);
+
       body = form;
     } else {
       if (request.headers.get("content-type")?.split(";")[0] !== "application/json") {
@@ -119,14 +140,16 @@ async function forward(request: NextRequest, context: Context, method: Method) {
       }
 
       body = content;
+
       headers.set("Content-Type", "application/json");
     }
   }
 
   const params = new URL(request.url).searchParams;
-  const query = method === "GET" && list ? `?${params.toString()}` : "";
 
-  const url = `${base.replace(/\/$/, "")}/api/${path.join("/")}/${query}`;
+  const query = method === "GET" && (list || commentList) ? `?${params.toString()}` : "";
+
+  const url = `${base.replace(/\/$/, "")}` + `/api/${path.join("/")}/${query}`;
 
   try {
     const upstream = await fetch(url, {
@@ -138,16 +161,22 @@ async function forward(request: NextRequest, context: Context, method: Method) {
     });
 
     if (upstream.status === 204) {
-      return new NextResponse(null, { status: 204 });
+      return new NextResponse(null, {
+        status: 204,
+      });
     }
 
     if (download && upstream.ok) {
       return new Response(upstream.body, {
         status: upstream.status,
+
         headers: {
           "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream",
+
           "Content-Disposition": upstream.headers.get("content-disposition") ?? "attachment",
+
           "Cache-Control": "private, no-store",
+
           "X-Content-Type-Options": "nosniff",
         },
       });
@@ -159,14 +188,17 @@ async function forward(request: NextRequest, context: Context, method: Method) {
 
     const response = new NextResponse(await upstream.text(), {
       status: upstream.status,
+
       headers: {
         "Content-Type": "application/json",
+
         "Cache-Control": "no-store",
       },
     });
 
     if (upstream.status === 401) {
       response.cookies.delete(SESSION_COOKIE);
+
       response.cookies.delete("temora_active_workspace");
     }
 

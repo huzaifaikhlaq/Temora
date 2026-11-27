@@ -69,8 +69,10 @@ class ResetSerializer(TokenSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    # Part of the token introspection contract consumed by Workspace.
-    is_active = serializers.BooleanField(read_only=True)
+
+    is_active = serializers.BooleanField(
+        read_only=True
+    )
 
     class Meta:
         model = User
@@ -78,6 +80,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
+            "username",
             "full_name",
             "email_verified",
             "is_active",

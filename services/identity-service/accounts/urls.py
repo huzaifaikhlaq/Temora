@@ -57,4 +57,9 @@ urlpatterns = [
         views.Introspect.as_view(),
         name="identity-introspect"
     ),
+    path(
+         "internal/users/resolve/",
+         views.InternalUserDirectory.as_view(),
+         name="internal-user-directory",
+    ),
 ]

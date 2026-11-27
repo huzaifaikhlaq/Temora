@@ -41,6 +41,11 @@ from .throttles import (
     VerifyThrottle,
 )
 
+from rest_framework import serializers
+
+from rest_framework.exceptions import (
+    PermissionDenied,
+)
 
 # Public API base class
 
@@ -439,3 +444,71 @@ class Introspect(APIView):
                 else None
             )
         })
+        
+        
+class InternalUserDirectorySerializer(
+    serializers.Serializer
+):
+    user_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=True,
+        max_length=200,
+    )
+
+
+class InternalUserDirectory(APIView):
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        service_id = request.headers.get(
+            "X-Service-Id",
+            "",
+        )
+
+        provided_key = request.headers.get(
+            "X-Service-Key",
+            "",
+        )
+
+        expected_key = settings.INTERNAL_SERVICE_KEYS.get(
+            service_id
+        )
+
+        if (
+            service_id != "issue-service"
+            or not expected_key
+            or not secrets.compare_digest(
+                provided_key,
+                expected_key,
+            )
+        ):
+            raise PermissionDenied(
+                "Invalid service credentials."
+            )
+
+        serializer = InternalUserDirectorySerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        user_ids = serializer.validated_data[
+            "user_ids"
+        ]
+
+        users = User.objects.filter(
+            id__in=user_ids,
+            is_active=True,
+            email_verified=True,
+        ).values(
+            "id",
+            "username",
+            "full_name",
+        )
+
+        return Response(list(users))

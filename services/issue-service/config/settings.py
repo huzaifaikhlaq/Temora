@@ -63,6 +63,16 @@ REST_FRAMEWORK = {
     ],
 }
 
+ISSUE_EVENTS_REDIS_URL = os.getenv(
+    "ISSUE_EVENTS_REDIS_URL",
+    "redis://redis:6379/0",
+)
+
+ISSUE_EVENTS_STREAM = os.getenv(
+    "ISSUE_EVENTS_STREAM",
+    "temora:events:issues",
+)
+
 IDENTITY_API_URL = required("IDENTITY_API_URL").rstrip("/")
 WORKSPACE_API_URL = required("WORKSPACE_API_URL").rstrip("/")
 PROJECT_API_URL = required("PROJECT_API_URL").rstrip("/")

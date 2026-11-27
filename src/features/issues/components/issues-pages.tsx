@@ -11,6 +11,7 @@ import { WorkItemsDirectory } from "@/features/issues/components/work-items-dire
 import { useWorkspaceScope } from "@/features/workspace/hooks/workspace-scope";
 import { workspaceApi } from "@/features/workspace/api/client";
 import type { WorkspaceMember } from "@/features/workspace/types";
+import { IssueComments } from "@/features/issues/components/issue-comments";
 
 const statuses: IssueStatus[] = ["backlog", "to_do", "in_progress", "in_review", "done"];
 const priorities: IssuePriority[] = ["urgent", "high", "medium", "low"];
@@ -208,22 +209,30 @@ export function IssueDetailPage({ projectId, issueId }: { projectId: string; iss
           {issue.attachments.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{issue.attachments.map((attachment) => <a key={attachment.id} href={issueApi.attachmentUrl(workspaceId!, projectId, issue.id, attachment.id)} download={attachment.original_name} className="flex min-w-0 items-center gap-3 rounded-xl bg-[#f3f2ff] p-3 hover:bg-accent/10"><span className="grid size-10 shrink-0 place-items-center rounded-lg bg-white text-accent"><Icon name="description" size={20} /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{attachment.original_name}</span><span className="mt-1 block text-xs text-muted">{attachmentSize(attachment.size)} · {dateLabel(attachment.created_at)}</span></span><Icon name="download" size={17} className="text-muted" /></a>)}</div> : <p className="mt-4 rounded-lg bg-[#f7f6ff] p-4 text-sm text-muted">No attachments have been added.</p>}
         </section>
 
-        <section className="rounded-2xl border border-border/50 bg-white p-5 shadow-sm sm:p-7">
-          <div className="flex items-center gap-5 border-b border-border/50 pb-3"><h2 className="font-semibold text-accent">Comments</h2><span className="text-sm text-muted">Activity history</span></div><div className="mt-5 rounded-xl bg-[#f7f6ff] p-5 text-sm text-muted"><Icon name="history" size={18} className="mr-2 inline-block" />Comments and issue history are not available from the current issue service.</div>
-        </section>
+        {workspaceId &&
+          scope?.userId &&
+          !issue.is_draft && (
+            <IssueComments
+              key={`${workspaceId}:${projectId}:${issue.id}`}
+              workspaceId={workspaceId}
+              projectId={projectId}
+              issueId={issue.id}
+              currentUserId={scope.userId}
+            />
+          )}
       </div>
 
       <aside className="space-y-5 xl:sticky xl:top-5">
         <section className="rounded-2xl border border-border/50 bg-white p-5 shadow-sm sm:p-6"><div className="mb-4 flex items-center justify-between"><h2 className="font-mono text-xs font-bold uppercase tracking-[.16em] text-muted">Properties &amp; meta</h2>{busy && <Icon name="progress_activity" className="animate-spin text-accent" size={17} />}</div>
           <div className="space-y-1"><Property label="Assignee" icon="person"><label className="sr-only" htmlFor="issue-assignee">Assignee</label><select id="issue-assignee" className="max-w-[190px] truncate border-0 bg-transparent text-right text-sm font-semibold outline-none" value={issue.assignee_id ?? ""} disabled={busy} onChange={(event) => void update({ assignee_id: event.target.value || null })}><option value="">Unassigned</option>{members.map((member) => <option key={member.id} value={member.user_id}>{getMemberName(member.user_id)}</option>)}</select></Property>
-          <Property label="Priority" icon="flag"><span className={`rounded-full px-2.5 py-1 text-xs font-bold priority-${issue.priority}`}>{priorityLabel[issue.priority]}</span></Property>
-          <Property label="Reporter" icon="person_add"><span className="inline-flex items-center gap-2 text-sm font-medium"><span className="grid size-7 place-items-center rounded-full bg-accent/10 font-mono text-[10px] text-accent">{initials(issue.reporter_id)}</span>{getMemberName(issue.reporter_id)}</span></Property>
-          <Property label="Sprint" icon="cycle"><span className="max-w-[190px] truncate rounded-md bg-[#f0effa] px-2 py-1 font-mono text-xs">{issue.sprint_id ?? "Not assigned"}</span></Property>
-          <Property label="Story points" icon="flag"><span className="rounded-md bg-[#f0effa] px-2 py-1 font-mono text-sm font-semibold">{issue.story_points ?? "Not set"}</span></Property>
-          <Property label="Due date" icon="calendar_today"><label className="sr-only" htmlFor="issue-due-date">Due date</label><input id="issue-due-date" type="date" className="max-w-[170px] rounded-md border border-transparent bg-[#f7f6ff] px-2 py-1 text-xs font-semibold outline-none focus:border-accent" value={issue.due_date ?? ""} disabled={busy} onChange={(event) => void update({ due_date: event.target.value || null })} /></Property>
-          <Property label="Project" icon="folder_open"><Link href={`/projects/${projectId}`} className="text-sm font-semibold hover:text-accent">{project?.name ?? "Project"}</Link></Property>
-          <div className="border-t border-border/50 py-3"><label className="mb-2 block text-xs font-medium text-muted">Tags &amp; labels</label><input className="w-full rounded-lg border border-transparent bg-[#f7f6ff] px-3 py-2 text-sm outline-none focus:border-accent" aria-label="Tags and labels" value={labelsValue} disabled={busy} onChange={(event) => setLabelsValue(event.target.value)} onBlur={() => { const nextTags = labelsValue.split(",").map((item) => item.trim()).filter(Boolean); if (JSON.stringify(nextTags) !== JSON.stringify(issue.tags)) void update({ tags: nextTags }); }} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} placeholder="Design, UI, release..." /><div className="mt-2 flex flex-wrap gap-1.5">{issue.tags.map((tag) => <span key={tag} className="rounded-md bg-[#f0effa] px-2 py-1 font-mono text-[11px] text-muted">{tag}</span>)}</div></div>
-          <div className="border-t border-border/50 pt-3 font-mono text-[11px] text-muted"><p>Created {dateLabel(issue.created_at)}</p><p className="mt-1">Updated {dateLabel(issue.updated_at)}</p></div>
+            <Property label="Priority" icon="flag"><span className={`rounded-full px-2.5 py-1 text-xs font-bold priority-${issue.priority}`}>{priorityLabel[issue.priority]}</span></Property>
+            <Property label="Reporter" icon="person_add"><span className="inline-flex items-center gap-2 text-sm font-medium"><span className="grid size-7 place-items-center rounded-full bg-accent/10 font-mono text-[10px] text-accent">{initials(issue.reporter_id)}</span>{getMemberName(issue.reporter_id)}</span></Property>
+            <Property label="Sprint" icon="cycle"><span className="max-w-[190px] truncate rounded-md bg-[#f0effa] px-2 py-1 font-mono text-xs">{issue.sprint_id ?? "Not assigned"}</span></Property>
+            <Property label="Story points" icon="flag"><span className="rounded-md bg-[#f0effa] px-2 py-1 font-mono text-sm font-semibold">{issue.story_points ?? "Not set"}</span></Property>
+            <Property label="Due date" icon="calendar_today"><label className="sr-only" htmlFor="issue-due-date">Due date</label><input id="issue-due-date" type="date" className="max-w-[170px] rounded-md border border-transparent bg-[#f7f6ff] px-2 py-1 text-xs font-semibold outline-none focus:border-accent" value={issue.due_date ?? ""} disabled={busy} onChange={(event) => void update({ due_date: event.target.value || null })} /></Property>
+            <Property label="Project" icon="folder_open"><Link href={`/projects/${projectId}`} className="text-sm font-semibold hover:text-accent">{project?.name ?? "Project"}</Link></Property>
+            <div className="border-t border-border/50 py-3"><label className="mb-2 block text-xs font-medium text-muted">Tags &amp; labels</label><input className="w-full rounded-lg border border-transparent bg-[#f7f6ff] px-3 py-2 text-sm outline-none focus:border-accent" aria-label="Tags and labels" value={labelsValue} disabled={busy} onChange={(event) => setLabelsValue(event.target.value)} onBlur={() => { const nextTags = labelsValue.split(",").map((item) => item.trim()).filter(Boolean); if (JSON.stringify(nextTags) !== JSON.stringify(issue.tags)) void update({ tags: nextTags }); }} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} placeholder="Design, UI, release..." /><div className="mt-2 flex flex-wrap gap-1.5">{issue.tags.map((tag) => <span key={tag} className="rounded-md bg-[#f0effa] px-2 py-1 font-mono text-[11px] text-muted">{tag}</span>)}</div></div>
+            <div className="border-t border-border/50 pt-3 font-mono text-[11px] text-muted"><p>Created {dateLabel(issue.created_at)}</p><p className="mt-1">Updated {dateLabel(issue.updated_at)}</p></div>
           </div>
         </section>
         <section className="rounded-2xl border border-border/50 bg-white p-5 shadow-sm"><h2 className="font-mono text-xs font-bold uppercase tracking-[.16em] text-muted">Issue activity</h2><p className="mt-3 text-sm text-muted">This view shows live issue fields and linked work. Activity events are not exposed by the current service.</p></section>

@@ -1,4 +1,3 @@
-
 import requests
 from django.conf import settings
 
@@ -52,7 +51,7 @@ def service_get(request, base_url, path):
     return data
 
 
-def require_scope(request, workspace_id, project_id, write=False):
+def require_scope(request,workspace_id,project_id,write=False,include_role=False,):
     workspace = service_get(
         request,
         settings.WORKSPACE_API_URL,
@@ -92,6 +91,9 @@ def require_scope(request, workspace_id, project_id, write=False):
         raise ValidationError(
             "Restore the project before editing issues"
         )
+
+   if include_role:
+    return project, role
 
     return project
 

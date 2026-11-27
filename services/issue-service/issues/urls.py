@@ -6,6 +6,11 @@ from .sprint_internal import (
     InternalSprintComplete,
 )
 
+from .comment_views import (
+    IssueComments,
+    IssueCommentDetail,
+)
+
 base = "workspaces/<uuid:workspace_id>/projects/<uuid:project_id>/issues/"
 
 urlpatterns = [
@@ -34,5 +39,17 @@ urlpatterns = [
     path(
         "internal/sprints/<uuid:sprint_id>/complete/",
         InternalSprintComplete.as_view(),
+    ),
+    path(
+        base + "<uuid:issue_id>/comments/",
+        IssueComments.as_view(),
+    ),
+
+    path(
+        base + (
+            "<uuid:issue_id>/comments/"
+            "<uuid:comment_id>/"
+        ),
+         IssueCommentDetail.as_view(),
     ),
 ]

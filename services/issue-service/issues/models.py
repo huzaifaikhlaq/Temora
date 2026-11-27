@@ -201,3 +201,118 @@ class SprintRolloverOperation(models.Model):
     result = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+class IssueComment(models.Model):
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    issue = models.ForeignKey(
+        Issue,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+
+    author_id = models.UUIDField(
+        db_index=True,
+    )
+
+    author_name = models.CharField(
+        max_length=150,
+    )
+
+    body = models.TextField()
+
+    mentioned_user_ids = models.JSONField(
+        default=list,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    edited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    deleted_by = models.UUIDField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+
+        ordering = ["-created_at", "-id"]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "issue",
+                    "deleted_at",
+                    "-created_at",
+                ],
+                name="issue_comment_list_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Comment {self.id} on {self.issue_id}"
+
+
+class IssueEvent(models.Model):
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    event_type = models.CharField(
+        max_length=100,
+        db_index=True,
+    )
+
+    payload = models.JSONField(
+        default=dict,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    published_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+
+        ordering = ["created_at", "id"]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "published_at",
+                    "created_at",
+                ],
+                name="issue_event_pending_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.id}"
