@@ -70,19 +70,26 @@ def start_checkout(workspace_id, user_id, plan_code):
             ):
                 return existing
 
-            raise BillingConflict(
-                "Resolve or cancel the existing checkout first."
+            if (
+                existing.plan_id == plan.id
+                and existing.status == CheckoutAttempt.Status.CREATING
+            ):
+                attempt = existing
+            else:
+                raise BillingConflict(
+                    "Resolve or cancel the existing checkout first."
+                )
+
+        else:
+            attempt = CheckoutAttempt.objects.create(
+                subscription=subscription,
+                plan=plan,
+                expected_price_id=plan.provider_price_id,
+                created_by=user_id,
             )
 
-        attempt = CheckoutAttempt.objects.create(
-            subscription=subscription,
-            plan=plan,
-            expected_price_id=plan.provider_price_id,
-            created_by=user_id,
-        )
-
-    # The reservation is committed before contacting Stripe.
-    # Do not blindly retry this POST on a timeout.
+    # The reservation is committed before contacting Stripe. Stripe's
+    # idempotency key lets a retried request recover the same session.
 
     result = stripe.create_checkout(attempt)
 

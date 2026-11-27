@@ -9,8 +9,19 @@ class Command(BaseCommand):
 
     help = "Create or update Temora billing plans"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--only-if-empty",
+            action="store_true",
+            help="Create the catalog only when no plans exist yet.",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
+
+        if options["only_if_empty"] and Plan.objects.exists():
+            self.stdout.write("Plans already exist; leaving them unchanged.")
+            return
 
         plans = [
             {
@@ -71,12 +82,13 @@ class Command(BaseCommand):
             if (
                 existing
                 and existing.provider_price_id
+                and not existing.provider_price_id.startswith("prod_")
                 and existing.provider_price_id
                     != data["provider_price_id"]
             ):
                 raise CommandError(
                     f"Do not replace the existing {code} "
-                    "provider price without a price migration."
+                    "Stripe Price without a price migration."
                 )
 
             plan, created = Plan.objects.update_or_create(

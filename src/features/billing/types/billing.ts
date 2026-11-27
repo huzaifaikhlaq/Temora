@@ -77,4 +77,6 @@ export type CheckoutResponse = {
   checkout_id: string;
 
   transaction_id: string;
+
+  checkout_url: string;
 };

@@ -16,18 +16,23 @@ class StripeRejected(APIException):
     default_detail = "Payment provider rejected the operation."
 
 
-def stripe_request(method, path, payload=None):
+def stripe_request(method, path, payload=None, idempotency_key=None):
     if not settings.STRIPE_SECRET_KEY:
         raise StripeUnavailable("Payment provider is not configured.")
 
     try:
+        headers = {
+            "Authorization": f"Bearer {settings.STRIPE_SECRET_KEY}",
+            "Accept": "application/json",
+        }
+
+        if idempotency_key:
+            headers["Idempotency-Key"] = idempotency_key
+
         response = requests.request(
             method=method,
             url=f"{settings.STRIPE_API_URL.rstrip('/')}/{path.lstrip('/')}",
-            headers={
-                "Authorization": f"Bearer {settings.STRIPE_SECRET_KEY}",
-                "Accept": "application/json",
-            },
+            headers=headers,
             data=payload,
             timeout=(5, 20),
             allow_redirects=False,
@@ -64,21 +69,28 @@ def create_checkout(attempt):
 
     attempt_id = str(attempt.id)
     workspace_id = str(attempt.subscription.workspace_id)
+
+    payload = {
+        "mode": "subscription",
+        "line_items[0][price]": attempt.expected_price_id,
+        "line_items[0][quantity]": 1,
+        "success_url": settings.STRIPE_CHECKOUT_SUCCESS_URL,
+        "cancel_url": settings.STRIPE_CHECKOUT_CANCEL_URL,
+        "client_reference_id": workspace_id,
+        "metadata[checkout_attempt_id]": attempt_id,
+        "metadata[workspace_id]": workspace_id,
+        "subscription_data[metadata][checkout_attempt_id]": attempt_id,
+        "subscription_data[metadata][workspace_id]": workspace_id,
+    }
+
+    if attempt.subscription.provider_customer_id:
+        payload["customer"] = attempt.subscription.provider_customer_id
+
     return stripe_request(
         "POST",
         "v1/checkout/sessions",
-        {
-            "mode": "subscription",
-            "line_items[0][price]": attempt.expected_price_id,
-            "line_items[0][quantity]": 1,
-            "success_url": settings.STRIPE_CHECKOUT_SUCCESS_URL,
-            "cancel_url": settings.STRIPE_CHECKOUT_CANCEL_URL,
-            "client_reference_id": workspace_id,
-            "metadata[checkout_attempt_id]": attempt_id,
-            "metadata[workspace_id]": workspace_id,
-            "subscription_data[metadata][checkout_attempt_id]": attempt_id,
-            "subscription_data[metadata][workspace_id]": workspace_id,
-        },
+        payload,
+        idempotency_key=f"temora-checkout-{attempt_id}",
     )
 
 

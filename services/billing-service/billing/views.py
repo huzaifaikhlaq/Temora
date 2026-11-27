@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Plan, Payment
+from . import stripe
 
 from .permissions import (
     require_workspace_access,
@@ -99,9 +100,22 @@ class CheckoutCreate(APIView):
             plan_code=serializer.validated_data["plan"],
         )
 
+        session = stripe.get_transaction(
+            attempt.provider_transaction_id,
+        )
+
+        checkout_url = session.get("url")
+
+        if session.get("status") != "open" or not checkout_url:
+            return Response(
+                {"detail": "The Stripe checkout session is no longer open."},
+                status=409,
+            )
+
         return Response({
             "checkout_id": str(attempt.id),
             "transaction_id": attempt.provider_transaction_id,
+            "checkout_url": checkout_url,
         })
 
 

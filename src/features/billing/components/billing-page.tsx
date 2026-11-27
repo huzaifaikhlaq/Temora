@@ -6,8 +6,6 @@ import {
   useState,
 } from "react";
 
-// import { initializePaddle } from "@paddle/paddle-js";
-
 import { Panel } from "@/components/shared/dashboard-ui";
 
 import {
@@ -21,43 +19,6 @@ import type {
   Payment,
   Subscription,
 } from "../types/billing";
-
-let paddlePromise:
-  // | ReturnType<typeof initializePaddle>
-  | undefined;
-
-function getPaddle() {
-  const token =
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-
-  if (!token) {
-    throw new Error(
-      "Paddle client token is missing.",
-    );
-  }
-
-  // if (!paddlePromise) {
-  //   paddlePromise = initializePaddle({
-  //     environment: "sandbox",
-  //     token,
-  //   }).then((paddle) => {
-  //     if (!paddle) {
-  //       paddlePromise = undefined;
-
-  //       throw new Error(
-  //         "Unable to initialize Paddle.",
-  //       );
-  //     }
-
-  //     return paddle;
-  //   }).catch((error) => {
-  //     paddlePromise = undefined;
-  //     throw error;
-  //   });
-  // }
-
-  return paddlePromise;
-}
 
 function formatMoney(
   amount: number,
@@ -153,17 +114,6 @@ function BillingContent({
     };
   }, [load]);
 
-  useEffect(() => {
-    if (
-      subscription?.can_manage &&
-      process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
-    ) {
-      void getPaddle().catch(() => {
-        // Checkout displays an actionable error if opened.
-      });
-    }
-  }, [subscription?.can_manage]);
-
   async function choosePlan(plan: Plan) {
     if (busy || !subscription?.can_manage) {
       return;
@@ -174,27 +124,21 @@ function BillingContent({
     setNotice("");
 
     try {
-      const paddle = await getPaddle();
-
       const checkout = await billingApi.checkout(
         workspaceId,
         plan.code,
       );
 
-      paddle?.Checkout.open({
-        transactionId: checkout.transaction_id,
+      const checkoutUrl = new URL(checkout.checkout_url);
 
-        settings: {
-          displayMode: "overlay",
-        },
-      });
+      if (
+        checkoutUrl.protocol !== "https:" ||
+        checkoutUrl.hostname !== "checkout.stripe.com"
+      ) {
+        throw new Error("Stripe returned an invalid checkout URL.");
+      }
 
-      setNotice(
-        "Complete your payment in Paddle. " +
-        "Your plan will update after payment verification.",
-      );
-
-      await load();
+      window.location.assign(checkoutUrl.href);
     } catch (err) {
       setError(
         err instanceof Error
